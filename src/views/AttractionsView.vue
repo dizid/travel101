@@ -1,17 +1,36 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useCountryStore } from '@stores/countryStore'
+import { useUserStore } from '@stores/userStore'
+import { useMatcher } from '@/composables/useMatcher'
 import AttractionCard from '@components/features/AttractionCard.vue'
 import type { AttractionCategory } from '@/types'
-import { SearchOutlined, StarFilled } from '@ant-design/icons-vue'
+import { SearchOutlined, StarFilled, LoadingOutlined } from '@ant-design/icons-vue'
 
 const route = useRoute()
 const countryStore = useCountryStore()
+const userStore = useUserStore()
+const { calculateLocalScore, getMatchReason, sortedByMatch, hasProfile } = useMatcher()
 
 const searchQuery = ref('')
 const activeCategory = ref<AttractionCategory | 'all' | 'hidden'>('all')
 const showHiddenOnly = ref(route.query.hidden === 'true')
+const showPersonalized = ref(true)
+
+// Fetch attractions on mount
+onMounted(async () => {
+  if (!countryStore.attractionsLoaded) {
+    await countryStore.fetchAttractions({ personalized: hasProfile.value })
+  }
+})
+
+// Re-fetch when user profile changes
+watch(() => userStore.hasProfile, async (newHasProfile) => {
+  if (newHasProfile) {
+    await countryStore.fetchAttractions({ personalized: true })
+  }
+})
 
 const categories: { value: AttractionCategory | 'all' | 'hidden'; label: string; icon: string }[] = [
   { value: 'all', label: 'All Places', icon: '🗺️' },
@@ -28,7 +47,10 @@ const categories: { value: AttractionCategory | 'all' | 'hidden'; label: string;
 ]
 
 const filteredAttractions = computed(() => {
-  let results = countryStore.attractions
+  // Use personalized sorting if enabled and user has profile
+  let results = (showPersonalized.value && hasProfile.value)
+    ? sortedByMatch.value
+    : countryStore.attractions
 
   // Filter by hidden gems
   if (activeCategory.value === 'hidden' || showHiddenOnly.value) {
@@ -96,6 +118,21 @@ function setCategory(cat: typeof activeCategory.value) {
 
     <!-- Content -->
     <div class="max-w-6xl mx-auto px-4 sm:px-6 py-8">
+      <!-- Personalization toggle -->
+      <div v-if="hasProfile" class="mb-6 flex items-center gap-3">
+        <label class="flex items-center gap-2 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            v-model="showPersonalized"
+            class="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+          />
+          <span class="text-sm text-gray-700">Sort by my preferences</span>
+        </label>
+        <span v-if="showPersonalized" class="text-xs text-primary-600 bg-primary-50 px-2 py-1 rounded-full">
+          Personalized for you
+        </span>
+      </div>
+
       <!-- Category filters -->
       <div class="flex flex-wrap gap-2 mb-8 overflow-x-auto pb-2">
         <button
@@ -133,6 +170,7 @@ function setCategory(cat: typeof activeCategory.value) {
 
       <!-- Results count -->
       <p class="text-sm text-gray-500 mb-4">
+        <LoadingOutlined v-if="countryStore.attractionsLoading" class="mr-2" />
         {{ filteredAttractions.length }} places found
       </p>
 
@@ -142,17 +180,29 @@ function setCategory(cat: typeof activeCategory.value) {
           v-for="attraction in filteredAttractions"
           :key="attraction.id"
           :attraction="attraction"
+          :show-match="showPersonalized && hasProfile"
+          :match-score="calculateLocalScore(attraction)"
+          :match-reason="getMatchReason(attraction)"
         />
       </div>
 
       <!-- Empty state -->
       <div
-        v-if="filteredAttractions.length === 0"
+        v-if="filteredAttractions.length === 0 && !countryStore.attractionsLoading"
         class="text-center py-16"
       >
         <span class="text-5xl mb-4 block">🔍</span>
         <h3 class="text-lg font-medium text-gray-900 mb-2">No places found</h3>
         <p class="text-gray-500">Try adjusting your search or filters.</p>
+      </div>
+
+      <!-- Loading state -->
+      <div
+        v-if="countryStore.attractionsLoading && filteredAttractions.length === 0"
+        class="text-center py-16"
+      >
+        <LoadingOutlined class="text-4xl text-primary-500 mb-4" />
+        <p class="text-gray-500">Loading attractions...</p>
       </div>
     </div>
   </div>

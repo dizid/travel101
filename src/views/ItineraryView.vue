@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useUserStore } from '@stores/userStore'
+import { useAI } from '@/composables/useAI'
+import AIChat from '@/components/features/AIChat.vue'
 import {
   CalendarOutlined,
   PlusOutlined,
@@ -11,9 +13,12 @@ import {
   DeleteOutlined,
   EditOutlined,
   RocketOutlined,
+  MessageOutlined,
 } from '@ant-design/icons-vue'
 
 const userStore = useUserStore()
+const { ask } = useAI()
+const showChat = ref(false)
 
 const isPro = computed(() => userStore.isPro)
 
@@ -56,9 +61,27 @@ const activityIcons: Record<string, string> = {
   nature: '🌿',
 }
 
-function generateWithAI() {
-  // Placeholder for AI generation
-  console.log('Generate itinerary with AI')
+const isGenerating = ref(false)
+
+async function generateWithAI() {
+  isGenerating.value = true
+  try {
+    const prefs = userStore.profile.prefs
+    const prompt = `Create a detailed ${sampleItinerary.value.days.length}-day Thailand itinerary for a ${prefs.tripType} traveler.
+Travel style: ${prefs.travelStyle.join(', ') || 'relaxation'}
+Interests: ${prefs.interests.join(', ') || 'culture, food'}
+Budget: ${prefs.budget}
+Group: ${prefs.groupType}
+
+Please provide a day-by-day plan with specific times, locations, and activities.`
+
+    const response = await ask(prompt)
+    if (response) {
+      console.log('AI Generated itinerary:', response)
+    }
+  } finally {
+    isGenerating.value = false
+  }
 }
 </script>
 
@@ -82,14 +105,23 @@ function generateWithAI() {
             </div>
           </div>
 
-          <button
-            v-if="isPro"
-            @click="generateWithAI"
-            class="btn-thai flex items-center gap-2"
-          >
-            <RocketOutlined />
-            Generate with AI
-          </button>
+          <div v-if="isPro" class="flex gap-2">
+            <button
+              @click="generateWithAI"
+              :disabled="isGenerating"
+              class="btn-thai flex items-center gap-2"
+            >
+              <RocketOutlined :class="{ 'animate-spin': isGenerating }" />
+              {{ isGenerating ? 'Generating...' : 'Generate with AI' }}
+            </button>
+            <button
+              @click="showChat = !showChat"
+              class="btn-thai-outline flex items-center gap-2"
+            >
+              <MessageOutlined />
+              Ask AI
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -236,5 +268,25 @@ function generateWithAI() {
         </button>
       </div>
     </div>
+
+    <!-- AI Chat Drawer -->
+    <Transition
+      enter-active-class="transition-transform duration-300"
+      enter-from-class="translate-x-full"
+      enter-to-class="translate-x-0"
+      leave-active-class="transition-transform duration-300"
+      leave-from-class="translate-x-0"
+      leave-to-class="translate-x-full"
+    >
+      <div
+        v-if="showChat"
+        class="fixed right-0 top-0 bottom-0 w-full max-w-md z-50 shadow-2xl"
+      >
+        <div class="absolute inset-0 bg-black/20" @click="showChat = false" />
+        <div class="absolute right-0 top-0 bottom-0 w-full max-w-md">
+          <AIChat class="h-full" />
+        </div>
+      </div>
+    </Transition>
   </div>
 </template>

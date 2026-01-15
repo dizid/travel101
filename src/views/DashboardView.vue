@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { RouterLink } from 'vue-router'
+import { computed, onMounted } from 'vue'
+import { RouterLink, useRoute } from 'vue-router'
 import { useUserStore } from '@stores/userStore'
+import { useSubscription } from '@/composables/useSubscription'
 import {
   UserOutlined,
   CrownOutlined,
@@ -9,9 +10,21 @@ import {
   SettingOutlined,
   CheckCircleFilled,
   RightOutlined,
+  LoadingOutlined,
 } from '@ant-design/icons-vue'
 
 const userStore = useUserStore()
+const route = useRoute()
+const { loading: subLoading, subscriptionStatus, nextBillingDate, startCheckout, openPortal, fetchStatus } = useSubscription()
+
+onMounted(async () => {
+  if (userStore.isAuthenticated) {
+    await fetchStatus()
+  }
+  if (route.query.upgrade === 'success') {
+    userStore.setPro(true)
+  }
+})
 
 const quickLinks = [
   { icon: '🛂', label: 'Visa Guide', path: '/visa', description: 'Check requirements' },
@@ -185,8 +198,13 @@ const profileCompleteness = computed(() => {
 
             <div class="text-center">
               <p class="text-2xl font-bold mb-1">$10<span class="text-sm font-normal">/month</span></p>
-              <button class="w-full py-3 bg-white text-primary-600 font-semibold rounded-xl hover:bg-primary-50 transition-colors">
-                Start Pro Trial
+              <button
+                @click="startCheckout"
+                :disabled="subLoading"
+                class="w-full py-3 bg-white text-primary-600 font-semibold rounded-xl hover:bg-primary-50 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                <LoadingOutlined v-if="subLoading" class="animate-spin" />
+                {{ subLoading ? 'Loading...' : 'Start Pro Trial' }}
               </button>
               <p class="text-xs text-primary-200 mt-2">Cancel anytime</p>
             </div>
@@ -207,14 +225,21 @@ const profileCompleteness = computed(() => {
             <div class="space-y-2 text-sm">
               <div class="flex items-center justify-between">
                 <span class="text-gray-500">Status</span>
-                <span class="font-medium text-green-600">Active</span>
+                <span class="font-medium text-green-600">
+                  {{ subscriptionStatus?.subscription?.status || 'Active' }}
+                </span>
               </div>
               <div class="flex items-center justify-between">
                 <span class="text-gray-500">Next billing</span>
-                <span class="font-medium">Jan 15, 2026</span>
+                <span class="font-medium">{{ nextBillingDate || 'N/A' }}</span>
               </div>
             </div>
-            <button class="w-full mt-4 btn-thai-outline text-sm">
+            <button
+              @click="openPortal"
+              :disabled="subLoading"
+              class="w-full mt-4 btn-thai-outline text-sm flex items-center justify-center gap-2"
+            >
+              <LoadingOutlined v-if="subLoading" class="animate-spin" />
               Manage Subscription
             </button>
           </div>

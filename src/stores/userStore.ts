@@ -18,6 +18,7 @@ export const useUserStore = defineStore('user', () => {
     prefs: { ...defaultPreferences },
     isPro: false,
   })
+  const authUserId = ref<string | null>(null)
   const isAuthenticated = ref(false)
   const isLoading = ref(false)
   const activities = ref<UserActivity[]>([])
@@ -31,6 +32,9 @@ export const useUserStore = defineStore('user', () => {
   const isPro = computed(() => profile.value.isPro)
 
   const displayName = computed(() => {
+    if (profile.value.name) {
+      return profile.value.name
+    }
     if (profile.value.email) {
       return profile.value.email.split('@')[0]
     }
@@ -80,6 +84,23 @@ export const useUserStore = defineStore('user', () => {
     localStorage.removeItem('user-profile')
   }
 
+  function setAuthUser(userId: string, email?: string, displayName?: string) {
+    authUserId.value = userId
+    isAuthenticated.value = true
+    if (email) {
+      profile.value.email = email
+    }
+    if (displayName) {
+      profile.value.name = displayName
+    }
+    saveToLocalStorage()
+  }
+
+  function clearAuthUser() {
+    authUserId.value = null
+    isAuthenticated.value = false
+  }
+
   // Local storage persistence
   function saveToLocalStorage() {
     localStorage.setItem('user-profile', JSON.stringify(profile.value))
@@ -107,6 +128,7 @@ export const useUserStore = defineStore('user', () => {
   return {
     // State
     profile,
+    authUserId,
     isAuthenticated,
     isLoading,
     activities,
@@ -121,6 +143,8 @@ export const useUserStore = defineStore('user', () => {
     setPro,
     addActivity,
     clearProfile,
+    setAuthUser,
+    clearAuthUser,
     loadFromLocalStorage,
   }
 })

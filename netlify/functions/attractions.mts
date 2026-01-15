@@ -1,0 +1,285 @@
+import type { Context, Config } from '@netlify/functions'
+import { getDb } from './lib/db.mts'
+import { calculateMatchScore, getMatchReasons, type UserPrefs } from './lib/matching.mts'
+
+interface Attraction {
+  id: string
+  slug: string
+  name: string
+  description: string
+  about: string | null
+  category: string
+  location: string | null
+  province: string | null
+  image_url: string | null
+  is_hidden_gem: boolean
+  is_pro_only: boolean
+  categories: Record<string, number>
+  created_at: string
+  updated_at: string
+}
+
+interface AttractionTip {
+  id: string
+  tip_type: string
+  title: string
+  content: string
+  is_pro_only: boolean
+  sort_order: number
+}
+
+interface AttractionSecret {
+  id: string
+  secret_type: string
+  title: string
+  content: string
+  location_hint: string | null
+  is_pro_only: boolean
+  sort_order: number
+}
+
+interface AttractionRecommendation {
+  id: string
+  rec_type: string
+  name: string
+  description: string
+  why_special: string | null
+  price_range: string | null
+  google_maps_url: string | null
+  is_pro_only: boolean
+  sort_order: number
+}
+
+function json(data: unknown, status = 200) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: { 'Content-Type': 'application/json' },
+  })
+}
+
+function parseUserPrefs(req: Request): UserPrefs | null {
+  const prefsHeader = req.headers.get('x-user-prefs')
+  if (!prefsHeader) return null
+  try {
+    return JSON.parse(prefsHeader) as UserPrefs
+  } catch {
+    return null
+  }
+}
+
+export default async (req: Request, context: Context) => {
+  if (req.method !== 'GET') {
+    return json({ error: 'Method not allowed' }, 405)
+  }
+
+  const db = getDb()
+  const url = new URL(req.url)
+  const pathParts = url.pathname.replace('/api/attractions', '').split('/').filter(Boolean)
+
+  try {
+    // GET /api/attractions - List attractions
+    if (pathParts.length === 0) {
+      return handleList(req, db, url)
+    }
+
+    // GET /api/attractions/matched - Personalized matches
+    if (pathParts[0] === 'matched') {
+      return handleMatched(req, db)
+    }
+
+    // GET /api/attractions/:slug - Single attraction
+    return handleDetail(req, db, pathParts[0], url)
+  } catch (error) {
+    console.error('Attractions function error:', error)
+    return json({ error: 'Internal server error' }, 500)
+  }
+}
+
+async function handleList(req: Request, db: ReturnType<typeof getDb>, url: URL) {
+  const category = url.searchParams.get('category')
+  const hiddenGemsOnly = url.searchParams.get('hidden_gems') === 'true'
+  const province = url.searchParams.get('province')
+  const personalized = url.searchParams.get('personalized') === 'true'
+  const limit = Math.min(parseInt(url.searchParams.get('limit') || '50'), 100)
+  const offset = parseInt(url.searchParams.get('offset') || '0')
+
+  // Build query conditions
+  let attractions: Attraction[]
+
+  if (category && hiddenGemsOnly) {
+    attractions = await db`
+      SELECT * FROM attractions
+      WHERE category = ${category} AND is_hidden_gem = true
+      ORDER BY name
+      LIMIT ${limit} OFFSET ${offset}
+    `
+  } else if (category) {
+    attractions = await db`
+      SELECT * FROM attractions
+      WHERE category = ${category}
+      ORDER BY name
+      LIMIT ${limit} OFFSET ${offset}
+    `
+  } else if (hiddenGemsOnly) {
+    attractions = await db`
+      SELECT * FROM attractions
+      WHERE is_hidden_gem = true
+      ORDER BY name
+      LIMIT ${limit} OFFSET ${offset}
+    `
+  } else if (province) {
+    attractions = await db`
+      SELECT * FROM attractions
+      WHERE province = ${province}
+      ORDER BY name
+      LIMIT ${limit} OFFSET ${offset}
+    `
+  } else {
+    attractions = await db`
+      SELECT * FROM attractions
+      ORDER BY name
+      LIMIT ${limit} OFFSET ${offset}
+    `
+  }
+
+  // Get total count
+  const countResult = await db`SELECT COUNT(*) as total FROM attractions`
+  const total = parseInt(countResult[0].total)
+
+  // If personalized, calculate match scores and sort
+  if (personalized) {
+    const prefs = parseUserPrefs(req)
+    if (prefs) {
+      const attractionsWithScores = attractions.map(a => ({
+        ...a,
+        matchScore: calculateMatchScore(prefs, a.categories),
+        matchReasons: getMatchReasons(prefs, a.categories),
+      }))
+
+      // Sort by match score descending
+      attractionsWithScores.sort((a, b) => b.matchScore - a.matchScore)
+
+      return json({
+        attractions: attractionsWithScores,
+        total,
+        hasMore: offset + limit < total,
+      })
+    }
+  }
+
+  return json({
+    attractions,
+    total,
+    hasMore: offset + limit < total,
+  })
+}
+
+async function handleMatched(req: Request, db: ReturnType<typeof getDb>) {
+  const prefs = parseUserPrefs(req)
+
+  if (!prefs) {
+    return json({ error: 'User preferences required (x-user-prefs header)' }, 400)
+  }
+
+  const attractions: Attraction[] = await db`
+    SELECT * FROM attractions ORDER BY name
+  `
+
+  const matches = attractions
+    .map(a => ({
+      attraction: a,
+      score: calculateMatchScore(prefs, a.categories),
+      reasons: getMatchReasons(prefs, a.categories),
+    }))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 10)
+
+  // Find top categories from user prefs
+  const topCategories = [
+    ...(prefs.interests || []),
+    ...(prefs.travelStyle || []),
+  ].slice(0, 5)
+
+  return json({
+    matches,
+    topCategories,
+  })
+}
+
+async function handleDetail(
+  req: Request,
+  db: ReturnType<typeof getDb>,
+  slug: string,
+  url: URL
+) {
+  const include = url.searchParams.get('include')?.split(',') || []
+  const includeTips = include.includes('tips') || include.includes('all')
+  const includeSecrets = include.includes('secrets') || include.includes('all')
+  const includeRecommendations = include.includes('recommendations') || include.includes('all')
+
+  // Get attraction by slug
+  const attractions: Attraction[] = await db`
+    SELECT * FROM attractions WHERE slug = ${slug}
+  `
+
+  if (attractions.length === 0) {
+    return json({ error: 'Attraction not found' }, 404)
+  }
+
+  const attraction = attractions[0]
+
+  // Build response with optional includes
+  const response: {
+    attraction: Attraction & {
+      tips?: AttractionTip[]
+      secrets?: AttractionSecret[]
+      recommendations?: AttractionRecommendation[]
+    }
+    matchInfo?: { score: number; reasons: string[] }
+  } = { attraction }
+
+  if (includeTips) {
+    const tips: AttractionTip[] = await db`
+      SELECT id, tip_type, title, content, is_pro_only, sort_order
+      FROM attraction_tips
+      WHERE attraction_id = ${attraction.id}
+      ORDER BY sort_order, created_at
+    `
+    response.attraction.tips = tips
+  }
+
+  if (includeSecrets) {
+    const secrets: AttractionSecret[] = await db`
+      SELECT id, secret_type, title, content, location_hint, is_pro_only, sort_order
+      FROM attraction_secrets
+      WHERE attraction_id = ${attraction.id}
+      ORDER BY sort_order, created_at
+    `
+    response.attraction.secrets = secrets
+  }
+
+  if (includeRecommendations) {
+    const recommendations: AttractionRecommendation[] = await db`
+      SELECT id, rec_type, name, description, why_special, price_range, google_maps_url, is_pro_only, sort_order
+      FROM attraction_recommendations
+      WHERE attraction_id = ${attraction.id}
+      ORDER BY sort_order, created_at
+    `
+    response.attraction.recommendations = recommendations
+  }
+
+  // Calculate match info if user prefs provided
+  const prefs = parseUserPrefs(req)
+  if (prefs) {
+    response.matchInfo = {
+      score: calculateMatchScore(prefs, attraction.categories),
+      reasons: getMatchReasons(prefs, attraction.categories),
+    }
+  }
+
+  return json(response)
+}
+
+export const config: Config = {
+  path: ['/api/attractions', '/api/attractions/*'],
+}

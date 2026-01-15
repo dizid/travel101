@@ -8,6 +8,7 @@ const props = defineProps<{
   attraction: Attraction
   showMatch?: boolean
   matchScore?: number
+  matchReason?: string
 }>()
 
 const categoryConfig: Record<AttractionCategory, { icon: string; label: string; color: string }> = {
@@ -51,7 +52,7 @@ const gradientClass = computed(() => {
 
 <template>
   <RouterLink
-    :to="`/attractions/${attraction.id}`"
+    :to="`/attractions/${attraction.slug || attraction.id}`"
     class="group block card-thai p-0 overflow-hidden hover:shadow-thai-lg transition-all duration-300"
   >
     <!-- Image placeholder -->
@@ -112,6 +113,13 @@ const gradientClass = computed(() => {
       <p class="text-sm text-gray-600 line-clamp-2">
         {{ attraction.description }}
       </p>
+
+      <!-- Match reason -->
+      <div v-if="showMatch && matchReason" class="mt-2">
+        <span class="text-xs text-primary-600 bg-primary-50 px-2 py-1 rounded-full">
+          {{ matchReason }}
+        </span>
+      </div>
     </div>
   </RouterLink>
 </template>
