@@ -1,0 +1,218 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Prompt:wght@400;500;600;700&family=Sarabun:wght@300;400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --color-thai-gold: #f59e0b;
+    --color-thai-teal: #14b8a6;
+    --color-thai-blue: #2563eb;
+    --color-thai-coral: #f97316;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply font-sans antialiased text-gray-800 bg-gradient-to-br from-amber-50/30 via-white to-teal-50/20;
+    min-height: 100vh;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display font-semibold text-gray-900;
+  }
+
+  ::selection {
+    @apply bg-primary-200 text-primary-900;
+  }
+}
+
+@layer components {
+  /* Thai-inspired card styles */
+  .card-thai {
+    @apply bg-white rounded-thai-lg shadow-soft p-6 border border-gray-100/50;
+    @apply transition-all duration-300 hover:shadow-soft-lg hover:border-primary-100;
+  }
+
+  .card-thai-elevated {
+    @apply card-thai shadow-thai hover:shadow-thai-lg;
+  }
+
+  .card-thai-glass {
+    @apply backdrop-blur-md bg-white/80 rounded-thai-lg shadow-soft p-6;
+    @apply border border-white/50;
+  }
+
+  /* Button styles */
+  .btn-thai {
+    @apply inline-flex items-center justify-center gap-2 px-6 py-3;
+    @apply font-medium text-white bg-gradient-to-r from-primary-500 to-primary-600;
+    @apply rounded-full shadow-thai transition-all duration-300;
+    @apply hover:shadow-thai-lg hover:from-primary-600 hover:to-primary-700;
+    @apply active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-primary-300;
+  }
+
+  .btn-thai-outline {
+    @apply inline-flex items-center justify-center gap-2 px-6 py-3;
+    @apply font-medium text-primary-600 bg-white border-2 border-primary-200;
+    @apply rounded-full transition-all duration-300;
+    @apply hover:bg-primary-50 hover:border-primary-300;
+    @apply active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-primary-200;
+  }
+
+  .btn-thai-ghost {
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2;
+    @apply font-medium text-gray-600 rounded-lg transition-all duration-200;
+    @apply hover:bg-gray-100 hover:text-gray-900;
+    @apply active:scale-[0.98];
+  }
+
+  .btn-accent {
+    @apply inline-flex items-center justify-center gap-2 px-6 py-3;
+    @apply font-medium text-white bg-gradient-to-r from-accent-500 to-accent-600;
+    @apply rounded-full shadow-soft transition-all duration-300;
+    @apply hover:shadow-lg hover:from-accent-600 hover:to-accent-700;
+    @apply active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-accent-300;
+  }
+
+  /* Badge styles */
+  .badge-thai {
+    @apply inline-flex items-center gap-1.5 px-3 py-1 text-sm font-medium;
+    @apply bg-primary-100 text-primary-700 rounded-full;
+  }
+
+  .badge-tip {
+    @apply inline-flex items-center gap-1.5 px-3 py-1 text-sm font-medium;
+    @apply bg-blue-100 text-blue-700 rounded-full;
+  }
+
+  .badge-note {
+    @apply inline-flex items-center gap-1.5 px-3 py-1 text-sm font-medium;
+    @apply bg-gray-100 text-gray-700 rounded-full;
+  }
+
+  .badge-warning {
+    @apply inline-flex items-center gap-1.5 px-3 py-1 text-sm font-medium;
+    @apply bg-amber-100 text-amber-700 rounded-full;
+  }
+
+  .badge-critical {
+    @apply inline-flex items-center gap-1.5 px-3 py-1 text-sm font-medium;
+    @apply bg-red-100 text-red-700 rounded-full;
+  }
+
+  .badge-pro {
+    @apply inline-flex items-center gap-1.5 px-3 py-1 text-sm font-semibold;
+    @apply bg-gradient-to-r from-primary-500 to-accent-500 text-white rounded-full;
+  }
+
+  /* Section styles */
+  .section-thai {
+    @apply py-16 md:py-24;
+  }
+
+  .section-header {
+    @apply text-center mb-12;
+  }
+
+  .section-title {
+    @apply text-3xl md:text-4xl font-bold text-gray-900 mb-4;
+  }
+
+  .section-subtitle {
+    @apply text-lg text-gray-600 max-w-2xl mx-auto;
+  }
+
+  /* Input styles */
+  .input-thai {
+    @apply w-full px-4 py-3 bg-white border border-gray-200 rounded-xl;
+    @apply text-gray-800 placeholder-gray-400;
+    @apply transition-all duration-200;
+    @apply focus:outline-none focus:border-primary-300 focus:ring-2 focus:ring-primary-100;
+  }
+
+  /* Thai-inspired decorative elements */
+  .thai-divider {
+    @apply flex items-center gap-4 my-8;
+  }
+
+  .thai-divider::before,
+  .thai-divider::after {
+    content: '';
+    @apply flex-1 h-px bg-gradient-to-r from-transparent via-primary-200 to-transparent;
+  }
+
+  .thai-accent {
+    @apply w-2 h-2 rounded-full bg-primary-400;
+  }
+
+  /* Gradient text */
+  .text-gradient-thai {
+    @apply bg-gradient-to-r from-primary-600 via-primary-500 to-accent-500;
+    @apply bg-clip-text text-transparent;
+  }
+
+  /* Step indicator */
+  .step-indicator {
+    @apply flex items-center gap-3;
+  }
+
+  .step-circle {
+    @apply w-10 h-10 rounded-full flex items-center justify-center;
+    @apply text-sm font-semibold transition-all duration-300;
+  }
+
+  .step-circle-active {
+    @apply bg-gradient-to-br from-primary-500 to-primary-600 text-white shadow-thai;
+  }
+
+  .step-circle-completed {
+    @apply bg-accent-500 text-white;
+  }
+
+  .step-circle-pending {
+    @apply bg-gray-100 text-gray-400;
+  }
+
+  /* Severity indicator colors */
+  .severity-tip {
+    @apply border-l-4 border-blue-400 bg-blue-50;
+  }
+
+  .severity-note {
+    @apply border-l-4 border-gray-400 bg-gray-50;
+  }
+
+  .severity-warning {
+    @apply border-l-4 border-amber-400 bg-amber-50;
+  }
+
+  .severity-critical {
+    @apply border-l-4 border-red-400 bg-red-50;
+  }
+}
+
+@layer utilities {
+  .animate-delay-100 {
+    animation-delay: 100ms;
+  }
+
+  .animate-delay-200 {
+    animation-delay: 200ms;
+  }
+
+  .animate-delay-300 {
+    animation-delay: 300ms;
+  }
+
+  .animate-delay-500 {
+    animation-delay: 500ms;
+  }
+
+  .text-balance {
+    text-wrap: balance;
+  }
+}

@@ -1,0 +1,239 @@
+// User profile types
+export interface UserProfile {
+  id?: string
+  clerkId?: string
+  email?: string
+  prefs: UserPreferences
+  isPro: boolean
+  createdAt?: Date
+}
+
+export interface UserPreferences {
+  travelStyle: TravelStyle[]
+  ageGroup: AgeGroup
+  groupType: GroupType
+  budget: BudgetLevel
+  interests: Interest[]
+  nationality: string
+  tripType: TripType
+}
+
+export type TravelStyle = 'party' | 'adventure' | 'relaxation' | 'culture'
+export type AgeGroup = 'young' | 'middle' | 'senior'
+export type GroupType = 'solo' | 'couple' | 'family' | 'friends'
+export type BudgetLevel = 'budget' | 'mid' | 'luxury'
+export type Interest = 'beach' | 'nightlife' | 'temples' | 'food' | 'shopping' | 'nature' | 'wellness'
+export type TripType = 'holiday' | 'expat' | 'digital_nomad'
+
+// Country and content types
+export interface Country {
+  id: string
+  code: string
+  name: string
+  theme: CountryTheme
+}
+
+export interface CountryTheme {
+  primaryColor: string
+  accentColor: string
+  backgroundGradient: string
+  pattern?: string
+}
+
+// Info types (visa, warnings, attractions)
+export interface Info {
+  id: string
+  countryId: string
+  type: InfoType
+  title: string
+  content: string
+  severity?: SeverityLevel
+  categories: Record<string, number>
+  updatedAt: Date
+}
+
+export type InfoType = 'visa' | 'warning' | 'tdac' | 'attraction'
+export type SeverityLevel = 1 | 2 | 3 | 4 // 1=tip, 2=note, 3=warning, 4=critical
+
+// Visa types
+export interface VisaType {
+  id: string
+  code: string
+  name: string
+  duration: number
+  description: string
+  requirements: string[]
+  extendable: boolean
+  forProfiles: Partial<UserPreferences>[]
+}
+
+export interface VisaWizardState {
+  step: number
+  nationality: string
+  currentLocation: 'in_thailand' | 'outside'
+  tripPurpose: TripType
+  duration: number
+  recommendedVisa?: VisaType
+  checklist: ChecklistItem[]
+}
+
+export interface ChecklistItem {
+  id: string
+  label: string
+  description?: string
+  checked: boolean
+  required: boolean
+  link?: string
+}
+
+// Warning types
+export interface Warning {
+  id: string
+  countryId: string
+  category: WarningCategory
+  title: string
+  content: string
+  severity: SeverityLevel
+  tags: string[]
+}
+
+export type WarningCategory =
+  | 'royal_family'
+  | 'drug_laws'
+  | 'scams'
+  | 'traffic'
+  | 'beach_safety'
+  | 'nightlife'
+
+// Attraction types
+export interface Attraction {
+  id: string
+  countryId: string
+  name: string
+  description: string
+  category: AttractionCategory
+  location: string
+  province: string
+  coordinates?: { lat: number; lng: number }
+  categories: Record<string, number> // Profile matching scores
+  isHiddenGem: boolean
+  imageUrl?: string
+  affiliateLinks?: AffiliateLink[]
+}
+
+export type AttractionCategory =
+  | 'beach'
+  | 'culture'
+  | 'nightlife'
+  | 'nature'
+  | 'island'
+  | 'foodie'
+  | 'nomad'
+  | 'wellness'
+  | 'adventure'
+  | 'family'
+  | 'romantic'
+  | 'budget'
+  | 'luxury'
+
+// Affiliate types
+export interface AffiliateLink {
+  partner: AffiliatePartner
+  url: string
+  label: string
+}
+
+export type AffiliatePartner = 'agoda' | 'klook' | 'safetywing' | 'wise' | 'getyourguide' | '12go'
+
+export interface AffiliateClick {
+  id: string
+  userId?: string
+  partner: AffiliatePartner
+  context: string
+  destinationUrl: string
+  converted: boolean
+  commissionAmount?: number
+  createdAt: Date
+}
+
+// AI types
+export interface AIPrompt {
+  id: string
+  type: AIPromptType
+  template: string
+  model: string
+  tokensEstimate: number
+}
+
+export type AIPromptType = 'visa_advisor' | 'itinerary_generator' | 'attraction_matcher'
+
+export interface AIResponse {
+  content: string
+  cached: boolean
+  timestamp: Date
+}
+
+export interface Itinerary {
+  days: ItineraryDay[]
+  tips: string[]
+  warnings: string[]
+}
+
+export interface ItineraryDay {
+  day: number
+  location: string
+  activities: string[]
+  accommodationArea: string
+  estimatedBudget: string
+}
+
+export interface AttractionMatch {
+  attraction: Attraction
+  score: number
+  reason: string
+  affiliateLink?: string
+}
+
+// User activity types
+export interface UserActivity {
+  id: string
+  userId: string
+  action: UserActivityAction
+  metadata: Record<string, unknown>
+  createdAt: Date
+}
+
+export type UserActivityAction =
+  | 'visa_wizard_start'
+  | 'visa_wizard_complete'
+  | 'checklist_progress'
+  | 'ai_query'
+  | 'itinerary_save'
+  | 'affiliate_click'
+
+// Subscription types
+export interface Subscription {
+  userId: string
+  status: SubscriptionStatus
+  plan: SubscriptionPlan
+  currentPeriodEnd?: Date
+  stripeCustomerId?: string
+  stripeSubscriptionId?: string
+}
+
+export type SubscriptionStatus = 'active' | 'canceled' | 'past_due' | 'none'
+export type SubscriptionPlan = 'free' | 'pro'
+
+// UI State types
+export interface Toast {
+  id: string
+  type: 'success' | 'error' | 'warning' | 'info'
+  message: string
+  duration?: number
+}
+
+export interface ModalState {
+  isOpen: boolean
+  component?: string
+  props?: Record<string, unknown>
+}
