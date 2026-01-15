@@ -376,13 +376,20 @@ export const useCountryStore = defineStore('country', () => {
   )
 
   // Actions
-  function getVisaForProfile(_nationality: string, tripType: string, duration: number): VisaType | null {
-    // Simple recommendation logic
-    if (duration <= 30) {
-      return visaTypes.value.find((v) => v.code === 'VE') || null
+  function getVisaForProfile(_nationality: string, tripType: string, duration: number, ageGroup?: string): VisaType | null {
+    // Retirement Visa for 50+ choosing long-term stay
+    if (tripType === 'expat' && ageGroup === 'senior') {
+      return visaTypes.value.find((v) => v.code === 'Non-O') || null
     }
+
+    // Digital Nomad Visa for remote workers
     if (tripType === 'digital_nomad') {
       return visaTypes.value.find((v) => v.code === 'DTV') || null
+    }
+
+    // Duration-based recommendations for tourists
+    if (duration <= 30) {
+      return visaTypes.value.find((v) => v.code === 'VE') || null
     }
     if (duration <= 60) {
       return visaTypes.value.find((v) => v.code === 'TR') || null
@@ -390,6 +397,8 @@ export const useCountryStore = defineStore('country', () => {
     if (duration <= 90) {
       return visaTypes.value.find((v) => v.code === 'STV') || null
     }
+
+    // Long-term stay for younger travelers → DTV or Elite
     return visaTypes.value.find((v) => v.code === 'DTV') || null
   }
 

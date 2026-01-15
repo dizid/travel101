@@ -24,6 +24,7 @@ const wizardState = ref<VisaWizardState>({
   currentLocation: 'outside',
   tripPurpose: userStore.profile.prefs.tripType || 'holiday',
   duration: 14,
+  ageGroup: userStore.profile.prefs.ageGroup || 'middle',
   recommendedVisa: undefined,
   checklist: [],
 })
@@ -50,6 +51,11 @@ const tripPurposes = [
   { value: 'expat', label: 'Long-term Stay', icon: '🏠', description: 'Living in Thailand' },
 ]
 
+const ageGroups = [
+  { value: 'young', label: 'Under 50', description: 'Standard visa options' },
+  { value: 'senior', label: '50 or older', description: 'Retirement visa eligible' },
+]
+
 // Step validation
 const canProceed = computed(() => {
   switch (wizardState.value.step) {
@@ -69,7 +75,8 @@ const recommendedVisa = computed(() => {
   return countryStore.getVisaForProfile(
     wizardState.value.nationality,
     wizardState.value.tripPurpose,
-    wizardState.value.duration
+    wizardState.value.duration,
+    wizardState.value.ageGroup
   )
 })
 
@@ -286,7 +293,7 @@ watch(
           </div>
 
           <!-- Trip purpose -->
-          <div>
+          <div class="mb-8">
             <label class="block text-sm font-medium text-gray-700 mb-3">
               What's the purpose of your trip?
             </label>
@@ -305,6 +312,29 @@ watch(
                   <span class="font-medium text-gray-900 block">{{ purpose.label }}</span>
                   <span class="text-sm text-gray-500">{{ purpose.description }}</span>
                 </div>
+              </button>
+            </div>
+          </div>
+
+          <!-- Age Group (shows for long-term stay) -->
+          <div v-if="wizardState.tripPurpose === 'expat'">
+            <label class="block text-sm font-medium text-gray-700 mb-3">
+              Your age group
+              <span class="text-gray-400 font-normal">(important for visa options)</span>
+            </label>
+            <div class="grid grid-cols-2 gap-3">
+              <button
+                v-for="age in ageGroups"
+                :key="age.value"
+                @click="wizardState.ageGroup = age.value as any"
+                class="p-4 rounded-xl border-2 text-left transition-all"
+                :class="wizardState.ageGroup === age.value
+                  ? 'border-primary-500 bg-primary-50'
+                  : 'border-gray-200 hover:border-gray-300'"
+              >
+                <span class="text-2xl mb-2 block">{{ age.value === 'senior' ? '👴' : '🧑' }}</span>
+                <span class="font-medium text-gray-900 block">{{ age.label }}</span>
+                <span class="text-sm text-gray-500">{{ age.description }}</span>
               </button>
             </div>
           </div>

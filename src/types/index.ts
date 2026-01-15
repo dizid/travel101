@@ -73,6 +73,7 @@ export interface VisaWizardState {
   currentLocation: 'in_thailand' | 'outside'
   tripPurpose: TripType
   duration: number
+  ageGroup?: AgeGroup
   recommendedVisa?: VisaType
   checklist: ChecklistItem[]
 }
