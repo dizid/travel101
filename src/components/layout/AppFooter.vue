@@ -102,9 +102,9 @@ const footerLinks = {
             © {{ currentYear }} Global Smart Traveler. Made with 💛 for Thailand lovers.
           </p>
           <div class="flex items-center gap-6 text-sm text-gray-500">
-            <a href="#" class="hover:text-gray-300 transition-colors">Privacy</a>
-            <a href="#" class="hover:text-gray-300 transition-colors">Terms</a>
-            <a href="#" class="hover:text-gray-300 transition-colors">Contact</a>
+            <RouterLink to="/privacy" class="hover:text-gray-300 transition-colors">Privacy</RouterLink>
+            <RouterLink to="/terms" class="hover:text-gray-300 transition-colors">Terms</RouterLink>
+            <RouterLink to="/contact" class="hover:text-gray-300 transition-colors">Contact</RouterLink>
           </div>
         </div>
       </div>

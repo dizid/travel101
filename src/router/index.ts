@@ -56,6 +56,24 @@ const routes: RouteRecordRaw[] = [
     meta: { title: 'Plan Your Trip', requiresPro: true },
   },
   {
+    path: '/privacy',
+    name: 'privacy',
+    component: () => import('@views/PrivacyView.vue'),
+    meta: { title: 'Privacy Policy' },
+  },
+  {
+    path: '/terms',
+    name: 'terms',
+    component: () => import('@views/TermsView.vue'),
+    meta: { title: 'Terms of Service' },
+  },
+  {
+    path: '/contact',
+    name: 'contact',
+    component: () => import('@views/ContactView.vue'),
+    meta: { title: 'Contact Us' },
+  },
+  {
     path: '/:pathMatch(.*)*',
     name: 'not-found',
     component: () => import('@views/NotFoundView.vue'),
