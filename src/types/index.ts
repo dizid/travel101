@@ -1,8 +1,9 @@
 // User profile types
 export interface UserProfile {
   id?: string
-  clerkId?: string
+  authUserId?: string
   email?: string
+  name?: string
   prefs: UserPreferences
   isPro: boolean
   createdAt?: Date
@@ -60,11 +61,18 @@ export interface VisaType {
   id: string
   code: string
   name: string
-  duration: number
+  duration: number              // Days per entry
+  validityPeriod?: number       // Total visa validity in days (e.g., DTV = 5 years)
   description: string
   requirements: string[]
   extendable: boolean
+  extensionDays?: number        // How many days extension gives
+  extensionFee?: number         // Fee in THB
   forProfiles: Partial<UserPreferences>[]
+  reportingInterval?: number    // 90-day reporting if applicable
+  renewalInfo?: string          // Annual renewal info
+  entryType?: 'single' | 'multiple'
+  notes?: string[]              // Important caveats
 }
 
 export interface VisaWizardState {
@@ -109,17 +117,63 @@ export type WarningCategory =
 // Attraction types
 export interface Attraction {
   id: string
-  countryId: string
+  slug: string
+  countryId?: string
   name: string
   description: string
+  about?: string
   category: AttractionCategory
   location: string
   province: string
   coordinates?: { lat: number; lng: number }
-  categories: Record<string, number> // Profile matching scores
+  categories: Record<string, number>
   isHiddenGem: boolean
+  isProOnly?: boolean
   imageUrl?: string
   affiliateLinks?: AffiliateLink[]
+}
+
+export interface AttractionDetail extends Attraction {
+  tips: AttractionTip[]
+  secrets: AttractionSecret[]
+  recommendations: AttractionRecommendation[]
+}
+
+export type TipType = 'timing' | 'transport' | 'money_saving' | 'crowd_avoidance' | 'photography' | 'preparation'
+
+export interface AttractionTip {
+  id: string
+  tipType: TipType
+  title: string
+  content: string
+  isProOnly: boolean
+  sortOrder: number
+}
+
+export type SecretType = 'hidden_spot' | 'local_food' | 'local_experience' | 'insider_knowledge'
+
+export interface AttractionSecret {
+  id: string
+  secretType: SecretType
+  title: string
+  content: string
+  locationHint?: string
+  isProOnly: boolean
+  sortOrder: number
+}
+
+export type RecommendationType = 'restaurant' | 'cafe' | 'hotel' | 'activity' | 'viewpoint' | 'shop'
+
+export interface AttractionRecommendation {
+  id: string
+  recType: RecommendationType
+  name: string
+  description: string
+  whySpecial?: string
+  priceRange?: '$' | '$$' | '$$$' | '$$$$'
+  googleMapsUrl?: string
+  isProOnly: boolean
+  sortOrder: number
 }
 
 export type AttractionCategory =
@@ -191,8 +245,21 @@ export interface ItineraryDay {
 export interface AttractionMatch {
   attraction: Attraction
   score: number
-  reason: string
-  affiliateLink?: string
+  reasons: string[]
+}
+
+export interface AttractionListResponse {
+  attractions: Attraction[]
+  total: number
+  hasMore: boolean
+}
+
+export interface AttractionDetailResponse {
+  attraction: AttractionDetail
+  matchInfo?: {
+    score: number
+    reasons: string[]
+  }
 }
 
 // User activity types

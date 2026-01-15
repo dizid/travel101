@@ -1,114 +1,202 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import type { Country, VisaType, Warning, Attraction, AttractionCategory } from '@/types'
+import { useApi } from '@/composables/useApi'
+import { useUserStore } from './userStore'
+import type {
+  Country,
+  VisaType,
+  Warning,
+  Attraction,
+  AttractionDetail,
+  AttractionCategory,
+  AttractionListResponse,
+  AttractionDetailResponse,
+  AttractionMatch,
+} from '@/types'
 
-// Thailand visa types data
+// Thailand visa types data (VERIFIED January 2025)
 const thailandVisaTypes: VisaType[] = [
   {
     id: 'visa-exemption',
     code: 'VE',
     name: 'Visa Exemption',
-    duration: 30,
-    description: 'For tourists from eligible countries. Stay up to 30 days without a visa.',
+    duration: 60, // Updated from 30 → 60 (July 2024)
+    description: 'For tourists from 93 eligible countries. Passport holders can enter visa-free for up to 60 days.',
     requirements: [
       'Valid passport (6+ months validity)',
-      'Return/onward flight ticket',
+      'Return/onward flight within 60 days',
       'Proof of accommodation',
-      'Proof of funds (20,000 THB or equivalent)',
+      'Proof of funds (10,000 THB individual / 20,000 THB family)',
+      'TDAC completed before arrival',
     ],
     extendable: true,
+    extensionDays: 30,
+    extensionFee: 1900,
     forProfiles: [{ tripType: 'holiday' }],
+    entryType: 'multiple',
+    notes: [
+      'Land border entries: MAX 2 per calendar year',
+      'Visa runs: MAX 2 per year (Nov 2025 crackdown)',
+      'Land entries are NOT eligible for extension',
+      'Same-day re-entries NOT eligible for extension',
+    ],
   },
   {
     id: 'tourist-visa',
     code: 'TR',
-    name: 'Tourist Visa',
+    name: 'Tourist Visa (Single Entry)',
     duration: 60,
-    description: 'Single-entry tourist visa for longer holidays.',
+    description: 'Single-entry tourist visa for planned holidays. Apply at Thai embassy before travel.',
     requirements: [
       'Valid passport (6+ months validity)',
       'Completed visa application form',
-      'Passport-sized photos',
+      'Passport-sized photos (4x6 cm)',
       'Proof of accommodation',
-      'Bank statements (3 months)',
-      'Return flight ticket',
+      'Bank statements (3 months, showing 20,000+ THB equivalent)',
+      'Return flight ticket within 60 days',
+      'TDAC completed before arrival',
     ],
     extendable: true,
+    extensionDays: 30,
+    extensionFee: 1900,
     forProfiles: [{ tripType: 'holiday' }],
-  },
-  {
-    id: 'stv',
-    code: 'STV',
-    name: 'Special Tourist Visa',
-    duration: 90,
-    description: 'For long-stay tourists, extendable twice for up to 270 days total.',
-    requirements: [
-      'Valid passport (6+ months validity)',
-      'Health insurance covering COVID-19',
-      'Proof of accommodation for full stay',
-      'Financial evidence',
+    entryType: 'single',
+    notes: [
+      'Total stay: up to 90 days (60 + 30 extension)',
+      'Multiple Entry Tourist Visa (METV) also available: 6-month validity, 60 days per entry',
     ],
-    extendable: true,
-    forProfiles: [{ tripType: 'holiday' }],
   },
+  // STV REMOVED - Discontinued September 2022
   {
     id: 'dtv',
     code: 'DTV',
-    name: 'Digital Nomad Visa (Destination Thailand Visa)',
-    duration: 180,
-    description: 'For remote workers and digital nomads. Work remotely while exploring Thailand.',
+    name: 'Destination Thailand Visa (Digital Nomad)',
+    duration: 180, // 180 days per entry
+    validityPeriod: 1825, // 5 years total validity
+    description: 'For remote workers and digital nomads. Valid for 5 years with 180 days per entry, extendable to 360 days.',
     requirements: [
       'Valid passport (6+ months validity)',
-      'Proof of employment or freelance income',
-      'Income of at least $80,000/year or $5,000 savings',
+      'Proof of remote work (employment contract, freelance portfolio, invoices)',
+      'Financial evidence: 500,000 THB (~$14,400 USD) in bank for 3 months',
+      'Proof of income for last 6 months',
       'Health insurance',
+      'TDAC completed before arrival',
     ],
     extendable: true,
+    extensionDays: 180, // Can extend for another 180 days per entry
+    extensionFee: 1900,
     forProfiles: [{ tripType: 'digital_nomad' }],
+    reportingInterval: 90,
+    entryType: 'multiple',
+    notes: [
+      '5-year multiple-entry visa',
+      'Up to 360 days continuous stay per entry (180 + 180 extension)',
+      'Family members can join (spouse + children under 20)',
+      'Cannot work for Thai companies - remote work for foreign employers only',
+      '90-day reporting required during stay',
+      'Visa fee: ~10,000 THB ($250-$300 USD)',
+    ],
   },
   {
     id: 'non-b',
     code: 'Non-B',
     name: 'Non-Immigrant B (Business)',
     duration: 90,
-    description: 'For business activities or employment in Thailand.',
+    description: 'For business activities or employment in Thailand. Initial 90 days, extendable to 1 year with work permit.',
     requirements: [
       'Valid passport (6+ months validity)',
       'Invitation letter from Thai company',
-      'Company registration documents',
-      'Employment contract',
+      'Company registration documents (DBD certificate)',
+      'Employment contract or business invitation',
+      'Work permit application (for 1-year extension)',
     ],
     extendable: true,
     forProfiles: [{ tripType: 'expat' }],
+    reportingInterval: 90,
+    renewalInfo: 'Extendable to 1 year with valid work permit',
+    entryType: 'single',
+    notes: [
+      'Initial entry: 90 days',
+      'With work permit: extends to 1 year, renewable annually',
+      '90-day reporting required',
+    ],
   },
   {
-    id: 'non-o',
+    id: 'non-o-retirement',
     code: 'Non-O',
-    name: 'Non-Immigrant O (Family/Retirement)',
-    duration: 90,
-    description: 'For retirees (50+) or those with Thai family members.',
+    name: 'Non-Immigrant O (Retirement)',
+    duration: 365, // 1 YEAR - NOT 90 days!
+    description: 'For retirees aged 50+. Valid for 1 year, renewable annually. The go-to visa for long-term retirement in Thailand.',
     requirements: [
       'Valid passport (6+ months validity)',
-      'Proof of relationship or age 50+',
-      'Financial evidence (800,000 THB in Thai bank or pension)',
-      'Health insurance',
+      'Age 50 years or older',
+      'Financial: 800,000 THB in Thai bank (2 months before apply, 3 months before renewal)',
+      'OR: Monthly pension of 65,000 THB (~$1,800 USD)',
+      'OR: Combination totaling 800,000 THB annually',
+      'Health insurance (min 400,000 THB inpatient, 40,000 THB outpatient)',
+      'Money must show international transfer (from abroad)',
     ],
     extendable: true,
     forProfiles: [{ tripType: 'expat', ageGroup: 'senior' }],
+    reportingInterval: 90,
+    renewalInfo: 'Renewable annually at local Immigration office. Apply 30 days before expiry.',
+    entryType: 'multiple',
+    notes: [
+      '90-day reporting (TM.47) required - FREE, takes 2 minutes',
+      'Can do reporting online at tm47.immigration.go.th',
+      'Re-entry permit required if leaving Thailand (single: 1,000 THB, multiple: 3,800 THB)',
+      'Employment is prohibited on this visa',
+      'Bank balance can drop to 400,000 THB during year, but must be 800,000 THB 2 months before renewal',
+    ],
+  },
+  {
+    id: 'non-o-family',
+    code: 'Non-O-M',
+    name: 'Non-Immigrant O (Marriage/Family)',
+    duration: 365,
+    description: 'For those married to a Thai national or supporting Thai children. Valid for 1 year, renewable annually.',
+    requirements: [
+      'Valid passport (6+ months validity)',
+      'Marriage certificate (translated & certified) OR birth certificate of Thai child',
+      'Financial: 400,000 THB in Thai bank OR 40,000 THB/month income',
+      'Spouse\'s Thai ID card and house registration',
+      'Health insurance',
+    ],
+    extendable: true,
+    forProfiles: [{ tripType: 'expat' }],
+    reportingInterval: 90,
+    renewalInfo: 'Renewable annually at local Immigration office',
+    entryType: 'multiple',
+    notes: [
+      'Lower financial requirement than retirement visa',
+      '90-day reporting required',
+      'Can apply for work permit separately',
+    ],
   },
   {
     id: 'elite',
     code: 'Elite',
-    name: 'Thailand Elite Visa',
-    duration: 365,
-    description: 'Premium long-stay visa with VIP privileges. 5-20 year options available.',
+    name: 'Thailand Privilege (Elite) Visa',
+    duration: 365, // 1 year per entry
+    validityPeriod: 1825, // 5-20 years depending on tier
+    description: 'Premium membership program with VIP benefits. Multiple tiers from 5 to 20+ years. No age, income, or employment requirements.',
     requirements: [
       'Valid passport',
-      'Clean criminal record',
-      'Membership fee (600,000 - 2,000,000 THB)',
+      'Clean criminal record / background check',
+      'Membership fee (see pricing tiers)',
     ],
-    extendable: false, // Comes with long validity
+    extendable: false, // Comes with long validity, no extension needed
     forProfiles: [{ budget: 'luxury' }],
+    entryType: 'multiple',
+    notes: [
+      'Bronze: 650,000 THB (~$18,000) - 5 years',
+      'Gold: 900,000 THB (~$25,000) - 10 years',
+      'Platinum: 1,500,000 THB (~$42,000) - 10 years + family option',
+      'Diamond: 2,500,000 THB (~$70,000) - 15 years',
+      'Reserve: 5,000,000 THB (~$140,000) - 20+ years (invitation only)',
+      'VIP airport fast-track, lounge access, limousine service',
+      'No 90-day reporting required for Elite members',
+    ],
   },
 ]
 
@@ -170,12 +258,11 @@ const thailandWarnings: Warning[] = [
   },
 ]
 
-// Thailand attractions data
-const thailandAttractions: Attraction[] = [
-  // Popular Beaches
+// Fallback attractions data (used when API is unavailable)
+const fallbackAttractions: Attraction[] = [
   {
     id: 'phuket',
-    countryId: 'thailand',
+    slug: 'phuket',
     name: 'Phuket',
     description: 'Thailand\'s largest island with stunning beaches, vibrant nightlife, and world-class resorts.',
     category: 'beach',
@@ -186,7 +273,7 @@ const thailandAttractions: Attraction[] = [
   },
   {
     id: 'krabi',
-    countryId: 'thailand',
+    slug: 'krabi',
     name: 'Krabi',
     description: 'Dramatic limestone cliffs, pristine beaches, and excellent rock climbing at Railay Beach.',
     category: 'beach',
@@ -196,42 +283,8 @@ const thailandAttractions: Attraction[] = [
     isHiddenGem: false,
   },
   {
-    id: 'koh-samui',
-    countryId: 'thailand',
-    name: 'Koh Samui',
-    description: 'Palm-fringed beaches, luxury resorts, and a more refined island experience.',
-    category: 'island',
-    location: 'Gulf of Thailand',
-    province: 'Surat Thani',
-    categories: { beach: 0.9, luxury: 0.9, wellness: 0.8, romantic: 0.8 },
-    isHiddenGem: false,
-  },
-  {
-    id: 'koh-phangan',
-    countryId: 'thailand',
-    name: 'Koh Phangan',
-    description: 'Famous for Full Moon Parties, but also offers serene beaches and yoga retreats.',
-    category: 'island',
-    location: 'Gulf of Thailand',
-    province: 'Surat Thani',
-    categories: { party: 1, beach: 0.8, wellness: 0.6, budget: 0.7 },
-    isHiddenGem: false,
-  },
-  // Culture
-  {
-    id: 'bangkok-temples',
-    countryId: 'thailand',
-    name: 'Bangkok Temples',
-    description: 'Explore Wat Pho, Wat Arun, and the Grand Palace - the spiritual heart of Thailand.',
-    category: 'culture',
-    location: 'Bangkok',
-    province: 'Bangkok',
-    categories: { culture: 1, temples: 1, history: 0.9 },
-    isHiddenGem: false,
-  },
-  {
     id: 'chiang-mai',
-    countryId: 'thailand',
+    slug: 'chiang-mai',
     name: 'Chiang Mai',
     description: 'The cultural capital of the North with ancient temples, cooking classes, and night markets.',
     category: 'culture',
@@ -240,100 +293,11 @@ const thailandAttractions: Attraction[] = [
     categories: { culture: 1, food: 0.9, nomad: 0.9, temples: 0.8, budget: 0.7 },
     isHiddenGem: false,
   },
-  {
-    id: 'ayutthaya',
-    countryId: 'thailand',
-    name: 'Ayutthaya',
-    description: 'UNESCO World Heritage ancient capital with impressive temple ruins.',
-    category: 'culture',
-    location: 'Central Thailand',
-    province: 'Ayutthaya',
-    categories: { culture: 1, history: 1, temples: 0.9 },
-    isHiddenGem: false,
-  },
-  // Hidden Gems
-  {
-    id: 'koh-kood',
-    countryId: 'thailand',
-    name: 'Koh Kood',
-    description: 'Thailand\'s fourth largest island remains blissfully undeveloped with pristine beaches.',
-    category: 'island',
-    location: 'Gulf of Thailand',
-    province: 'Trat',
-    categories: { beach: 1, relaxation: 1, romantic: 0.9, nature: 0.8 },
-    isHiddenGem: true,
-  },
-  {
-    id: 'koh-yao-noi',
-    countryId: 'thailand',
-    name: 'Koh Yao Noi',
-    description: 'A peaceful Muslim fishing community with stunning Phang Nga Bay views.',
-    category: 'island',
-    location: 'Phang Nga Bay',
-    province: 'Phang Nga',
-    categories: { relaxation: 1, romantic: 0.9, nature: 0.8, culture: 0.6 },
-    isHiddenGem: true,
-  },
-  {
-    id: 'nan-province',
-    countryId: 'thailand',
-    name: 'Nan Province',
-    description: 'Authentic northern culture, ancient temples, and barely any tourists.',
-    category: 'culture',
-    location: 'Northern Thailand',
-    province: 'Nan',
-    categories: { culture: 1, nature: 0.8, budget: 0.8, authentic: 1 },
-    isHiddenGem: true,
-  },
-  {
-    id: 'umphang',
-    countryId: 'thailand',
-    name: 'Umphang',
-    description: 'Remote jungle region with Thailand\'s largest waterfall, Thi Lo Su.',
-    category: 'nature',
-    location: 'Western Thailand',
-    province: 'Tak',
-    categories: { nature: 1, adventure: 0.9, authentic: 0.9 },
-    isHiddenGem: true,
-  },
-  // Digital Nomad Hubs
-  {
-    id: 'chiang-mai-nomad',
-    countryId: 'thailand',
-    name: 'Chiang Mai (Nimman)',
-    description: 'The digital nomad capital with co-working spaces, cafes, and a thriving community.',
-    category: 'nomad',
-    location: 'Northern Thailand',
-    province: 'Chiang Mai',
-    categories: { nomad: 1, food: 0.8, culture: 0.7, budget: 0.8 },
-    isHiddenGem: false,
-  },
-  {
-    id: 'koh-lanta',
-    countryId: 'thailand',
-    name: 'Koh Lanta',
-    description: 'Laid-back island perfect for remote workers seeking beach-work balance.',
-    category: 'nomad',
-    location: 'Andaman Sea',
-    province: 'Krabi',
-    categories: { nomad: 0.9, beach: 0.8, relaxation: 0.9, budget: 0.7 },
-    isHiddenGem: false,
-  },
-  // Foodie
-  {
-    id: 'yaowarat',
-    countryId: 'thailand',
-    name: 'Yaowarat (Bangkok Chinatown)',
-    description: 'Street food paradise with legendary dishes and a vibrant night food scene.',
-    category: 'foodie',
-    location: 'Bangkok',
-    province: 'Bangkok',
-    categories: { food: 1, culture: 0.7, nightlife: 0.6 },
-    isHiddenGem: false,
-  },
 ]
 
 export const useCountryStore = defineStore('country', () => {
+  const { get } = useApi()
+
   // State
   const currentCountry = ref<Country>({
     id: 'thailand',
@@ -348,7 +312,13 @@ export const useCountryStore = defineStore('country', () => {
 
   const visaTypes = ref<VisaType[]>(thailandVisaTypes)
   const warnings = ref<Warning[]>(thailandWarnings)
-  const attractions = ref<Attraction[]>(thailandAttractions)
+
+  // Attractions state (API-driven with fallback)
+  const attractions = ref<Attraction[]>(fallbackAttractions)
+  const attractionsLoading = ref(false)
+  const attractionsLoaded = ref(false)
+  const currentAttraction = ref<AttractionDetail | null>(null)
+  const matchedAttractions = ref<AttractionMatch[]>([])
   const isLoading = ref(false)
 
   // Getters
@@ -402,8 +372,163 @@ export const useCountryStore = defineStore('country', () => {
     return visaTypes.value.find((v) => v.code === 'DTV') || null
   }
 
+  // Fetch attractions from API
+  async function fetchAttractions(options?: {
+    category?: string
+    hiddenGemsOnly?: boolean
+    personalized?: boolean
+  }) {
+    attractionsLoading.value = true
+    try {
+      const params = new URLSearchParams()
+      if (options?.category) params.set('category', options.category)
+      if (options?.hiddenGemsOnly) params.set('hidden_gems', 'true')
+      if (options?.personalized) params.set('personalized', 'true')
+
+      const userStore = useUserStore()
+      const headers: Record<string, string> = {}
+      if (options?.personalized && userStore.hasProfile) {
+        headers['x-user-prefs'] = JSON.stringify(userStore.profile.prefs)
+      }
+
+      const response = await get<AttractionListResponse>(
+        `/attractions?${params.toString()}`,
+        { headers, requiresAuth: false }
+      )
+
+      if (response && response.attractions) {
+        // Transform API response to match frontend types
+        attractions.value = response.attractions.map(transformAttraction)
+        attractionsLoaded.value = true
+      }
+    } catch (error) {
+      console.error('Failed to fetch attractions:', error)
+      // Keep fallback data if API fails
+    } finally {
+      attractionsLoading.value = false
+    }
+  }
+
+  // Fetch single attraction with full details
+  async function fetchAttractionBySlug(slug: string) {
+    attractionsLoading.value = true
+    try {
+      const userStore = useUserStore()
+      const headers: Record<string, string> = {}
+      if (userStore.hasProfile) {
+        headers['x-user-prefs'] = JSON.stringify(userStore.profile.prefs)
+      }
+
+      const response = await get<AttractionDetailResponse>(
+        `/attractions/${slug}?include=tips,secrets,recommendations`,
+        { headers, requiresAuth: false }
+      )
+
+      if (response && response.attraction) {
+        currentAttraction.value = transformAttractionDetail(response.attraction)
+        return {
+          attraction: currentAttraction.value,
+          matchInfo: response.matchInfo,
+        }
+      }
+      return null
+    } catch (error) {
+      console.error('Failed to fetch attraction:', error)
+      return null
+    } finally {
+      attractionsLoading.value = false
+    }
+  }
+
+  // Fetch personalized matches
+  async function fetchMatchedAttractions() {
+    const userStore = useUserStore()
+    if (!userStore.hasProfile) return
+
+    attractionsLoading.value = true
+    try {
+      const response = await get<{ matches: AttractionMatch[] }>(
+        '/attractions/matched',
+        {
+          headers: { 'x-user-prefs': JSON.stringify(userStore.profile.prefs) },
+          requiresAuth: false,
+        }
+      )
+
+      if (response && response.matches) {
+        matchedAttractions.value = response.matches.map((m) => ({
+          ...m,
+          attraction: transformAttraction(m.attraction),
+        }))
+      }
+    } catch (error) {
+      console.error('Failed to fetch matched attractions:', error)
+    } finally {
+      attractionsLoading.value = false
+    }
+  }
+
+  // Transform API response to frontend format
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  function transformAttraction(a: any): Attraction {
+    return {
+      id: a.id as string,
+      slug: a.slug as string,
+      name: a.name as string,
+      description: a.description as string,
+      about: a.about as string | undefined,
+      category: a.category as AttractionCategory,
+      location: a.location as string,
+      province: a.province as string,
+      categories: a.categories as Record<string, number>,
+      isHiddenGem: a.is_hidden_gem as boolean,
+      isProOnly: a.is_pro_only as boolean,
+      imageUrl: a.image_url as string | undefined,
+    }
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  function transformAttractionDetail(a: any): AttractionDetail {
+    const base = transformAttraction(a)
+    return {
+      ...base,
+      tips: ((a.tips as Record<string, unknown>[]) || []).map((t) => ({
+        id: t.id as string,
+        tipType: t.tip_type as AttractionDetail['tips'][0]['tipType'],
+        title: t.title as string,
+        content: t.content as string,
+        isProOnly: t.is_pro_only as boolean,
+        sortOrder: t.sort_order as number,
+      })),
+      secrets: ((a.secrets as Record<string, unknown>[]) || []).map((s) => ({
+        id: s.id as string,
+        secretType: s.secret_type as AttractionDetail['secrets'][0]['secretType'],
+        title: s.title as string,
+        content: s.content as string,
+        locationHint: s.location_hint as string | undefined,
+        isProOnly: s.is_pro_only as boolean,
+        sortOrder: s.sort_order as number,
+      })),
+      recommendations: ((a.recommendations as Record<string, unknown>[]) || []).map((r) => ({
+        id: r.id as string,
+        recType: r.rec_type as AttractionDetail['recommendations'][0]['recType'],
+        name: r.name as string,
+        description: r.description as string,
+        whySpecial: r.why_special as string | undefined,
+        priceRange: r.price_range as AttractionDetail['recommendations'][0]['priceRange'],
+        googleMapsUrl: r.google_maps_url as string | undefined,
+        isProOnly: r.is_pro_only as boolean,
+        sortOrder: r.sort_order as number,
+      })),
+    }
+  }
+
   function getAttractionById(id: string): Attraction | undefined {
     return attractions.value.find((a) => a.id === id)
+  }
+
+  function getAttractionBySlug(slug: string): Attraction | undefined {
+    return attractions.value.find((a) => a.slug === slug)
   }
 
   function getWarningsByCategory(category: string): Warning[] {
@@ -416,6 +541,10 @@ export const useCountryStore = defineStore('country', () => {
     visaTypes,
     warnings,
     attractions,
+    attractionsLoading,
+    attractionsLoaded,
+    currentAttraction,
+    matchedAttractions,
     isLoading,
     // Getters
     hiddenGems,
@@ -424,7 +553,11 @@ export const useCountryStore = defineStore('country', () => {
     criticalWarnings,
     // Actions
     getVisaForProfile,
+    fetchAttractions,
+    fetchAttractionBySlug,
+    fetchMatchedAttractions,
     getAttractionById,
+    getAttractionBySlug,
     getWarningsByCategory,
   }
 })

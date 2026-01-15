@@ -29,6 +29,51 @@ const wizardState = ref<VisaWizardState>({
   checklist: [],
 })
 
+// Non-linear slider for days → years
+// Breakpoints map slider position (0-100) to actual days
+const sliderBreakpoints = [
+  { slider: 0, days: 1 },
+  { slider: 10, days: 7 },
+  { slider: 20, days: 14 },
+  { slider: 30, days: 30 },
+  { slider: 40, days: 60 },
+  { slider: 50, days: 90 },
+  { slider: 60, days: 180 },
+  { slider: 75, days: 365 },
+  { slider: 90, days: 730 },
+  { slider: 100, days: 1825 }, // 5+ years
+]
+
+// Convert slider position (0-100) to actual days (non-linear)
+function sliderToDays(value: number): number {
+  for (let i = 0; i < sliderBreakpoints.length - 1; i++) {
+    if (value <= sliderBreakpoints[i + 1].slider) {
+      const ratio = (value - sliderBreakpoints[i].slider) / (sliderBreakpoints[i + 1].slider - sliderBreakpoints[i].slider)
+      return Math.round(sliderBreakpoints[i].days + ratio * (sliderBreakpoints[i + 1].days - sliderBreakpoints[i].days))
+    }
+  }
+  return 1825
+}
+
+// Convert actual days to slider position (0-100)
+function daysToSlider(days: number): number {
+  for (let i = 0; i < sliderBreakpoints.length - 1; i++) {
+    if (days <= sliderBreakpoints[i + 1].days) {
+      const ratio = (days - sliderBreakpoints[i].days) / (sliderBreakpoints[i + 1].days - sliderBreakpoints[i].days)
+      return Math.round(sliderBreakpoints[i].slider + ratio * (sliderBreakpoints[i + 1].slider - sliderBreakpoints[i].slider))
+    }
+  }
+  return 100
+}
+
+// Slider position (0-100)
+const sliderPosition = ref(daysToSlider(wizardState.value.duration))
+
+// Sync slider position with actual days
+watch(sliderPosition, (pos) => {
+  wizardState.value.duration = sliderToDays(pos)
+})
+
 const totalSteps = 3
 
 // Common nationalities for quick select
@@ -139,7 +184,7 @@ const checklistProgress = computed(() => {
   return Math.round((checked / checklist.value.length) * 100)
 })
 
-// Duration labels
+// Duration labels - descriptive category
 const durationLabel = computed(() => {
   const days = wizardState.value.duration
   if (days <= 7) return 'Quick trip'
@@ -147,13 +192,57 @@ const durationLabel = computed(() => {
   if (days <= 30) return 'Extended stay'
   if (days <= 60) return 'Long holiday'
   if (days <= 90) return 'Extended visit'
-  return 'Long-term stay'
+  if (days <= 180) return '6-month stay'
+  if (days <= 365) return '1 year stay'
+  if (days <= 730) return 'Multi-year stay'
+  return 'Long-term / retirement'
 })
 
-// Need extension warning
+// Human-readable duration value
+const durationValueDisplay = computed(() => {
+  const days = wizardState.value.duration
+  if (days === 1) return '1 day'
+  if (days <= 6) return `${days} days`
+  if (days === 7) return '1 week'
+  if (days < 14) return `${days} days`
+  if (days === 14) return '2 weeks'
+  if (days < 30) return `${Math.round(days / 7)} weeks`
+  if (days === 30) return '1 month'
+  if (days < 60) return `${Math.round(days / 30)} months`
+  if (days === 60) return '2 months'
+  if (days === 90) return '3 months'
+  if (days < 180) return `${Math.round(days / 30)} months`
+  if (days === 180) return '6 months'
+  if (days < 365) return `${Math.round(days / 30)} months`
+  if (days === 365) return '1 year'
+  if (days < 730) return `${Math.round(days / 365 * 10) / 10} years`
+  if (days === 730) return '2 years'
+  if (days < 1825) return `${Math.round(days / 365)} years`
+  return '5+ years'
+})
+
+// Need extension warning - don't show for 1-year visas
 const needsExtension = computed(() => {
   if (!recommendedVisa.value) return false
+  // Don't show extension warning for retirement/long-term visas (365+ days)
+  if (recommendedVisa.value.duration >= 365) return false
   return wizardState.value.duration > recommendedVisa.value.duration
+})
+
+// Show border run warning for visa exemption users planning long stays
+const showBorderRunWarning = computed(() => {
+  return recommendedVisa.value?.code === 'VE' && wizardState.value.duration > 60
+})
+
+// Format duration display - show years for long-term visas
+const durationDisplay = computed(() => {
+  if (!recommendedVisa.value) return ''
+  const days = recommendedVisa.value.duration
+  if (days >= 365) {
+    const years = Math.floor(days / 365)
+    return `${years} year${years > 1 ? 's' : ''} validity`
+  }
+  return `Up to ${days} days`
 })
 
 // Navigation
@@ -348,20 +437,42 @@ watch(
           </h2>
 
           <div class="mb-4">
-            <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center justify-between mb-3">
               <span class="text-sm text-gray-500">{{ durationLabel }}</span>
-              <span class="text-2xl font-bold text-primary-600">{{ wizardState.duration }} days</span>
+              <span class="text-2xl font-bold text-primary-600">{{ durationValueDisplay }}</span>
             </div>
             <a-slider
-              v-model:value="wizardState.duration"
-              :min="1"
-              :max="180"
+              v-model:value="sliderPosition"
+              :min="0"
+              :max="100"
               :step="1"
               :tooltip-visible="false"
+              :marks="{ 0: '', 30: '', 50: '', 75: '', 100: '' }"
             />
-            <div class="flex justify-between text-xs text-gray-400 mt-1">
-              <span>1 day</span>
-              <span>6 months</span>
+            <div class="flex justify-between text-xs text-gray-400 mt-2">
+              <span>Days</span>
+              <span>Months</span>
+              <span>Years</span>
+            </div>
+            <!-- Quick duration buttons -->
+            <div class="flex flex-wrap gap-2 mt-4">
+              <button
+                v-for="preset in [
+                  { label: '2 weeks', days: 14 },
+                  { label: '1 month', days: 30 },
+                  { label: '3 months', days: 90 },
+                  { label: '1 year', days: 365 },
+                  { label: '5+ years', days: 1825 },
+                ]"
+                :key="preset.days"
+                @click="sliderPosition = daysToSlider(preset.days)"
+                class="px-3 py-1.5 text-xs rounded-full border transition-all"
+                :class="wizardState.duration === preset.days
+                  ? 'border-primary-500 bg-primary-50 text-primary-700'
+                  : 'border-gray-200 hover:border-gray-300 text-gray-600'"
+              >
+                {{ preset.label }}
+              </button>
             </div>
           </div>
         </div>
@@ -392,17 +503,66 @@ watch(
             <div class="flex flex-wrap gap-4 text-sm">
               <div class="flex items-center gap-2">
                 <CalendarOutlined class="text-primary-500" />
-                <span>Up to <strong>{{ recommendedVisa.duration }} days</strong></span>
+                <span><strong>{{ durationDisplay }}</strong></span>
               </div>
               <div v-if="recommendedVisa.extendable" class="flex items-center gap-2">
                 <CheckCircleFilled class="text-green-500" />
-                <span>Extendable</span>
+                <span>Extendable{{ recommendedVisa.extensionDays ? ` (+${recommendedVisa.extensionDays} days)` : '' }}</span>
+              </div>
+              <div v-if="recommendedVisa.entryType === 'multiple'" class="flex items-center gap-2">
+                <CheckCircleFilled class="text-blue-500" />
+                <span>Multiple entry</span>
+              </div>
+            </div>
+
+            <!-- Renewal info for long-term visas -->
+            <div v-if="recommendedVisa.renewalInfo" class="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+              <p class="text-sm text-green-800">
+                <strong>🔄 Renewal:</strong> {{ recommendedVisa.renewalInfo }}
+              </p>
+            </div>
+
+            <!-- Validity period for multi-year visas -->
+            <div v-if="recommendedVisa.validityPeriod && recommendedVisa.validityPeriod > 365" class="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <p class="text-sm text-blue-800">
+                <strong>📅 Total validity:</strong> {{ Math.floor(recommendedVisa.validityPeriod / 365) }} years ({{ recommendedVisa.duration }} days per entry)
+              </p>
+            </div>
+          </div>
+
+          <!-- Border Run Crackdown Warning -->
+          <div v-if="showBorderRunWarning" class="bg-red-50 border-2 border-red-300 rounded-xl p-5 mb-6">
+            <div class="flex items-start gap-3">
+              <span class="text-2xl">🚫</span>
+              <div>
+                <h4 class="font-bold text-red-800 text-lg">Border Run Crackdown (Nov 2025)</h4>
+                <p class="text-red-700 mt-2">
+                  Your planned {{ wizardState.duration }} days exceeds the 60-day visa exemption.
+                  Thai Immigration now strictly enforces visa run limits:
+                </p>
+                <ul class="mt-3 space-y-2 text-sm text-red-700">
+                  <li class="flex items-start gap-2">
+                    <span class="text-red-500 font-bold">•</span>
+                    <span><strong>Land borders:</strong> Maximum 2 visa-exempt entries per calendar year</span>
+                  </li>
+                  <li class="flex items-start gap-2">
+                    <span class="text-red-500 font-bold">•</span>
+                    <span><strong>All entries:</strong> Officers can deny entry after 2 visa runs without justifiable reason</span>
+                  </li>
+                  <li class="flex items-start gap-2">
+                    <span class="text-red-500 font-bold">•</span>
+                    <span><strong>Land entries:</strong> NOT eligible for 30-day extension</span>
+                  </li>
+                </ul>
+                <p class="text-red-800 mt-3 font-medium">
+                  ⚠️ 2,900+ foreigners denied entry this year. For stays over 90 days, consider a <strong>Tourist Visa</strong>, <strong>DTV</strong>, or <strong>Non-O</strong> visa instead.
+                </p>
               </div>
             </div>
           </div>
 
           <!-- Extension warning -->
-          <div v-if="needsExtension" class="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">
+          <div v-if="needsExtension && !showBorderRunWarning" class="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">
             <div class="flex items-start gap-3">
               <span class="text-xl">⚠️</span>
               <div>
@@ -442,6 +602,85 @@ watch(
                 <span>{{ req }}</span>
               </li>
             </ul>
+          </div>
+
+          <!-- Important Notes -->
+          <div v-if="recommendedVisa?.notes?.length" class="mt-6 p-4 bg-gray-50 border border-gray-200 rounded-xl">
+            <h4 class="font-medium text-gray-900 mb-3">Important Notes:</h4>
+            <ul class="space-y-2">
+              <li
+                v-for="note in recommendedVisa.notes"
+                :key="note"
+                class="text-sm text-gray-600"
+              >
+                {{ note }}
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- 90-Day Reporting Guide -->
+        <div v-if="recommendedVisa?.reportingInterval" class="card-thai p-6 mt-6">
+          <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
+            📋 90-Day Reporting (TM.47) - Required
+          </h3>
+
+          <div class="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+            <p class="text-green-800 font-medium">
+              ✓ This is FREE and takes about 2 minutes. It's NOT a visa limit - just an address check-in!
+            </p>
+          </div>
+
+          <p class="text-gray-600 mb-4">
+            Every 90 days you must report your current address to Immigration.
+            <strong>Filing window:</strong> 15 days before to 7 days after due date.
+          </p>
+
+          <div class="space-y-3">
+            <div class="flex items-start gap-3 p-3 bg-blue-50 rounded-lg">
+              <span class="text-xl">💻</span>
+              <div>
+                <h4 class="font-medium text-blue-900">Online (Recommended)</h4>
+                <p class="text-sm text-blue-700">
+                  <a href="https://tm47.immigration.go.th" target="_blank" rel="noopener"
+                     class="underline hover:no-underline">tm47.immigration.go.th</a>
+                </p>
+                <p class="text-xs text-blue-600 mt-1">
+                  Note: First report on a new passport must be done in person or by mail.
+                </p>
+              </div>
+            </div>
+
+            <div class="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
+              <span class="text-xl">📮</span>
+              <div>
+                <h4 class="font-medium">By Mail</h4>
+                <p class="text-sm text-gray-600">
+                  Send TM.47 form via registered mail at least 15 days before due date.
+                  Include pre-paid return envelope.
+                </p>
+              </div>
+            </div>
+
+            <div class="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
+              <span class="text-xl">🏢</span>
+              <div>
+                <h4 class="font-medium">In Person</h4>
+                <p class="text-sm text-gray-600">
+                  Visit your local Immigration office. Bring passport only.
+                  Usually takes 5-15 minutes depending on queue.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+            <p class="text-sm text-amber-800">
+              <strong>⚠️ Penalties:</strong> Late report = 2,000 THB fine.
+              Failure to report = up to 5,000 THB + 200 THB/day.
+              <br>
+              <strong>💡 Tip:</strong> Set a calendar reminder for 7 days before your due date!
+            </p>
           </div>
         </div>
 
