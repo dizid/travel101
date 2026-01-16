@@ -26,6 +26,15 @@ export type BudgetLevel = 'budget' | 'mid' | 'luxury'
 export type Interest = 'beach' | 'nightlife' | 'temples' | 'food' | 'shopping' | 'nature' | 'wellness'
 export type TripType = 'holiday' | 'expat' | 'digital_nomad'
 
+// Place types for expanded taxonomy
+export type PlaceType = 'attraction' | 'course' | 'tour' | 'activity' | 'coworking' | 'restaurant' | 'event'
+
+// Verification status for AI enrichment pipeline
+export type VerificationStatus = 'pending' | 'ai_scored' | 'human_verified' | 'needs_review' | 'rejected'
+
+// Data source for place ingestion
+export type DataSource = 'manual' | 'google_places' | 'viator' | 'getyourguide' | 'coworker' | 'ai_generated'
+
 // Country and content types
 export interface Country {
   id: string
@@ -114,7 +123,7 @@ export type WarningCategory =
   | 'beach_safety'
   | 'nightlife'
 
-// Attraction types
+// Attraction/Place types
 export interface Attraction {
   id: string
   slug: string
@@ -131,6 +140,46 @@ export interface Attraction {
   isProOnly?: boolean
   imageUrl?: string
   affiliateLinks?: AffiliateLink[]
+  // New fields for expanded place types
+  placeType?: PlaceType
+  metadata?: PlaceMetadata
+  externalIds?: ExternalIds
+  dataSource?: DataSource
+  verificationStatus?: VerificationStatus
+  aiEnrichedAt?: Date
+}
+
+// Type-specific metadata for different place types
+export interface PlaceMetadata {
+  // Course/Tour metadata
+  durationHours?: number
+  priceTHB?: number
+  skillLevel?: 'beginner' | 'intermediate' | 'advanced'
+  groupSizeMax?: number
+  bookingUrl?: string
+  // Restaurant metadata
+  cuisine?: string[]
+  priceRange?: '$' | '$$' | '$$$' | '$$$$'
+  dietaryOptions?: string[]
+  // Co-working metadata
+  wifiSpeedMbps?: number
+  hasMeetingRooms?: boolean
+  is24Hours?: boolean
+  monthlyPriceTHB?: number
+  // Event metadata
+  dateStart?: string
+  dateEnd?: string
+  isRecurring?: boolean
+  // AI enrichment metadata
+  aiConfidence?: number
+}
+
+// External IDs for deduplication
+export interface ExternalIds {
+  googlePlaceId?: string
+  viatorId?: string
+  gygId?: string
+  coworkerId?: string
 }
 
 export interface AttractionDetail extends Attraction {
@@ -177,6 +226,7 @@ export interface AttractionRecommendation {
 }
 
 export type AttractionCategory =
+  // Core experience types
   | 'beach'
   | 'culture'
   | 'nightlife'
@@ -190,6 +240,33 @@ export type AttractionCategory =
   | 'romantic'
   | 'budget'
   | 'luxury'
+  // Extended categories
+  | 'food'
+  | 'party'
+  | 'relaxation'
+  | 'authentic'
+  | 'temples'
+  | 'history'
+  | 'photography'
+  | 'trekking'
+  // Course/activity types
+  | 'skill_building'
+  | 'certification'
+  | 'creative'
+  | 'physical'
+  // Tour types
+  | 'guided'
+  | 'day_trip'
+  | 'small_group'
+  | 'private_tour'
+  // Restaurant types
+  | 'fine_dining'
+  | 'street_food'
+  | 'vegetarian'
+  | 'local_cuisine'
+  // Co-working types
+  | 'fast_wifi'
+  | 'community'
 
 // Affiliate types
 export interface AffiliateLink {
