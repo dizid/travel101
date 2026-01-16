@@ -11,7 +11,11 @@
  *   npx tsx scripts/generate-places.ts --dry-run
  */
 
-import 'dotenv/config'
+import { config } from 'dotenv'
+// Load both .env and .env.local
+config({ path: '.env' })
+config({ path: '.env.local' })
+
 import Anthropic from '@anthropic-ai/sdk'
 import postgres from 'postgres'
 
