@@ -29,7 +29,7 @@ import {
   BulbOutlined,
 } from '@ant-design/icons-vue'
 import type { TipType, SecretType, RecommendationType } from '@/types'
-import { generateAffiliateUrl, trackAffiliateClick } from '@/utils/affiliates'
+import { generateAffiliateUrl, trackAffiliateClick, generateHeritageHotelUrl, generateTransportUrl } from '@/utils/affiliates'
 
 const route = useRoute()
 const countryStore = useCountryStore()
@@ -153,6 +153,7 @@ const categoryLabels: Record<string, { icon: string; label: string }> = {
   nature: { icon: '🌿', label: 'Nature' },
   island: { icon: '🏝️', label: 'Island' },
   foodie: { icon: '🍜', label: 'Foodie' },
+  food: { icon: '🍜', label: 'Food' },
   nomad: { icon: '💻', label: 'Nomad Hub' },
   wellness: { icon: '🧘', label: 'Wellness' },
   adventure: { icon: '⛰️', label: 'Adventure' },
@@ -160,7 +161,79 @@ const categoryLabels: Record<string, { icon: string; label: string }> = {
   romantic: { icon: '💕', label: 'Romantic' },
   budget: { icon: '💰', label: 'Budget' },
   luxury: { icon: '✨', label: 'Luxury' },
+  history: { icon: '📜', label: 'History' },
+  temples: { icon: '🛕', label: 'Temples' },
+  shopping: { icon: '🛍️', label: 'Shopping' },
+  relaxation: { icon: '😌', label: 'Relaxation' },
+  party: { icon: '🎉', label: 'Party' },
+  authentic: { icon: '🎭', label: 'Authentic' },
 }
+
+// Map Google Places types to friendly labels
+const googleTypeLabels: Record<string, string> = {
+  tourist_attraction: 'Tourist Attraction',
+  museum: 'Museum',
+  park: 'Nature',
+  zoo: 'Zoo',
+  aquarium: 'Aquarium',
+  amusement_park: 'Amusement Park',
+  art_gallery: 'Art Gallery',
+  hindu_temple: 'Temple',
+  buddhist_temple: 'Temple',
+  temple: 'Temple',
+  historical_landmark: 'Historical',
+  national_park: 'National Park',
+  beach: 'Beach',
+  waterfall: 'Nature',
+  restaurant: 'Restaurant',
+  cafe: 'Cafe',
+  bar: 'Bar',
+  spa: 'Wellness',
+  diving_center: 'Diving',
+  golf_course: 'Golf',
+  gym: 'Fitness',
+  yoga_studio: 'Yoga',
+}
+
+// Get displayable categories for "Best for" section
+const displayCategories = computed(() => {
+  if (!attraction.value) return []
+
+  const categories: string[] = []
+
+  // First, try to get from categories object (proper JSONB with named keys)
+  if (attraction.value.categories && typeof attraction.value.categories === 'object') {
+    const cats = attraction.value.categories as Record<string, number>
+    for (const [key, score] of Object.entries(cats)) {
+      // Only include if key is a named category (not numeric) and score > 0.5
+      if (typeof key === 'string' && !/^\d+$/.test(key) && score > 0.5) {
+        categories.push(key)
+      }
+    }
+  }
+
+  // If no valid categories found, try metadata.googleTypes
+  if (categories.length === 0 && attraction.value.metadata) {
+    const metadata = attraction.value.metadata as Record<string, unknown>
+    const googleTypes = metadata.googleTypes as string[] | undefined
+    if (googleTypes && Array.isArray(googleTypes)) {
+      for (const type of googleTypes.slice(0, 5)) {
+        const label = googleTypeLabels[type]
+        if (label && !categories.includes(label)) {
+          categories.push(label)
+        }
+      }
+    }
+  }
+
+  // Always include main category if not already present
+  if (attraction.value.category && !categories.includes(attraction.value.category)) {
+    categories.unshift(attraction.value.category)
+  }
+
+  // Limit to 6 categories
+  return categories.slice(0, 6)
+})
 
 // Affiliate links
 const klookUrl = computed(() => {
@@ -173,7 +246,17 @@ const agodaUrl = computed(() => {
   return generateAffiliateUrl('agoda', attraction.value.province || 'Thailand')
 })
 
-function handleAffiliateClick(partner: 'klook' | 'agoda', url: string) {
+const heritageHotelUrl = computed(() => {
+  if (!attraction.value) return '#'
+  return generateHeritageHotelUrl(attraction.value.name, attraction.value.province || 'Thailand')
+})
+
+const transportUrl = computed(() => {
+  if (!attraction.value) return '#'
+  return generateTransportUrl('Bangkok', attraction.value.province || 'Thailand')
+})
+
+function handleAffiliateClick(partner: 'klook' | 'agoda' | '12go', url: string) {
   trackAffiliateClick(partner, attraction.value?.province || 'Thailand', attraction.value?.slug)
   window.open(url, '_blank', 'noopener,noreferrer')
 }
@@ -328,15 +411,14 @@ const gradientClass = computed(() => {
               <p class="text-gray-600">{{ attraction.about }}</p>
             </div>
 
-            <h2 class="text-xl font-semibold text-gray-900 mt-8 mb-4">Best for</h2>
-            <div class="flex flex-wrap gap-2">
+            <h2 v-if="displayCategories.length > 0" class="text-xl font-semibold text-gray-900 mt-8 mb-4">Best for</h2>
+            <div v-if="displayCategories.length > 0" class="flex flex-wrap gap-2">
               <span
-                v-for="(score, category) in attraction.categories"
-                :key="category"
-                v-show="score > 0.5"
-                class="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-full text-sm"
+                v-for="cat in displayCategories"
+                :key="cat"
+                class="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-full text-sm capitalize"
               >
-                {{ String(category).replace('_', ' ') }}
+                {{ categoryLabels[cat]?.icon || '' }} {{ categoryLabels[cat]?.label || cat.replace(/_/g, ' ') }}
               </span>
             </div>
           </div>
@@ -510,8 +592,26 @@ const gradientClass = computed(() => {
 
         <!-- Sidebar -->
         <div class="space-y-6">
-          <!-- Book activities card -->
-          <div class="card-thai">
+          <!-- Heritage Hotel booking card (for heritage places) -->
+          <div v-if="attraction.placeType === 'heritage'" class="card-thai border-2 border-amber-200 bg-amber-50">
+            <div class="flex items-center gap-2 mb-3">
+              <span class="text-xl">🏛️</span>
+              <h3 class="font-semibold text-gray-900">Book This Heritage Stay</h3>
+            </div>
+            <p class="text-sm text-gray-600 mb-4">
+              Experience history at {{ attraction.name }}.
+            </p>
+            <button
+              @click="handleAffiliateClick('agoda', heritageHotelUrl)"
+              class="w-full justify-center bg-amber-600 hover:bg-amber-700 text-white font-medium py-2.5 px-4 rounded-lg transition-colors"
+            >
+              Check Availability on Agoda
+            </button>
+            <p class="text-xs text-gray-500 mt-2 text-center">Best rates guaranteed</p>
+          </div>
+
+          <!-- Book activities card (for non-heritage places) -->
+          <div v-if="attraction.placeType !== 'heritage'" class="card-thai">
             <h3 class="font-semibold text-gray-900 mb-4">Book Activities</h3>
             <p class="text-sm text-gray-600 mb-4">
               Find tours and experiences in {{ attraction.name }}.
@@ -527,15 +627,30 @@ const gradientClass = computed(() => {
 
           <!-- Book hotels card -->
           <div class="card-thai">
-            <h3 class="font-semibold text-gray-900 mb-4">Find Hotels</h3>
+            <h3 class="font-semibold text-gray-900 mb-4">{{ attraction.placeType === 'heritage' ? 'More Hotels Nearby' : 'Find Hotels' }}</h3>
             <p class="text-sm text-gray-600 mb-4">
-              Best places to stay in {{ attraction.province }}.
+              {{ attraction.placeType === 'heritage' ? 'Other places to stay in' : 'Best places to stay in' }} {{ attraction.province }}.
             </p>
             <button
               @click="handleAffiliateClick('agoda', agodaUrl)"
               class="btn-accent w-full justify-center"
             >
               View on Agoda
+            </button>
+            <p class="text-xs text-gray-400 mt-2 text-center">Affiliate link</p>
+          </div>
+
+          <!-- Transport card (for all places) -->
+          <div class="card-thai">
+            <h3 class="font-semibold text-gray-900 mb-4">Get There</h3>
+            <p class="text-sm text-gray-600 mb-4">
+              Buses, trains & ferries to {{ attraction.province }}.
+            </p>
+            <button
+              @click="handleAffiliateClick('12go', transportUrl)"
+              class="w-full justify-center bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 px-4 rounded-lg transition-colors"
+            >
+              Book on 12Go Asia
             </button>
             <p class="text-xs text-gray-400 mt-2 text-center">Affiliate link</p>
           </div>

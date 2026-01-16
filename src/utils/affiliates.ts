@@ -42,10 +42,10 @@ const affiliateConfigs: Record<AffiliatePartner, AffiliateConfig> = {
   '12go': {
     baseUrl: 'https://12go.asia',
     buildUrl: (destination, _attractionName, affiliateId) => {
-      // 12Go uses destination-based URLs
+      // 12Go booking URLs with referer tracking
       const slug = destination.toLowerCase().replace(/\s+/g, '-')
-      const params = affiliateId ? `?affiliate_id=${affiliateId}` : ''
-      return `https://12go.asia/en/travel/${slug}${params}`
+      const params = affiliateId ? `?referer=${affiliateId}` : ''
+      return `https://12go.asia/en/travel/thailand/${slug}${params}`
     },
   },
   getyourguide: {
@@ -112,4 +112,84 @@ export function trackAffiliateClick(
       attraction: attractionSlug,
     })
   }
+}
+
+/**
+ * Generate heritage hotel booking URL (Agoda with hotel name)
+ */
+export function generateHeritageHotelUrl(
+  hotelName: string,
+  province: string
+): string {
+  const affiliateId = typeof import.meta !== 'undefined'
+    ? (import.meta.env?.VITE_AGODA_AFFILIATE_ID as string | undefined)
+    : undefined
+
+  const params = new URLSearchParams({
+    textToSearch: `${hotelName} ${province} Thailand`,
+    ...(affiliateId && { cid: affiliateId }),
+    pcs: '1',
+  })
+  return `https://www.agoda.com/partners/partnersearch.aspx?${params.toString()}`
+}
+
+/**
+ * Generate transport booking URL (12Go)
+ */
+export function generateTransportUrl(
+  from: string,
+  to: string
+): string {
+  const affiliateId = typeof import.meta !== 'undefined'
+    ? (import.meta.env?.VITE_12GO_AFFILIATE_ID as string | undefined)
+    : undefined
+
+  const fromSlug = from.toLowerCase().replace(/\s+/g, '-')
+  const toSlug = to.toLowerCase().replace(/\s+/g, '-')
+  const params = affiliateId ? `?referer=${affiliateId}` : ''
+  return `https://12go.asia/en/travel/${fromSlug}/${toSlug}${params}`
+}
+
+/**
+ * Affiliate link contexts - where to show which partners
+ */
+export const affiliateContexts = {
+  // Attraction detail pages
+  attractionDetail: ['klook', 'agoda'] as AffiliatePartner[],
+
+  // Heritage hotels - prioritize Agoda
+  heritageHotel: ['agoda'] as AffiliatePartner[],
+
+  // Activities/tours pages
+  activities: ['klook', 'getyourguide'] as AffiliatePartner[],
+
+  // Transport between cities
+  transport: ['12go'] as AffiliatePartner[],
+
+  // Destination overview
+  destination: ['klook', 'agoda', '12go', 'getyourguide'] as AffiliatePartner[],
+
+  // Itinerary pages
+  itinerary: ['klook', 'agoda', '12go'] as AffiliatePartner[],
+
+  // Dashboard recommendations
+  dashboard: ['klook', 'agoda'] as AffiliatePartner[],
+}
+
+/**
+ * Get affiliate links for a specific context
+ */
+export function getContextAffiliateLinks(
+  context: keyof typeof affiliateContexts,
+  destination: string,
+  attractionName?: string
+): Partial<Record<AffiliatePartner, string>> {
+  const partners = affiliateContexts[context]
+  const links: Partial<Record<AffiliatePartner, string>> = {}
+
+  for (const partner of partners) {
+    links[partner] = generateAffiliateUrl(partner, destination, attractionName)
+  }
+
+  return links
 }

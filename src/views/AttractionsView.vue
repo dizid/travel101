@@ -5,6 +5,7 @@ import { useCountryStore } from '@stores/countryStore'
 import { useUserStore } from '@stores/userStore'
 import { useMatcher } from '@/composables/useMatcher'
 import AttractionCard from '@components/features/AttractionCard.vue'
+import AffiliateCard from '@components/common/AffiliateCard.vue'
 import type { AttractionCategory } from '@/types'
 import { SearchOutlined, StarFilled, LoadingOutlined } from '@ant-design/icons-vue'
 
@@ -174,16 +175,47 @@ function setCategory(cat: typeof activeCategory.value) {
         {{ filteredAttractions.length }} places found
       </p>
 
-      <!-- Attractions grid -->
-      <div class="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        <AttractionCard
-          v-for="attraction in filteredAttractions"
-          :key="attraction.id"
-          :attraction="attraction"
-          :show-match="showPersonalized && hasProfile"
-          :match-score="calculateLocalScore(attraction)"
-          :match-reason="getMatchReason(attraction)"
-        />
+      <!-- Main content with sidebar -->
+      <div class="lg:flex lg:gap-8">
+        <!-- Attractions grid -->
+        <div class="flex-1">
+          <div class="grid sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+            <AttractionCard
+              v-for="attraction in filteredAttractions"
+              :key="attraction.id"
+              :attraction="attraction"
+              :show-match="showPersonalized && hasProfile"
+              :match-score="calculateLocalScore(attraction)"
+              :match-reason="getMatchReason(attraction)"
+            />
+          </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="hidden lg:block w-72 flex-shrink-0">
+          <div class="sticky top-24 space-y-6">
+            <AffiliateCard
+              context="destination"
+              destination="Thailand"
+              title="Book Your Thailand Trip"
+            />
+
+            <!-- Quick stats -->
+            <div class="card-thai">
+              <h3 class="font-semibold text-gray-900 mb-3">Quick Facts</h3>
+              <div class="space-y-2 text-sm">
+                <div class="flex justify-between">
+                  <span class="text-gray-500">Total Places</span>
+                  <span class="font-medium">{{ countryStore.attractions.length }}</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-gray-500">Hidden Gems</span>
+                  <span class="font-medium">{{ countryStore.attractions.filter(a => a.isHiddenGem).length }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Empty state -->

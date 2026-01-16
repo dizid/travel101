@@ -5,7 +5,7 @@ import { getDb } from './lib/db.mts'
 // TYPES
 // ==========================================
 
-type PlaceType = 'attraction' | 'course' | 'tour' | 'activity' | 'coworking' | 'restaurant' | 'event'
+type PlaceType = 'attraction' | 'course' | 'tour' | 'activity' | 'coworking' | 'restaurant' | 'event' | 'heritage'
 
 interface GooglePlacesTextSearchRequest {
   textQuery: string

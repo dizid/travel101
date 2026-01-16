@@ -3,6 +3,7 @@ import { RouterLink } from 'vue-router'
 import { useCountryStore } from '@stores/countryStore'
 import WarningCard from '@components/features/WarningCard.vue'
 import AttractionCard from '@components/features/AttractionCard.vue'
+import AffiliateButton from '@components/common/AffiliateButton.vue'
 import {
   RightOutlined,
   SafetyOutlined,
@@ -225,6 +226,54 @@ const features = [
             :key="attraction.id"
             :attraction="attraction"
           />
+        </div>
+      </div>
+    </section>
+
+    <!-- Booking Partners Section -->
+    <section class="py-16 md:py-20 bg-gradient-to-b from-white to-gray-50">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center mb-10">
+          <h2 class="text-2xl md:text-3xl font-display font-bold text-gray-900 mb-3">
+            Book with Our Trusted Partners
+          </h2>
+          <p class="text-gray-600 max-w-2xl mx-auto">
+            We've partnered with the best booking platforms to help you plan your perfect Thailand trip.
+          </p>
+        </div>
+
+        <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <!-- Klook -->
+          <div class="card-thai text-center hover:shadow-thai-lg transition-shadow">
+            <div class="text-4xl mb-3">🎫</div>
+            <h3 class="font-semibold text-gray-900 mb-2">Tours & Activities</h3>
+            <p class="text-sm text-gray-600 mb-4">Book experiences, day trips, and attractions</p>
+            <AffiliateButton partner="klook" destination="Thailand" variant="primary" class="w-full" />
+          </div>
+
+          <!-- Agoda -->
+          <div class="card-thai text-center hover:shadow-thai-lg transition-shadow">
+            <div class="text-4xl mb-3">🏨</div>
+            <h3 class="font-semibold text-gray-900 mb-2">Hotels & Stays</h3>
+            <p class="text-sm text-gray-600 mb-4">Find great deals on accommodations</p>
+            <AffiliateButton partner="agoda" destination="Thailand" variant="primary" class="w-full" />
+          </div>
+
+          <!-- 12Go -->
+          <div class="card-thai text-center hover:shadow-thai-lg transition-shadow">
+            <div class="text-4xl mb-3">🚌</div>
+            <h3 class="font-semibold text-gray-900 mb-2">Transport</h3>
+            <p class="text-sm text-gray-600 mb-4">Buses, trains, and ferries across Thailand</p>
+            <AffiliateButton partner="12go" destination="Thailand" variant="primary" class="w-full" />
+          </div>
+
+          <!-- GetYourGuide -->
+          <div class="card-thai text-center hover:shadow-thai-lg transition-shadow">
+            <div class="text-4xl mb-3">🗺️</div>
+            <h3 class="font-semibold text-gray-900 mb-2">Guided Tours</h3>
+            <p class="text-sm text-gray-600 mb-4">Expert-led experiences and adventures</p>
+            <AffiliateButton partner="getyourguide" destination="Thailand" variant="primary" class="w-full" />
+          </div>
         </div>
       </div>
     </section>

@@ -27,7 +27,7 @@ export type Interest = 'beach' | 'nightlife' | 'temples' | 'food' | 'shopping' |
 export type TripType = 'holiday' | 'expat' | 'digital_nomad'
 
 // Place types for expanded taxonomy
-export type PlaceType = 'attraction' | 'course' | 'tour' | 'activity' | 'coworking' | 'restaurant' | 'event'
+export type PlaceType = 'attraction' | 'course' | 'tour' | 'activity' | 'coworking' | 'restaurant' | 'event' | 'heritage'
 
 // Verification status for AI enrichment pipeline
 export type VerificationStatus = 'pending' | 'ai_scored' | 'human_verified' | 'needs_review' | 'rejected'

@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
 import type { Attraction, AttractionCategory } from '@/types'
 import { EnvironmentOutlined, StarFilled } from '@ant-design/icons-vue'
+import { generateAffiliateUrl, generateHeritageHotelUrl, trackAffiliateClick } from '@/utils/affiliates'
 
 const props = defineProps<{
   attraction: Attraction
@@ -10,6 +11,23 @@ const props = defineProps<{
   matchScore?: number
   matchReason?: string
 }>()
+
+const isHeritage = computed(() => props.attraction.placeType === 'heritage')
+
+const affiliateUrl = computed(() => {
+  if (isHeritage.value) {
+    return generateHeritageHotelUrl(props.attraction.name, props.attraction.province || 'Thailand')
+  }
+  return generateAffiliateUrl('klook', props.attraction.province || 'Thailand', props.attraction.name)
+})
+
+function handleBookClick(event: Event) {
+  event.preventDefault()
+  event.stopPropagation()
+  const partner = isHeritage.value ? 'agoda' : 'klook'
+  trackAffiliateClick(partner, props.attraction.province || 'Thailand', props.attraction.slug)
+  window.open(affiliateUrl.value, '_blank', 'noopener,noreferrer')
+}
 
 const categoryConfig: Partial<Record<AttractionCategory, { icon: string; label: string; color: string }>> = {
   beach: { icon: '🏖️', label: 'Beach', color: 'bg-blue-100 text-blue-700' },
@@ -97,6 +115,18 @@ const gradientClass = computed(() => {
           {{ config.icon }}
           {{ config.label }}
         </span>
+      </div>
+
+      <!-- Hover affiliate button -->
+      <div
+        class="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+      >
+        <button
+          @click="handleBookClick"
+          class="px-3 py-1.5 bg-white/95 hover:bg-white text-gray-800 text-xs font-medium rounded-full shadow-lg backdrop-blur transition-colors"
+        >
+          {{ isHeritage ? 'Book Stay' : 'Book Activity' }}
+        </button>
       </div>
     </div>
 

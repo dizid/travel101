@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import { useUserStore } from '@stores/userStore'
 import type { TravelStyle, Interest, GroupType, BudgetLevel, TripType, AgeGroup } from '@/types'
+import { countryOptions, filterCountry } from '@/data/countries'
 import {
   UserOutlined,
   SaveOutlined,
@@ -63,17 +64,6 @@ const ageGroups: { value: AgeGroup; label: string }[] = [
   { value: 'young', label: '18-35' },
   { value: 'middle', label: '36-55' },
   { value: 'senior', label: '55+' },
-]
-
-const popularNationalities = [
-  { code: 'US', name: 'United States' },
-  { code: 'GB', name: 'United Kingdom' },
-  { code: 'AU', name: 'Australia' },
-  { code: 'DE', name: 'Germany' },
-  { code: 'FR', name: 'France' },
-  { code: 'JP', name: 'Japan' },
-  { code: 'SG', name: 'Singapore' },
-  { code: 'NL', name: 'Netherlands' },
 ]
 
 function toggleStyle(style: TravelStyle) {
@@ -138,26 +128,15 @@ function saveProfile() {
         <!-- Nationality -->
         <div class="card-thai">
           <h2 class="text-lg font-semibold text-gray-900 mb-4">Nationality</h2>
-          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
-            <button
-              v-for="country in popularNationalities"
-              :key="country.code"
-              @click="formData.nationality = country.code"
-              class="px-3 py-2 text-sm rounded-lg border-2 transition-all"
-              :class="formData.nationality === country.code
-                ? 'border-primary-500 bg-primary-50 text-primary-700'
-                : 'border-gray-200 hover:border-gray-300 text-gray-600'"
-            >
-              {{ country.name }}
-            </button>
-          </div>
           <a-select
             v-model:value="formData.nationality"
-            placeholder="Or search..."
+            placeholder="Type to search your country..."
             class="w-full"
             size="large"
             show-search
-            :options="popularNationalities.map(c => ({ value: c.code, label: c.name }))"
+            :filter-option="filterCountry"
+            :options="countryOptions"
+            option-filter-prop="label"
           />
         </div>
 

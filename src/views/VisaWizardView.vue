@@ -3,6 +3,7 @@ import { ref, computed, watch } from 'vue'
 import { useUserStore } from '@stores/userStore'
 import { useCountryStore } from '@stores/countryStore'
 import type { VisaWizardState, ChecklistItem } from '@/types'
+import { countryOptions, filterCountry } from '@/data/countries'
 import {
   CheckCircleFilled,
   RightOutlined,
@@ -75,20 +76,6 @@ watch(sliderPosition, (pos) => {
 })
 
 const totalSteps = 3
-
-// Common nationalities for quick select
-const popularNationalities = [
-  { code: 'US', name: 'United States' },
-  { code: 'GB', name: 'United Kingdom' },
-  { code: 'AU', name: 'Australia' },
-  { code: 'DE', name: 'Germany' },
-  { code: 'FR', name: 'France' },
-  { code: 'JP', name: 'Japan' },
-  { code: 'KR', name: 'South Korea' },
-  { code: 'SG', name: 'Singapore' },
-  { code: 'CN', name: 'China' },
-  { code: 'IN', name: 'India' },
-]
 
 const tripPurposes = [
   { value: 'holiday', label: 'Holiday / Tourism', icon: '🌴', description: 'Vacation and sightseeing' },
@@ -327,26 +314,15 @@ watch(
             <label class="block text-sm font-medium text-gray-700 mb-3">
               What's your nationality?
             </label>
-            <div class="grid grid-cols-2 sm:grid-cols-5 gap-2 mb-3">
-              <button
-                v-for="country in popularNationalities"
-                :key="country.code"
-                @click="wizardState.nationality = country.code"
-                class="px-3 py-2 text-sm rounded-lg border-2 transition-all"
-                :class="wizardState.nationality === country.code
-                  ? 'border-primary-500 bg-primary-50 text-primary-700'
-                  : 'border-gray-200 hover:border-gray-300 text-gray-600'"
-              >
-                {{ country.name }}
-              </button>
-            </div>
             <a-select
               v-model:value="wizardState.nationality"
-              placeholder="Or search for your country..."
+              placeholder="Type to search your country..."
               class="w-full"
               size="large"
               show-search
-              :options="popularNationalities.map(c => ({ value: c.code, label: c.name }))"
+              :filter-option="filterCountry"
+              :options="countryOptions"
+              option-filter-prop="label"
             />
           </div>
 
