@@ -6,5 +6,17 @@
     </linearGradient>
   </defs>
   <rect width="100" height="100" rx="20" fill="url(#grad)"/>
-  <text x="50" y="65" font-size="50" text-anchor="middle" dominant-baseline="middle">🌴</text>
+  <!-- Palm tree trunk -->
+  <path d="M50 88 Q45 70 48 55 Q50 45 52 55 Q55 70 50 88 Z" fill="white"/>
+  <!-- Palm fronds -->
+  <path d="M50 52 Q35 45 18 50 Q32 40 50 45 Z" fill="white"/>
+  <path d="M50 52 Q30 35 15 28 Q30 30 50 42 Z" fill="white"/>
+  <path d="M50 52 Q45 30 40 12 Q50 28 54 42 Z" fill="white"/>
+  <path d="M50 52 Q55 30 60 12 Q50 28 46 42 Z" fill="white"/>
+  <path d="M50 52 Q70 35 85 28 Q70 30 50 42 Z" fill="white"/>
+  <path d="M50 52 Q65 45 82 50 Q68 40 50 45 Z" fill="white"/>
+  <!-- Coconuts -->
+  <circle cx="46" cy="50" r="4" fill="white"/>
+  <circle cx="54" cy="50" r="4" fill="white"/>
+  <circle cx="50" cy="54" r="4" fill="white"/>
 </svg>
