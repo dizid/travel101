@@ -11,7 +11,7 @@ const props = defineProps<{
   matchReason?: string
 }>()
 
-const categoryConfig: Record<AttractionCategory, { icon: string; label: string; color: string }> = {
+const categoryConfig: Partial<Record<AttractionCategory, { icon: string; label: string; color: string }>> = {
   beach: { icon: '🏖️', label: 'Beach', color: 'bg-blue-100 text-blue-700' },
   culture: { icon: '🏛️', label: 'Culture', color: 'bg-purple-100 text-purple-700' },
   nightlife: { icon: '🌙', label: 'Nightlife', color: 'bg-pink-100 text-pink-700' },
@@ -27,7 +27,8 @@ const categoryConfig: Record<AttractionCategory, { icon: string; label: string; 
   luxury: { icon: '✨', label: 'Luxury', color: 'bg-yellow-100 text-yellow-700' },
 }
 
-const config = computed(() => categoryConfig[props.attraction.category] || categoryConfig.culture)
+const defaultConfig = { icon: '📍', label: 'Place', color: 'bg-gray-100 text-gray-700' }
+const config = computed(() => categoryConfig[props.attraction.category] || defaultConfig)
 
 // Generate a placeholder gradient based on category
 const gradientClass = computed(() => {
