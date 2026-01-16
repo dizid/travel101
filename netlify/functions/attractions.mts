@@ -17,6 +17,12 @@ interface Attraction {
   categories: Record<string, number>
   created_at: string
   updated_at: string
+  // New fields for place types
+  place_type: string
+  metadata: Record<string, unknown>
+  external_ids: Record<string, string>
+  data_source: string | null
+  verification_status: string
 }
 
 interface AttractionTip {
@@ -99,41 +105,65 @@ async function handleList(req: Request, db: ReturnType<typeof getDb>, url: URL) 
   const category = url.searchParams.get('category')
   const hiddenGemsOnly = url.searchParams.get('hidden_gems') === 'true'
   const province = url.searchParams.get('province')
+  const placeType = url.searchParams.get('place_type')
   const personalized = url.searchParams.get('personalized') === 'true'
   const limit = Math.min(parseInt(url.searchParams.get('limit') || '50'), 100)
   const offset = parseInt(url.searchParams.get('offset') || '0')
 
-  // Build query conditions
+  // Build query with dynamic conditions
   let attractions: Attraction[]
 
-  if (category && hiddenGemsOnly) {
-    attractions = await db`
-      SELECT * FROM attractions
-      WHERE category = ${category} AND is_hidden_gem = true
-      ORDER BY name
-      LIMIT ${limit} OFFSET ${offset}
-    `
-  } else if (category) {
-    attractions = await db`
-      SELECT * FROM attractions
-      WHERE category = ${category}
-      ORDER BY name
-      LIMIT ${limit} OFFSET ${offset}
-    `
-  } else if (hiddenGemsOnly) {
-    attractions = await db`
-      SELECT * FROM attractions
-      WHERE is_hidden_gem = true
-      ORDER BY name
-      LIMIT ${limit} OFFSET ${offset}
-    `
-  } else if (province) {
-    attractions = await db`
-      SELECT * FROM attractions
-      WHERE province = ${province}
-      ORDER BY name
-      LIMIT ${limit} OFFSET ${offset}
-    `
+  // Build WHERE conditions array
+  const conditions: string[] = []
+  if (category) conditions.push(`category = '${category}'`)
+  if (hiddenGemsOnly) conditions.push(`is_hidden_gem = true`)
+  if (province) conditions.push(`province = '${province}'`)
+  if (placeType) conditions.push(`place_type = '${placeType}'`)
+
+  if (conditions.length > 0) {
+    // Use parameterized query for safety
+    if (placeType && !category && !hiddenGemsOnly && !province) {
+      attractions = await db`
+        SELECT * FROM attractions
+        WHERE place_type = ${placeType}
+        ORDER BY name
+        LIMIT ${limit} OFFSET ${offset}
+      `
+    } else if (category && hiddenGemsOnly) {
+      attractions = await db`
+        SELECT * FROM attractions
+        WHERE category = ${category} AND is_hidden_gem = true
+        ORDER BY name
+        LIMIT ${limit} OFFSET ${offset}
+      `
+    } else if (category) {
+      attractions = await db`
+        SELECT * FROM attractions
+        WHERE category = ${category}
+        ORDER BY name
+        LIMIT ${limit} OFFSET ${offset}
+      `
+    } else if (hiddenGemsOnly) {
+      attractions = await db`
+        SELECT * FROM attractions
+        WHERE is_hidden_gem = true
+        ORDER BY name
+        LIMIT ${limit} OFFSET ${offset}
+      `
+    } else if (province) {
+      attractions = await db`
+        SELECT * FROM attractions
+        WHERE province = ${province}
+        ORDER BY name
+        LIMIT ${limit} OFFSET ${offset}
+      `
+    } else {
+      attractions = await db`
+        SELECT * FROM attractions
+        ORDER BY name
+        LIMIT ${limit} OFFSET ${offset}
+      `
+    }
   } else {
     attractions = await db`
       SELECT * FROM attractions
