@@ -57,4 +57,4 @@ functions/           # Netlify serverless functions (user.js, ai.js, countries.j
 - Use clear comments only when logic isn't self-evident
 - Keep existing working code intact when adding features
 - Prefer editing existing files over creating new ones
-- Use the Supabase and Stripe MCP servers for database/payment operations
+- Use the Neon and Stripe MCP servers for database/payment operations
