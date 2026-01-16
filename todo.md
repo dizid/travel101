@@ -22,16 +22,26 @@ Expand from 15 attractions to 1000s of places (attractions, courses, tours, acti
 - [x] Support for `enrich_single`, `enrich_batch`, `get_pending` actions
 
 ### Phase 3: Google Places Ingestion ⏳ NEEDS API KEY
-- [ ] Set up Google Places API key
+- [x] Create `/api/google-places` ingestion function
+- [ ] Set up Google Places API key (https://console.cloud.google.com → Enable Places API)
 - [ ] Ingest top Thailand attractions (temples, parks, landmarks)
 - [ ] Ingest restaurants in major cities
 - [ ] Run AI enrichment on ingested places
 
-### Phase 4: Viator Integration 🔄 IN PROGRESS
-- [ ] Create Viator API integration (free affiliate)
-- [ ] Ingest tours, courses, activities
+### Phase 4: Viator Integration ⏳ NEEDS API KEY
+- [x] Create ingest-places.mts function
+- [x] Add sample data (5 courses, 4 tours, 3 activities, 3 coworking) - 29 total places
+- [ ] Apply for Viator affiliate (https://viator.com/affiliates) - takes 1-3 days
+- [ ] Ingest Viator tours, courses, activities
 - [ ] Map Viator categories to our taxonomy
 - [ ] Add affiliate booking links
+
+### API Keys Status 🔑
+| Key | Status | Action |
+|-----|--------|--------|
+| ANTHROPIC_API_KEY | ✅ Configured | AI enrichment ready |
+| GOOGLE_PLACES_API_KEY | ✅ Configured | Ready for Google Places ingestion |
+| VIATOR_API_KEY | ✅ Configured | Ready for Viator integration |
 
 ### Phase 5: Matching Algorithm Updates ⏳ PENDING
 - [ ] Add type-specific weight modifiers

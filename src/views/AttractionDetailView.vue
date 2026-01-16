@@ -29,6 +29,7 @@ import {
   BulbOutlined,
 } from '@ant-design/icons-vue'
 import type { TipType, SecretType, RecommendationType } from '@/types'
+import { generateAffiliateUrl, trackAffiliateClick } from '@/utils/affiliates'
 
 const route = useRoute()
 const countryStore = useCountryStore()
@@ -159,6 +160,22 @@ const categoryLabels: Record<string, { icon: string; label: string }> = {
   romantic: { icon: '💕', label: 'Romantic' },
   budget: { icon: '💰', label: 'Budget' },
   luxury: { icon: '✨', label: 'Luxury' },
+}
+
+// Affiliate links
+const klookUrl = computed(() => {
+  if (!attraction.value) return '#'
+  return generateAffiliateUrl('klook', attraction.value.province || 'Thailand', attraction.value.name)
+})
+
+const agodaUrl = computed(() => {
+  if (!attraction.value) return '#'
+  return generateAffiliateUrl('agoda', attraction.value.province || 'Thailand')
+})
+
+function handleAffiliateClick(partner: 'klook' | 'agoda', url: string) {
+  trackAffiliateClick(partner, attraction.value?.province || 'Thailand', attraction.value?.slug)
+  window.open(url, '_blank', 'noopener,noreferrer')
 }
 
 const gradientClass = computed(() => {
@@ -499,12 +516,12 @@ const gradientClass = computed(() => {
             <p class="text-sm text-gray-600 mb-4">
               Find tours and experiences in {{ attraction.name }}.
             </p>
-            <a
-              href="#"
+            <button
+              @click="handleAffiliateClick('klook', klookUrl)"
               class="btn-thai w-full justify-center"
             >
               View on Klook
-            </a>
+            </button>
             <p class="text-xs text-gray-400 mt-2 text-center">Affiliate link</p>
           </div>
 
@@ -514,12 +531,12 @@ const gradientClass = computed(() => {
             <p class="text-sm text-gray-600 mb-4">
               Best places to stay in {{ attraction.province }}.
             </p>
-            <a
-              href="#"
+            <button
+              @click="handleAffiliateClick('agoda', agodaUrl)"
               class="btn-accent w-full justify-center"
             >
               View on Agoda
-            </a>
+            </button>
             <p class="text-xs text-gray-400 mt-2 text-center">Affiliate link</p>
           </div>
 
