@@ -13,8 +13,9 @@ import type {
   AttractionDetailResponse,
   AttractionMatch,
 } from '@/types'
+import { getVisaEligibility, isVisaExempt, isVoaEligible, isWorkingHolidayEligible, OFFICIAL_RESOURCES } from '@/data/visaEligibility'
 
-// Thailand visa types data (VERIFIED January 2025)
+// Thailand visa types data (VERIFIED January 2026)
 const thailandVisaTypes: VisaType[] = [
   {
     id: 'visa-exemption',
@@ -36,10 +37,11 @@ const thailandVisaTypes: VisaType[] = [
     entryType: 'multiple',
     notes: [
       'Land border entries: MAX 2 per calendar year',
-      'Visa runs: MAX 2 per year (Nov 2025 crackdown)',
+      'Strict enforcement: Immigration actively denying entries to suspected overstayers',
       'Land entries are NOT eligible for extension',
       'Same-day re-entries NOT eligible for extension',
     ],
+    officialUrl: OFFICIAL_RESOURCES.immigration,
   },
   {
     id: 'tourist-visa',
@@ -197,6 +199,88 @@ const thailandVisaTypes: VisaType[] = [
       'VIP airport fast-track, lounge access, limousine service',
       'No 90-day reporting required for Elite members',
     ],
+    officialUrl: 'https://www.thailandprivilege.com',
+  },
+  {
+    id: 'voa',
+    code: 'VOA',
+    name: 'Visa on Arrival',
+    duration: 15,
+    description: 'Quick visa for short stays. Available at Thai airports for citizens of eligible countries. NOT extendable.',
+    requirements: [
+      'Valid passport (6+ months validity)',
+      'Return flight within 15 days',
+      'Proof of accommodation',
+      'Proof of funds (10,000 THB individual / 20,000 THB family)',
+      'Passport photo (4x6 cm)',
+      'Visa fee: 2,000 THB (cash only)',
+    ],
+    extendable: false,
+    forProfiles: [{ tripType: 'holiday' }],
+    entryType: 'single',
+    notes: [
+      'Available for China, India, Taiwan, Russia, and 18 other countries',
+      'NOT available for visa-exempt countries (they get 60 days free)',
+      'NOT extendable - must leave within 15 days',
+      'Can be slow during peak times - arrive early at airport',
+      'Cash only for visa fee at immigration counter',
+    ],
+    officialUrl: OFFICIAL_RESOURCES.immigration,
+  },
+  {
+    id: 'education-visa',
+    code: 'ED',
+    name: 'Education Visa (Non-ED)',
+    duration: 90,
+    description: 'For studying Thai language, martial arts, cooking, or other courses at approved schools. Extendable for course duration.',
+    requirements: [
+      'Valid passport (6+ months validity)',
+      'Acceptance letter from MoE-approved school',
+      'School registration documents',
+      'Proof of funds',
+      'Passport photos',
+    ],
+    extendable: true,
+    extensionDays: 90,
+    extensionFee: 1900,
+    forProfiles: [{ tripType: 'holiday' }, { tripType: 'digital_nomad' }],
+    reportingInterval: 90,
+    entryType: 'single',
+    notes: [
+      'Popular for Thai language schools (1 year programs)',
+      'Muay Thai training also qualifies',
+      'Cooking schools may qualify if registered with MoE',
+      'Must attend classes - immigration checks attendance',
+      '90-day reporting required',
+      'Can study part-time and work on tourist-related activities (check restrictions)',
+    ],
+    officialUrl: OFFICIAL_RESOURCES.mfa,
+  },
+  {
+    id: 'working-holiday',
+    code: 'WH',
+    name: 'Working Holiday Visa',
+    duration: 365,
+    description: 'For young travelers (18-30) from eligible countries to work and travel in Thailand for up to 1 year.',
+    requirements: [
+      'Age 18-30 (some countries 18-35)',
+      'Passport from eligible country (Australia, NZ, Canada, France, etc.)',
+      'No dependent children',
+      'Return flight or proof of funds for return',
+      'Health insurance for duration',
+      'Clean criminal record',
+    ],
+    extendable: false,
+    forProfiles: [{ tripType: 'digital_nomad' }],
+    entryType: 'single',
+    notes: [
+      'Eligible countries: Australia, New Zealand, Canada, France, South Korea, Hong Kong, Israel',
+      'Can work for Thai employers (unlike DTV)',
+      'Limited quota each year - apply early',
+      'Must apply at Thai embassy before travel',
+      'One-time visa - cannot repeat',
+    ],
+    officialUrl: OFFICIAL_RESOURCES.mfa,
   },
 ]
 
@@ -346,30 +430,100 @@ export const useCountryStore = defineStore('country', () => {
   )
 
   // Actions
-  function getVisaForProfile(_nationality: string, tripType: string, duration: number, ageGroup?: string): VisaType | null {
+  function getVisaForProfile(
+    nationality: string,
+    tripType: string,
+    duration: number,
+    ageGroup?: string
+  ): { visa: VisaType | null; warning?: string; alternatives?: VisaType[] } {
+    const eligibility = getVisaEligibility(nationality)
+
     // Retirement Visa for 50+ choosing long-term stay
     if (tripType === 'expat' && ageGroup === 'senior') {
-      return visaTypes.value.find((v) => v.code === 'Non-O') || null
+      const visa = visaTypes.value.find((v) => v.code === 'Non-O') || null
+      return { visa }
+    }
+
+    // Working Holiday for eligible young travelers from specific countries
+    if (tripType === 'digital_nomad' && isWorkingHolidayEligible(nationality)) {
+      const whVisa = visaTypes.value.find((v) => v.code === 'WH')
+      const dtvVisa = visaTypes.value.find((v) => v.code === 'DTV')
+      if (whVisa && dtvVisa) {
+        return {
+          visa: whVisa,
+          alternatives: [dtvVisa],
+        }
+      }
     }
 
     // Digital Nomad Visa for remote workers
     if (tripType === 'digital_nomad') {
-      return visaTypes.value.find((v) => v.code === 'DTV') || null
+      const visa = visaTypes.value.find((v) => v.code === 'DTV') || null
+      return { visa }
     }
 
-    // Duration-based recommendations for tourists
-    if (duration <= 30) {
-      return visaTypes.value.find((v) => v.code === 'VE') || null
-    }
-    if (duration <= 60) {
-      return visaTypes.value.find((v) => v.code === 'TR') || null
-    }
-    if (duration <= 90) {
-      return visaTypes.value.find((v) => v.code === 'STV') || null
+    // Check nationality eligibility for visa exemption
+    if (isVisaExempt(nationality)) {
+      // Visa-exempt country
+      if (duration <= 60) {
+        const visa = visaTypes.value.find((v) => v.code === 'VE') || null
+        return { visa }
+      }
+      if (duration <= 90) {
+        // Visa exemption + extension (60 + 30)
+        const visa = visaTypes.value.find((v) => v.code === 'VE') || null
+        return {
+          visa,
+          warning: 'Requires 30-day extension at immigration office (฿1,900)',
+        }
+      }
+      // Over 90 days - need Tourist Visa or DTV
+      if (duration <= 120) {
+        const trVisa = visaTypes.value.find((v) => v.code === 'TR') || null
+        const dtvVisa = visaTypes.value.find((v) => v.code === 'DTV')
+        return {
+          visa: trVisa,
+          warning: 'Tourist Visa with extension recommended for this duration',
+          alternatives: dtvVisa ? [dtvVisa] : undefined,
+        }
+      }
+    } else if (isVoaEligible(nationality)) {
+      // VOA-only country (China, India, etc.)
+      if (duration <= 15) {
+        const visa = visaTypes.value.find((v) => v.code === 'VOA') || null
+        return {
+          visa,
+          warning: eligibility?.notes || 'Visa on Arrival: 15 days, ฿2,000 fee, NOT extendable',
+        }
+      }
+      // Need Tourist Visa for longer stays
+      const trVisa = visaTypes.value.find((v) => v.code === 'TR') || null
+      return {
+        visa: trVisa,
+        warning: 'Your country requires Tourist Visa for stays over 15 days. Apply at Thai embassy before travel.',
+      }
+    } else {
+      // Visa required - must apply at embassy
+      const trVisa = visaTypes.value.find((v) => v.code === 'TR') || null
+      return {
+        visa: trVisa,
+        warning: 'Your country requires visa application at Thai embassy before travel. No visa exemption or VOA available.',
+      }
     }
 
-    // Long-term stay for younger travelers → DTV or Elite
-    return visaTypes.value.find((v) => v.code === 'DTV') || null
+    // Long-term stay for anyone → DTV or Elite
+    const dtvVisa = visaTypes.value.find((v) => v.code === 'DTV') || null
+    const edVisa = visaTypes.value.find((v) => v.code === 'ED')
+    return {
+      visa: dtvVisa,
+      alternatives: edVisa ? [edVisa] : undefined,
+    }
+  }
+
+  // Legacy function for backwards compatibility (returns just the visa)
+  function getVisaForProfileSimple(nationality: string, tripType: string, duration: number, ageGroup?: string): VisaType | null {
+    const result = getVisaForProfile(nationality, tripType, duration, ageGroup)
+    return result.visa
   }
 
   // Fetch attractions from API
@@ -553,6 +707,7 @@ export const useCountryStore = defineStore('country', () => {
     criticalWarnings,
     // Actions
     getVisaForProfile,
+    getVisaForProfileSimple,
     fetchAttractions,
     fetchAttractionBySlug,
     fetchMatchedAttractions,

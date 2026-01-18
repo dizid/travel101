@@ -83,6 +83,14 @@ export interface VisaType {
   renewalInfo?: string          // Annual renewal info
   entryType?: 'single' | 'multiple'
   notes?: string[]              // Important caveats
+  officialUrl?: string          // Link to official immigration/MFA source
+}
+
+// Visa recommendation result with nationality-aware warnings
+export interface VisaRecommendation {
+  visa: VisaType | null
+  warning?: string              // Nationality-specific warning
+  alternatives?: VisaType[]     // Other visa options to consider
 }
 
 export interface VisaWizardState {

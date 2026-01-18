@@ -1,18 +1,30 @@
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useApi } from './useApi'
 import { useUserStore } from '@/stores/userStore'
 
-interface AIMessage {
+export interface AIMessage {
   role: 'user' | 'assistant'
   content: string
+  timestamp?: string
 }
 
 interface AIResponse {
   response: string
+  conversationId?: string
   usage: {
     inputTokens: number
     outputTokens: number
   }
+}
+
+interface AIConversation {
+  id: string
+  conversation_type: string
+  context_slug: string | null
+  title: string
+  messages: AIMessage[]
+  created_at: string
+  updated_at: string
 }
 
 // Cache configuration
@@ -55,21 +67,68 @@ function evictOldestIfNeeded() {
 }
 
 export function useAI() {
-  const { post, loading, error } = useApi()
+  const { get, post, del, loading, error } = useApi()
   const userStore = useUserStore()
   const conversationHistory = ref<AIMessage[]>([])
+  const conversationId = ref<string | null>(null)
+  const conversationLoaded = ref(false)
 
   // Attraction-specific conversation history (keyed by slug)
   const attractionHistory = ref<Map<string, AIMessage[]>>(new Map())
 
-  async function ask(message: string): Promise<string | null> {
+  const isPro = computed(() => userStore.isPro)
+
+  // Load previous conversation from database (Pro feature)
+  async function loadConversation(type = 'general', context?: string): Promise<boolean> {
+    if (!isPro.value) return false
+
+    try {
+      const params = new URLSearchParams({ type })
+      if (context) params.set('context', context)
+
+      const result = await get<{ conversation: AIConversation | null }>(`/ai?${params}`)
+      if (result?.conversation) {
+        conversationHistory.value = result.conversation.messages.map(msg => ({
+          role: msg.role,
+          content: msg.content,
+        }))
+        conversationId.value = result.conversation.id
+        conversationLoaded.value = true
+        return true
+      }
+    } catch (e) {
+      console.error('Failed to load conversation:', e)
+    }
+
+    conversationLoaded.value = true
+    return false
+  }
+
+  // Start a new conversation (archive old one)
+  async function startNewConversation(type = 'general', context?: string): Promise<void> {
+    if (isPro.value) {
+      try {
+        const params = new URLSearchParams({ type })
+        if (context) params.set('context', context)
+        await del(`/ai?${params}`)
+      } catch (e) {
+        console.error('Failed to archive old conversation:', e)
+      }
+    }
+
+    conversationHistory.value = []
+    conversationId.value = null
+  }
+
+  async function ask(message: string, persist = true): Promise<string | null> {
     // Truncate history to last N messages to avoid token limits
     const truncatedHistory = conversationHistory.value.slice(-MAX_CONVERSATION_HISTORY)
 
-    const response = await post<AIResponse>('/ai', {
+    const response = await post<AIResponse>('/ai?type=general', {
       message,
       userProfile: userStore.profile.prefs,
       conversationHistory: truncatedHistory,
+      saveToDb: persist && isPro.value,
     })
 
     if (response) {
@@ -77,6 +136,9 @@ export function useAI() {
         { role: 'user', content: message },
         { role: 'assistant', content: response.response }
       )
+      if (response.conversationId) {
+        conversationId.value = response.conversationId
+      }
       return response.response
     }
 
@@ -85,6 +147,7 @@ export function useAI() {
 
   function clearHistory() {
     conversationHistory.value = []
+    conversationId.value = null
   }
 
   // Get AI-generated personalized intro for an attraction
@@ -195,7 +258,12 @@ export function useAI() {
     loading,
     error,
     conversationHistory,
+    conversationId,
+    conversationLoaded,
     clearHistory,
+    loadConversation,
+    startNewConversation,
+    isPro,
     // Attraction-specific AI
     getPersonalizedIntro,
     getTailoredTips,

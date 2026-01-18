@@ -2,6 +2,15 @@ import type { Context, Config } from '@netlify/functions'
 import Anthropic from '@anthropic-ai/sdk'
 import { getDb } from './lib/db.mts'
 
+function requirePro(
+  db: ReturnType<typeof getDb> extends Promise<infer U> ? U : never,
+  userId: string
+): Promise<boolean> {
+  return db
+    .sql`SELECT is_pro FROM user_profiles WHERE user_id = ${userId}`
+    .then((r: { rows: { is_pro: boolean }[] }) => r.rows[0]?.is_pro ?? false)
+}
+
 const SYSTEM_PROMPT = `You are a friendly and knowledgeable Thailand travel advisor. You help travelers with:
 - Visa requirements and recommendations based on nationality and trip type
 - Cultural tips and local customs
@@ -52,6 +61,99 @@ Key facts about Thailand visas (VERIFIED January 2025):
 Always provide accurate information and suggest proper long-term visas instead of visa runs.`
 
 export default async (req: Request, context: Context) => {
+  const userId = req.headers.get('x-user-id')
+  const url = new URL(req.url)
+  const conversationType = url.searchParams.get('type') || 'general'
+  const contextSlug = url.searchParams.get('context') || null
+
+  // GET: Load conversation history
+  if (req.method === 'GET') {
+    if (!userId) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    }
+
+    try {
+      const db = await getDb()
+      const isPro = await requirePro(db, userId)
+
+      if (!isPro) {
+        return new Response(JSON.stringify({ error: 'Pro subscription required' }), {
+          status: 403,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      }
+
+      // Load the most recent non-archived conversation for this type/context
+      const result = await db.sql`
+        SELECT id, conversation_type, context_slug, title, messages, created_at, updated_at
+        FROM ai_conversations
+        WHERE user_id = ${userId}
+          AND conversation_type = ${conversationType}
+          AND (context_slug = ${contextSlug} OR (context_slug IS NULL AND ${contextSlug} IS NULL))
+          AND is_archived = false
+        ORDER BY updated_at DESC
+        LIMIT 1
+      `
+
+      const conversation = result.rows[0] || null
+
+      return new Response(JSON.stringify({ conversation }), {
+        headers: { 'Content-Type': 'application/json' },
+      })
+    } catch (error) {
+      console.error('Load conversation error:', error)
+      return new Response(JSON.stringify({ error: 'Failed to load conversation' }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    }
+  }
+
+  // DELETE: Archive (clear) conversation
+  if (req.method === 'DELETE') {
+    if (!userId) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    }
+
+    try {
+      const db = await getDb()
+      const isPro = await requirePro(db, userId)
+
+      if (!isPro) {
+        return new Response(JSON.stringify({ error: 'Pro subscription required' }), {
+          status: 403,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      }
+
+      // Archive the conversation instead of deleting
+      await db.sql`
+        UPDATE ai_conversations
+        SET is_archived = true, updated_at = NOW()
+        WHERE user_id = ${userId}
+          AND conversation_type = ${conversationType}
+          AND (context_slug = ${contextSlug} OR (context_slug IS NULL AND ${contextSlug} IS NULL))
+          AND is_archived = false
+      `
+
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { 'Content-Type': 'application/json' },
+      })
+    } catch (error) {
+      console.error('Archive conversation error:', error)
+      return new Response(JSON.stringify({ error: 'Failed to archive conversation' }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    }
+  }
+
   if (req.method !== 'POST') {
     return new Response(JSON.stringify({ error: 'Method not allowed' }), {
       status: 405,
@@ -69,7 +171,7 @@ export default async (req: Request, context: Context) => {
 
   try {
     const body = await req.json()
-    const { message, userProfile, conversationHistory = [] } = body
+    const { message, userProfile, conversationHistory = [], saveToDb = false } = body
 
     if (!message) {
       return new Response(JSON.stringify({ error: 'Message is required' }), {
@@ -107,9 +209,66 @@ export default async (req: Request, context: Context) => {
     const contentBlock = response.content[0]
     const assistantMessage = contentBlock.type === 'text' ? contentBlock.text : ''
 
+    // Save to database if Pro user requested persistence
+    let conversationId = null
+    if (saveToDb && userId) {
+      try {
+        const db = await getDb()
+        const isPro = await requirePro(db, userId)
+
+        if (isPro) {
+          // Build updated messages array
+          const updatedMessages = [
+            ...conversationHistory.map((msg: { role: string; content: string }) => ({
+              role: msg.role,
+              content: msg.content,
+              timestamp: new Date().toISOString(),
+            })),
+            { role: 'user', content: message, timestamp: new Date().toISOString() },
+            { role: 'assistant', content: assistantMessage, timestamp: new Date().toISOString() },
+          ]
+
+          // Generate title from first message if needed
+          const title = message.slice(0, 100) + (message.length > 100 ? '...' : '')
+
+          // Find existing active conversation or create new
+          const existing = await db.sql`
+            SELECT id FROM ai_conversations
+            WHERE user_id = ${userId}
+              AND conversation_type = ${conversationType}
+              AND (context_slug = ${contextSlug} OR (context_slug IS NULL AND ${contextSlug} IS NULL))
+              AND is_archived = false
+            LIMIT 1
+          `
+
+          if (existing.rows.length > 0) {
+            // Update existing conversation
+            await db.sql`
+              UPDATE ai_conversations
+              SET messages = ${JSON.stringify(updatedMessages)}::jsonb, updated_at = NOW()
+              WHERE id = ${existing.rows[0].id}
+            `
+            conversationId = existing.rows[0].id
+          } else {
+            // Create new conversation
+            const result = await db.sql`
+              INSERT INTO ai_conversations (user_id, conversation_type, context_slug, title, messages)
+              VALUES (${userId}, ${conversationType}, ${contextSlug}, ${title}, ${JSON.stringify(updatedMessages)}::jsonb)
+              RETURNING id
+            `
+            conversationId = result.rows[0]?.id
+          }
+        }
+      } catch (dbError) {
+        console.error('Failed to save conversation:', dbError)
+        // Don't fail the request, just log the error
+      }
+    }
+
     return new Response(
       JSON.stringify({
         response: assistantMessage,
+        conversationId,
         usage: {
           inputTokens: response.usage.input_tokens,
           outputTokens: response.usage.output_tokens,

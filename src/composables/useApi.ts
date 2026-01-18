@@ -66,7 +66,7 @@ export function useApi() {
       request<T>(endpoint, { ...options, method: 'POST', body }),
     put: <T>(endpoint: string, body: unknown, options?: Omit<ApiOptions, 'method' | 'body'>) =>
       request<T>(endpoint, { ...options, method: 'PUT', body }),
-    del: <T>(endpoint: string, options?: Omit<ApiOptions, 'method'>) =>
-      request<T>(endpoint, { ...options, method: 'DELETE' }),
+    del: <T>(endpoint: string, body?: unknown, options?: Omit<ApiOptions, 'method' | 'body'>) =>
+      request<T>(endpoint, { ...options, method: 'DELETE', body }),
   }
 }

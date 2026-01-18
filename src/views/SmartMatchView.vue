@@ -16,18 +16,33 @@ import {
   LoadingOutlined,
   EnvironmentOutlined,
   StarFilled,
-  PlusOutlined,
+  PlusCircleOutlined,
+  CheckOutlined,
 } from '@ant-design/icons-vue'
 
 const router = useRouter()
 const userStore = useUserStore()
 const countryStore = useCountryStore()
-const { calculateLocalScore, getMatchReason, sortedByMatch, hasProfile } = useMatcher()
+const { calculateLocalScore, getMatchReason, getMatchBreakdown, sortedByMatch, hasProfile } = useMatcher()
 const { get, post, del } = useApi()
+
+import { useItinerary } from '@/composables/useItinerary'
+const {
+  itineraries,
+  fetchItineraries,
+  addActivity,
+} = useItinerary()
 
 const isPro = computed(() => userStore.isPro)
 const loading = ref(true)
 const savingFavorite = ref<string | null>(null)
+
+// Add to Itinerary modal state
+const showAddToTripModal = ref(false)
+const selectedAttractionForTrip = ref<{ slug: string; name: string; score: number } | null>(null)
+const selectedItineraryId = ref<string>('')
+const selectedDayId = ref<string>('')
+const addingToTrip = ref(false)
 
 // Filters
 const minScore = ref(0)
@@ -50,6 +65,13 @@ const categories = [
 // Favorites stored as Set of slugs (synced with DB)
 const favorites = ref<Set<string>>(new Set())
 
+// Match breakdown expanded state
+const expandedBreakdown = ref<string | null>(null)
+
+function toggleBreakdown(slug: string) {
+  expandedBreakdown.value = expandedBreakdown.value === slug ? null : slug
+}
+
 async function loadFavorites() {
   if (!isPro.value) return
   const result = await get<{ slugs: string[] }>('/matches')
@@ -67,6 +89,7 @@ onMounted(async () => {
 
   if (isPro.value) {
     promises.push(loadFavorites())
+    promises.push(fetchItineraries())
   }
 
   await Promise.all(promises)
@@ -143,6 +166,36 @@ function isFavorite(slug: string) {
 
 function goToAttraction(slug: string) {
   router.push(`/attractions/${slug}`)
+}
+
+// Add to Itinerary functions
+function openAddToTripModal(slug: string, name: string, score: number) {
+  selectedAttractionForTrip.value = { slug, name, score }
+  selectedItineraryId.value = itineraries.value[0]?.id || ''
+  selectedDayId.value = ''
+  showAddToTripModal.value = true
+}
+
+const selectedItinerary = computed(() => {
+  return itineraries.value.find(it => it.id === selectedItineraryId.value)
+})
+
+async function handleAddToTrip() {
+  if (!selectedAttractionForTrip.value || !selectedDayId.value) return
+
+  addingToTrip.value = true
+  try {
+    await addActivity(selectedDayId.value, {
+      title: selectedAttractionForTrip.value.name,
+      attractionSlug: selectedAttractionForTrip.value.slug,
+      activityType: 'attraction',
+      description: `${selectedAttractionForTrip.value.score}% match`,
+    })
+    showAddToTripModal.value = false
+    selectedAttractionForTrip.value = null
+  } finally {
+    addingToTrip.value = false
+  }
 }
 
 function getScoreColor(score: number) {
@@ -403,6 +456,51 @@ function getScoreBgColor(score: number) {
               <p v-if="match.reason" class="text-sm text-green-600 font-medium">
                 {{ match.reason }}
               </p>
+
+              <!-- Why This Match? -->
+              <button
+                @click.stop="toggleBreakdown(match.attraction.slug)"
+                class="mt-2 text-xs text-gray-400 hover:text-pink-500 transition-colors"
+              >
+                {{ expandedBreakdown === match.attraction.slug ? 'Hide breakdown' : 'Why this match?' }}
+              </button>
+
+              <div
+                v-if="expandedBreakdown === match.attraction.slug"
+                class="mt-3 p-3 rounded-lg bg-gray-50 border border-gray-100"
+                @click.stop
+              >
+                <div class="space-y-2">
+                  <div
+                    v-for="factor in getMatchBreakdown(match.attraction).factors.slice(0, 4)"
+                    :key="factor.label"
+                    class="flex items-center gap-2"
+                  >
+                    <div class="flex-1">
+                      <div class="flex items-center justify-between text-xs mb-1">
+                        <span class="text-gray-600">{{ factor.label }}</span>
+                        <span class="font-medium text-gray-900">+{{ factor.contribution }}%</span>
+                      </div>
+                      <div class="h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                        <div
+                          class="h-full bg-gradient-to-r from-pink-400 to-rose-500 rounded-full"
+                          :style="{ width: `${factor.strength}%` }"
+                        ></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Add to Trip button -->
+              <button
+                v-if="itineraries.length > 0"
+                @click.stop="openAddToTripModal(match.attraction.slug, match.attraction.name, match.score)"
+                class="mt-3 w-full py-2 px-3 rounded-lg bg-primary-50 text-primary-700 text-sm font-medium flex items-center justify-center gap-2 hover:bg-primary-100 transition-colors"
+              >
+                <PlusCircleOutlined />
+                Add to Itinerary
+              </button>
             </div>
           </div>
         </div>
@@ -445,6 +543,41 @@ function getScoreBgColor(score: number) {
               </h4>
               <p class="text-sm text-gray-500 mb-2">{{ match.attraction.province }}</p>
               <p v-if="match.reason" class="text-sm text-blue-600">{{ match.reason }}</p>
+
+              <!-- Why This Match? -->
+              <button
+                @click.stop="toggleBreakdown(match.attraction.slug)"
+                class="mt-2 text-xs text-gray-400 hover:text-pink-500 transition-colors"
+              >
+                {{ expandedBreakdown === match.attraction.slug ? 'Hide breakdown' : 'Why this match?' }}
+              </button>
+
+              <div
+                v-if="expandedBreakdown === match.attraction.slug"
+                class="mt-3 p-3 rounded-lg bg-gray-50 border border-gray-100"
+                @click.stop
+              >
+                <div class="space-y-2">
+                  <div
+                    v-for="factor in getMatchBreakdown(match.attraction).factors.slice(0, 4)"
+                    :key="factor.label"
+                    class="flex items-center gap-2"
+                  >
+                    <div class="flex-1">
+                      <div class="flex items-center justify-between text-xs mb-1">
+                        <span class="text-gray-600">{{ factor.label }}</span>
+                        <span class="font-medium text-gray-900">+{{ factor.contribution }}%</span>
+                      </div>
+                      <div class="h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                        <div
+                          class="h-full bg-gradient-to-r from-blue-400 to-indigo-500 rounded-full"
+                          :style="{ width: `${factor.strength}%` }"
+                        ></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -461,8 +594,18 @@ function getScoreBgColor(score: number) {
               v-for="match in goodMatches"
               :key="match.attraction.slug"
               @click="goToAttraction(match.attraction.slug)"
-              class="p-4 bg-white rounded-xl border border-gray-100 cursor-pointer hover:shadow-md transition-all group"
+              class="p-4 bg-white rounded-xl border border-gray-100 cursor-pointer hover:shadow-md transition-all group relative"
             >
+              <button
+                @click.stop="toggleFavorite(match.attraction.slug, match.score, match.reason)"
+                :disabled="savingFavorite === match.attraction.slug"
+                class="absolute top-2 right-2 p-1.5 rounded-full bg-gray-50 hover:bg-gray-100 transition-colors disabled:opacity-50"
+              >
+                <LoadingOutlined v-if="savingFavorite === match.attraction.slug" class="text-gray-400 animate-spin text-xs" />
+                <HeartFilled v-else-if="isFavorite(match.attraction.slug)" class="text-red-500 text-xs" />
+                <HeartOutlined v-else class="text-gray-400 text-xs" />
+              </button>
+
               <div class="flex items-center justify-between mb-2">
                 <span :class="['text-sm font-medium', getScoreBgColor(match.score).split(' ')[1]]">
                   {{ match.score }}%
@@ -473,6 +616,29 @@ function getScoreBgColor(score: number) {
                 {{ match.attraction.name }}
               </h4>
               <p class="text-xs text-gray-400">{{ match.attraction.province }}</p>
+
+              <!-- Why This Match? (compact) -->
+              <button
+                @click.stop="toggleBreakdown(match.attraction.slug)"
+                class="mt-1 text-xs text-gray-400 hover:text-amber-500 transition-colors"
+              >
+                {{ expandedBreakdown === match.attraction.slug ? '−' : '+' }} Why?
+              </button>
+
+              <div
+                v-if="expandedBreakdown === match.attraction.slug"
+                class="mt-2 space-y-1"
+                @click.stop
+              >
+                <div
+                  v-for="factor in getMatchBreakdown(match.attraction).factors.slice(0, 3)"
+                  :key="factor.label"
+                  class="flex items-center justify-between text-xs"
+                >
+                  <span class="text-gray-500">{{ factor.label }}</span>
+                  <span class="font-medium text-amber-600">+{{ factor.contribution }}%</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -485,5 +651,89 @@ function getScoreBgColor(score: number) {
         </div>
       </div>
     </div>
+
+    <!-- Add to Itinerary Modal -->
+    <Transition
+      enter-active-class="transition-opacity duration-200"
+      enter-from-class="opacity-0"
+      leave-active-class="transition-opacity duration-200"
+      leave-to-class="opacity-0"
+    >
+      <div
+        v-if="showAddToTripModal && selectedAttractionForTrip"
+        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
+        @click.self="showAddToTripModal = false"
+      >
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full">
+          <div class="p-6">
+            <div class="flex items-center gap-3 mb-6">
+              <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center text-white">
+                <PlusCircleOutlined class="text-xl" />
+              </div>
+              <div>
+                <h2 class="text-xl font-bold text-gray-900">Add to Itinerary</h2>
+                <p class="text-sm text-gray-500">{{ selectedAttractionForTrip.name }}</p>
+              </div>
+            </div>
+
+            <!-- Select Itinerary -->
+            <div class="mb-4">
+              <label class="block text-sm font-medium text-gray-700 mb-2">Select Itinerary</label>
+              <select v-model="selectedItineraryId" class="input-thai">
+                <option v-for="it in itineraries" :key="it.id" :value="it.id">
+                  {{ it.name }}
+                </option>
+              </select>
+            </div>
+
+            <!-- Select Day -->
+            <div class="mb-6">
+              <label class="block text-sm font-medium text-gray-700 mb-2">Select Day</label>
+              <div v-if="selectedItinerary?.days?.length" class="grid grid-cols-2 gap-2">
+                <button
+                  v-for="day in selectedItinerary.days"
+                  :key="day.id"
+                  @click="selectedDayId = day.id"
+                  :class="[
+                    'p-3 rounded-lg border-2 text-left transition-all',
+                    selectedDayId === day.id
+                      ? 'border-primary-500 bg-primary-50'
+                      : 'border-gray-200 hover:border-primary-200'
+                  ]"
+                >
+                  <p class="font-medium text-gray-900">Day {{ day.dayNumber }}</p>
+                  <p class="text-xs text-gray-500">{{ day.location }}</p>
+                </button>
+              </div>
+              <p v-else class="text-sm text-gray-500 text-center py-4">
+                No days in this itinerary yet.
+                <RouterLink :to="`/itinerary?id=${selectedItineraryId}`" class="text-primary-600 hover:underline">
+                  Add days first
+                </RouterLink>
+              </p>
+            </div>
+
+            <!-- Actions -->
+            <div class="flex gap-3">
+              <button
+                @click="showAddToTripModal = false"
+                class="flex-1 btn-thai-outline"
+              >
+                Cancel
+              </button>
+              <button
+                @click="handleAddToTrip"
+                :disabled="!selectedDayId || addingToTrip"
+                class="flex-1 btn-thai flex items-center justify-center gap-2"
+              >
+                <LoadingOutlined v-if="addingToTrip" class="animate-spin" />
+                <CheckOutlined v-else />
+                {{ addingToTrip ? 'Adding...' : 'Add to Day' }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Transition>
   </div>
 </template>

@@ -2,7 +2,7 @@
 import { ref, computed, watch } from 'vue'
 import { useUserStore } from '@stores/userStore'
 import { useCountryStore } from '@stores/countryStore'
-import type { VisaWizardState, ChecklistItem } from '@/types'
+import type { VisaWizardState, ChecklistItem, VisaRecommendation } from '@/types'
 import { countryOptions, filterCountry } from '@/data/countries'
 import {
   CheckCircleFilled,
@@ -13,6 +13,9 @@ import {
   CalendarOutlined,
   SafetyOutlined,
   CrownOutlined,
+  LinkOutlined,
+  WarningOutlined,
+  InfoCircleOutlined,
 } from '@ant-design/icons-vue'
 
 const userStore = useUserStore()
@@ -102,8 +105,8 @@ const canProceed = computed(() => {
   }
 })
 
-// Get visa recommendation
-const recommendedVisa = computed(() => {
+// Get visa recommendation with nationality-aware warnings and alternatives
+const visaResult = computed<VisaRecommendation>(() => {
   return countryStore.getVisaForProfile(
     wizardState.value.nationality,
     wizardState.value.tripPurpose,
@@ -111,6 +114,11 @@ const recommendedVisa = computed(() => {
     wizardState.value.ageGroup
   )
 })
+
+// Get the recommended visa and related info from the result
+const recommendedVisa = computed(() => visaResult.value.visa)
+const visaWarning = computed(() => visaResult.value.warning)
+const visaAlternatives = computed(() => visaResult.value.alternatives || [])
 
 // Generate checklist based on visa type
 const checklist = computed<ChecklistItem[]>(() => {
@@ -469,6 +477,17 @@ watch(
             </div>
           </div>
 
+          <!-- Nationality-specific warning -->
+          <div v-if="visaWarning" class="bg-amber-50 border-2 border-amber-300 rounded-xl p-5 mb-6">
+            <div class="flex items-start gap-3">
+              <WarningOutlined class="text-2xl text-amber-600 mt-0.5" />
+              <div>
+                <h4 class="font-bold text-amber-800 text-lg">Important Notice</h4>
+                <p class="text-amber-700 mt-2">{{ visaWarning }}</p>
+              </div>
+            </div>
+          </div>
+
           <div v-if="recommendedVisa" class="bg-gradient-to-br from-primary-50 to-accent-50 rounded-2xl p-6 mb-6">
             <div class="flex items-center gap-2 mb-2">
               <span class="text-3xl">🛂</span>
@@ -491,6 +510,19 @@ watch(
               </div>
             </div>
 
+            <!-- Official source link -->
+            <div v-if="recommendedVisa.officialUrl" class="mt-4">
+              <a
+                :href="recommendedVisa.officialUrl"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="inline-flex items-center gap-2 text-sm text-primary-600 hover:text-primary-700 underline"
+              >
+                <LinkOutlined />
+                Official immigration info
+              </a>
+            </div>
+
             <!-- Renewal info for long-term visas -->
             <div v-if="recommendedVisa.renewalInfo" class="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
               <p class="text-sm text-green-800">
@@ -506,12 +538,49 @@ watch(
             </div>
           </div>
 
+          <!-- Alternative visa options -->
+          <div v-if="visaAlternatives.length > 0" class="bg-gray-50 border border-gray-200 rounded-xl p-5 mb-6">
+            <div class="flex items-center gap-2 mb-4">
+              <InfoCircleOutlined class="text-blue-500" />
+              <h4 class="font-semibold text-gray-900">Other Options to Consider</h4>
+            </div>
+            <div class="space-y-3">
+              <div
+                v-for="alt in visaAlternatives"
+                :key="alt.id"
+                class="p-4 bg-white border border-gray-100 rounded-lg"
+              >
+                <div class="flex items-start justify-between">
+                  <div>
+                    <h5 class="font-medium text-gray-900">{{ alt.name }}</h5>
+                    <p class="text-sm text-gray-600 mt-1">{{ alt.description }}</p>
+                    <div class="flex flex-wrap gap-3 mt-2 text-xs text-gray-500">
+                      <span>{{ alt.duration }} days</span>
+                      <span v-if="alt.extendable">Extendable</span>
+                      <span v-if="alt.entryType === 'multiple'">Multiple entry</span>
+                    </div>
+                  </div>
+                  <a
+                    v-if="alt.officialUrl"
+                    :href="alt.officialUrl"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="text-primary-500 hover:text-primary-600"
+                    title="Official info"
+                  >
+                    <LinkOutlined />
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <!-- Border Run Crackdown Warning -->
           <div v-if="showBorderRunWarning" class="bg-red-50 border-2 border-red-300 rounded-xl p-5 mb-6">
             <div class="flex items-start gap-3">
               <span class="text-2xl">🚫</span>
               <div>
-                <h4 class="font-bold text-red-800 text-lg">Border Run Crackdown (Nov 2025)</h4>
+                <h4 class="font-bold text-red-800 text-lg">Immigration Crackdown Active</h4>
                 <p class="text-red-700 mt-2">
                   Your planned {{ wizardState.duration }} days exceeds the 60-day visa exemption.
                   Thai Immigration now strictly enforces visa run limits:
@@ -531,7 +600,7 @@ watch(
                   </li>
                 </ul>
                 <p class="text-red-800 mt-3 font-medium">
-                  ⚠️ 2,900+ foreigners denied entry this year. For stays over 90 days, consider a <strong>Tourist Visa</strong>, <strong>DTV</strong>, or <strong>Non-O</strong> visa instead.
+                  ⚠️ Thousands of foreigners denied entry recently. For stays over 90 days, consider a <strong>Tourist Visa</strong>, <strong>DTV</strong>, or <strong>Non-O</strong> visa instead.
                 </p>
               </div>
             </div>

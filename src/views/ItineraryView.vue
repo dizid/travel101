@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@stores/userStore'
 import { useItinerary } from '@/composables/useItinerary'
+import { useApi } from '@/composables/useApi'
+import { downloadIcsCalendar, copyItineraryToClipboard, printItinerary } from '@/utils/export'
 import {
   CalendarOutlined,
   PlusOutlined,
@@ -18,6 +20,11 @@ import {
   LoadingOutlined,
   StarFilled,
   DollarOutlined,
+  DownloadOutlined,
+  CopyOutlined,
+  PrinterOutlined,
+  BulbOutlined,
+  CloseOutlined,
 } from '@ant-design/icons-vue'
 
 const route = useRoute()
@@ -212,6 +219,140 @@ function formatBudget(thb: number) {
     return `฿${(thb / 1000).toFixed(1)}k`
   }
   return `฿${thb}`
+}
+
+// Cost Analytics
+const dailyCosts = computed(() => {
+  if (!currentItinerary.value?.days) return []
+  return currentItinerary.value.days.map(day => ({
+    dayNumber: day.dayNumber,
+    location: day.location,
+    total: day.activities.reduce((sum, a) => sum + (a.estimatedCostThb || 0), 0),
+    byType: day.activities.reduce((acc, a) => {
+      const type = a.activityType || 'other'
+      acc[type] = (acc[type] || 0) + (a.estimatedCostThb || 0)
+      return acc
+    }, {} as Record<string, number>),
+  }))
+})
+
+const totalTripCost = computed(() => {
+  return dailyCosts.value.reduce((sum, day) => sum + day.total, 0)
+})
+
+const costByCategory = computed(() => {
+  const categories: Record<string, number> = {}
+  dailyCosts.value.forEach(day => {
+    Object.entries(day.byType).forEach(([type, cost]) => {
+      categories[type] = (categories[type] || 0) + cost
+    })
+  })
+  return Object.entries(categories)
+    .sort((a, b) => b[1] - a[1])
+    .map(([type, cost]) => ({ type, cost, icon: activityIcons[type] || '📌' }))
+})
+
+const maxDailyCost = computed(() => {
+  return Math.max(...dailyCosts.value.map(d => d.total), 1)
+})
+
+// Export functions
+const showCopiedToast = ref(false)
+
+async function handleExportCalendar() {
+  if (!currentItinerary.value) return
+  downloadIcsCalendar(currentItinerary.value)
+}
+
+async function handleCopyItinerary() {
+  if (!currentItinerary.value) return
+  const success = await copyItineraryToClipboard(currentItinerary.value)
+  if (success) {
+    showCopiedToast.value = true
+    setTimeout(() => {
+      showCopiedToast.value = false
+    }, 2000)
+  }
+}
+
+function handlePrint() {
+  printItinerary()
+}
+
+// AI Suggestions
+const { post: postAI } = useApi()
+const showAISuggestions = ref(false)
+const aiSuggestionsLoading = ref(false)
+const aiSuggestions = ref<{ type: string; title: string; description: string }[]>([])
+
+async function getAISuggestions() {
+  if (!currentItinerary.value) return
+
+  aiSuggestionsLoading.value = true
+  showAISuggestions.value = true
+  aiSuggestions.value = []
+
+  try {
+    const itineraryData = {
+      name: currentItinerary.value.name,
+      duration: getTripDuration(currentItinerary.value),
+      locations: getLocations(currentItinerary.value),
+      totalBudget: totalTripCost.value,
+      days: currentItinerary.value.days?.map(day => ({
+        dayNumber: day.dayNumber,
+        location: day.location,
+        activities: day.activities.map(a => ({
+          title: a.title,
+          type: a.activityType,
+          time: a.timeSlot,
+        })),
+      })),
+    }
+
+    const response = await postAI<{ response: string }>('/ai?type=itinerary', {
+      message: `Analyze this Thailand itinerary and give me 3-4 specific, actionable suggestions to improve it. Focus on:
+1. Missing experiences based on the locations visited
+2. Timing or route optimization
+3. Budget tips
+4. Hidden gems near the planned activities
+
+Itinerary: ${JSON.stringify(itineraryData)}
+
+User preferences: ${JSON.stringify(userStore.profile.prefs)}
+
+Format your response as a JSON array of objects with "type" (optimize/missing/tip/gem), "title" (short), and "description" (1-2 sentences). Only output the JSON array, no other text.`,
+      userProfile: userStore.profile.prefs,
+      saveToDb: false,
+    })
+
+    if (response?.response) {
+      try {
+        // Try to parse JSON from the response
+        const jsonMatch = response.response.match(/\[[\s\S]*\]/)
+        if (jsonMatch) {
+          aiSuggestions.value = JSON.parse(jsonMatch[0])
+        }
+      } catch {
+        // If parsing fails, create a single suggestion from the response
+        aiSuggestions.value = [{
+          type: 'tip',
+          title: 'AI Suggestions',
+          description: response.response.slice(0, 200),
+        }]
+      }
+    }
+  } catch (error) {
+    console.error('Failed to get AI suggestions:', error)
+  } finally {
+    aiSuggestionsLoading.value = false
+  }
+}
+
+const suggestionIcons: Record<string, string> = {
+  optimize: '🗺️',
+  missing: '✨',
+  tip: '💡',
+  gem: '💎',
 }
 
 // Day handlers
@@ -514,7 +655,101 @@ async function handleDeleteActivity(activityId: string) {
                 <StarFilled class="text-xs" />
                 AI Generated
               </span>
+
+              <!-- Export Actions -->
+              <div class="flex items-center gap-1 ml-4">
+                <button
+                  @click="getAISuggestions"
+                  :disabled="aiSuggestionsLoading"
+                  class="p-2 rounded-lg hover:bg-amber-100 text-amber-600 hover:text-amber-700 transition-colors disabled:opacity-50"
+                  title="Get AI Suggestions"
+                >
+                  <LoadingOutlined v-if="aiSuggestionsLoading" class="animate-spin" />
+                  <BulbOutlined v-else />
+                </button>
+                <button
+                  @click="handleExportCalendar"
+                  class="p-2 rounded-lg hover:bg-gray-100 text-gray-600 hover:text-primary-600 transition-colors"
+                  title="Export to Calendar"
+                >
+                  <DownloadOutlined />
+                </button>
+                <button
+                  @click="handleCopyItinerary"
+                  class="p-2 rounded-lg hover:bg-gray-100 text-gray-600 hover:text-primary-600 transition-colors"
+                  title="Copy to Clipboard"
+                >
+                  <CopyOutlined />
+                </button>
+                <button
+                  @click="handlePrint"
+                  class="p-2 rounded-lg hover:bg-gray-100 text-gray-600 hover:text-primary-600 transition-colors"
+                  title="Print Itinerary"
+                >
+                  <PrinterOutlined />
+                </button>
+              </div>
             </div>
+          </div>
+
+          <!-- AI Suggestions Panel -->
+          <Transition
+            enter-active-class="transition-all duration-300"
+            enter-from-class="opacity-0 -translate-y-2"
+            leave-active-class="transition-all duration-300"
+            leave-to-class="opacity-0 -translate-y-2"
+          >
+            <div
+              v-if="showAISuggestions"
+              class="card-thai bg-gradient-to-br from-amber-50 to-yellow-50 border-amber-200"
+            >
+              <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                  <BulbOutlined class="text-amber-500" />
+                  AI Suggestions
+                </h3>
+                <button
+                  @click="showAISuggestions = false"
+                  class="p-1 rounded hover:bg-amber-100 text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <CloseOutlined />
+                </button>
+              </div>
+
+              <div v-if="aiSuggestionsLoading" class="text-center py-8">
+                <LoadingOutlined class="text-2xl text-amber-500 animate-spin mb-2" />
+                <p class="text-gray-500 text-sm">Analyzing your itinerary...</p>
+              </div>
+
+              <div v-else-if="aiSuggestions.length > 0" class="space-y-3">
+                <div
+                  v-for="(suggestion, index) in aiSuggestions"
+                  :key="index"
+                  class="p-3 bg-white rounded-lg border border-amber-100"
+                >
+                  <div class="flex items-start gap-3">
+                    <span class="text-xl">{{ suggestionIcons[suggestion.type] || '💡' }}</span>
+                    <div>
+                      <h4 class="font-medium text-gray-900">{{ suggestion.title }}</h4>
+                      <p class="text-sm text-gray-600 mt-1">{{ suggestion.description }}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div v-else class="text-center py-4 text-gray-500">
+                <p>No suggestions available. Try adding more activities to your itinerary.</p>
+              </div>
+            </div>
+          </Transition>
+
+          <!-- Copied Toast -->
+          <div
+            v-if="showCopiedToast"
+            class="fixed bottom-4 right-4 px-4 py-2 bg-gray-900 text-white rounded-lg shadow-lg flex items-center gap-2 z-50"
+          >
+            <CheckOutlined class="text-green-400" />
+            Copied to clipboard!
           </div>
 
           <!-- Locations -->
@@ -533,6 +768,59 @@ async function handleDeleteActivity(activityId: string) {
           <div v-if="currentItinerary.notes" class="mt-4 p-4 rounded-xl bg-amber-50 border border-amber-200">
             <h4 class="font-medium text-amber-800 mb-2">Pro Tips</h4>
             <p class="text-sm text-amber-700 whitespace-pre-line">• {{ currentItinerary.notes }}</p>
+          </div>
+        </div>
+
+        <!-- Cost Analytics -->
+        <div v-if="totalTripCost > 0" class="card-thai bg-gradient-to-br from-emerald-50 to-teal-50 border-emerald-200">
+          <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <span class="text-xl">💰</span>
+            Trip Budget
+          </h3>
+
+          <!-- Total Cost -->
+          <div class="mb-6 p-4 bg-white rounded-xl border border-emerald-200">
+            <div class="flex items-center justify-between">
+              <span class="text-gray-600">Estimated Total</span>
+              <span class="text-2xl font-bold text-emerald-600">฿{{ totalTripCost.toLocaleString() }}</span>
+            </div>
+            <p class="text-sm text-gray-500 mt-1">~${{ Math.round(totalTripCost / 35).toLocaleString() }} USD</p>
+          </div>
+
+          <!-- Daily Breakdown Chart -->
+          <div class="mb-6">
+            <h4 class="text-sm font-medium text-gray-700 mb-3">Daily Spending</h4>
+            <div class="space-y-2">
+              <div v-for="day in dailyCosts" :key="day.dayNumber" class="flex items-center gap-3">
+                <span class="text-xs text-gray-500 w-12">Day {{ day.dayNumber }}</span>
+                <div class="flex-1 h-6 bg-gray-100 rounded-full overflow-hidden">
+                  <div
+                    class="h-full bg-gradient-to-r from-emerald-400 to-teal-500 rounded-full flex items-center justify-end px-2"
+                    :style="{ width: `${(day.total / maxDailyCost) * 100}%`, minWidth: day.total > 0 ? '40px' : '0' }"
+                  >
+                    <span v-if="day.total > 0" class="text-xs font-medium text-white">฿{{ day.total.toLocaleString() }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Category Breakdown -->
+          <div v-if="costByCategory.length > 0">
+            <h4 class="text-sm font-medium text-gray-700 mb-3">By Category</h4>
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              <div
+                v-for="cat in costByCategory"
+                :key="cat.type"
+                class="p-3 bg-white rounded-lg border border-gray-100"
+              >
+                <div class="flex items-center gap-2 mb-1">
+                  <span>{{ cat.icon }}</span>
+                  <span class="text-sm text-gray-600 capitalize">{{ cat.type }}</span>
+                </div>
+                <p class="text-lg font-semibold text-gray-900">฿{{ cat.cost.toLocaleString() }}</p>
+              </div>
+            </div>
           </div>
         </div>
 
