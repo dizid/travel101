@@ -122,6 +122,26 @@ export const useUserStore = defineStore('user', () => {
     }
   }
 
+  // Favorites functions
+  const savedPlaces = computed(() => profile.value.savedPlaces || [])
+
+  function toggleSavedPlace(slug: string) {
+    if (!profile.value.savedPlaces) {
+      profile.value.savedPlaces = []
+    }
+    const index = profile.value.savedPlaces.indexOf(slug)
+    if (index === -1) {
+      profile.value.savedPlaces.push(slug)
+    } else {
+      profile.value.savedPlaces.splice(index, 1)
+    }
+    saveToLocalStorage()
+  }
+
+  function isPlaceSaved(slug: string): boolean {
+    return profile.value.savedPlaces?.includes(slug) || false
+  }
+
   // Initialize from localStorage
   loadFromLocalStorage()
 
@@ -132,6 +152,7 @@ export const useUserStore = defineStore('user', () => {
     isAuthenticated,
     isLoading,
     activities,
+    savedPlaces,
     // Getters
     hasProfile,
     isPro,
@@ -146,5 +167,7 @@ export const useUserStore = defineStore('user', () => {
     setAuthUser,
     clearAuthUser,
     loadFromLocalStorage,
+    toggleSavedPlace,
+    isPlaceSaved,
   }
 })

@@ -2,6 +2,11 @@
 import { RouterView } from 'vue-router'
 import AppHeader from '@components/layout/AppHeader.vue'
 import AppFooter from '@components/layout/AppFooter.vue'
+import ExitIntentPopup from '@components/ui/ExitIntentPopup.vue'
+import { useAuth } from '@/composables/useAuth'
+
+// Initialize auth on app load - checks session and syncs profile
+useAuth()
 </script>
 
 <template>
@@ -15,6 +20,7 @@ import AppFooter from '@components/layout/AppFooter.vue'
       </RouterView>
     </main>
     <AppFooter />
+    <ExitIntentPopup />
   </div>
 </template>
 

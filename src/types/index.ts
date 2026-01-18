@@ -6,6 +6,7 @@ export interface UserProfile {
   name?: string
   prefs: UserPreferences
   isPro: boolean
+  savedPlaces?: string[]  // Array of attraction slugs
   createdAt?: Date
 }
 

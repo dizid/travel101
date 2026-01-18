@@ -1,59 +1,78 @@
 import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router'
+import { updateMetaTags, getPageMeta } from '@/utils/seo'
 
 const routes: RouteRecordRaw[] = [
   {
     path: '/',
     name: 'home',
     component: () => import('@views/HomeView.vue'),
-    meta: { title: 'Welcome to Thailand' },
+    meta: { title: 'Thailand Travel Guide', seoKey: 'home' },
   },
   {
     path: '/visa',
     name: 'visa',
     component: () => import('@views/VisaWizardView.vue'),
-    meta: { title: 'Visa Guide' },
+    meta: { title: 'Thailand Visa Guide', seoKey: 'visa' },
   },
   {
     path: '/tdac',
     name: 'tdac',
     component: () => import('@views/TDACGuideView.vue'),
-    meta: { title: 'TDAC Guide' },
+    meta: { title: 'Thailand Arrival Card Guide', seoKey: 'tdac' },
   },
   {
     path: '/warnings',
     name: 'warnings',
     component: () => import('@views/WarningsView.vue'),
-    meta: { title: 'Good to Know' },
+    meta: { title: 'Thailand Travel Tips', seoKey: 'warnings' },
   },
   {
     path: '/attractions',
     name: 'attractions',
     component: () => import('@views/AttractionsView.vue'),
-    meta: { title: 'Places to Visit' },
+    meta: { title: 'Places to Visit in Thailand', seoKey: 'attractions' },
   },
   {
     path: '/attractions/:id',
     name: 'attraction-detail',
     component: () => import('@views/AttractionDetailView.vue'),
-    meta: { title: 'Attraction' },
+    meta: { title: 'Attraction', dynamicSeo: true },
   },
   {
     path: '/dashboard',
     name: 'dashboard',
     component: () => import('@views/DashboardView.vue'),
-    meta: { title: 'My Dashboard', requiresAuth: true },
+    meta: { title: 'My Dashboard', seoKey: 'dashboard', requiresAuth: true },
   },
   {
     path: '/profile',
     name: 'profile',
     component: () => import('@views/ProfileView.vue'),
-    meta: { title: 'My Profile' },
+    meta: { title: 'Travel Profile', seoKey: 'profile' },
   },
   {
     path: '/itinerary',
     name: 'itinerary',
     component: () => import('@views/ItineraryView.vue'),
-    meta: { title: 'Plan Your Trip', requiresPro: true },
+    meta: { title: 'Trip Itinerary Planner', seoKey: 'itinerary', requiresPro: true },
+  },
+  {
+    path: '/alerts',
+    name: 'alerts',
+    component: () => import('@views/AlertsView.vue'),
+    meta: { title: 'Oversight Alerts', requiresPro: true },
+  },
+  {
+    path: '/smart-match',
+    name: 'smart-match',
+    component: () => import('@views/SmartMatchView.vue'),
+    meta: { title: 'Smart Match', requiresPro: true },
+  },
+  {
+    path: '/saved',
+    name: 'saved',
+    component: () => import('@views/SavedPlacesView.vue'),
+    meta: { title: 'Saved Places', requiresAuth: true },
   },
   {
     path: '/privacy',
@@ -95,12 +114,29 @@ const router = createRouter({
   },
 })
 
-// Update page title
+// Update page title and meta tags
 router.beforeEach((to, _from, next) => {
-  const title = to.meta.title as string
-  document.title = title
-    ? `${title} | Global Smart Traveler`
-    : 'Global Smart Traveler'
+  const seoKey = to.meta.seoKey as string | undefined
+  const dynamicSeo = to.meta.dynamicSeo as boolean | undefined
+
+  // For pages with static SEO, update meta tags from pageMeta config
+  if (seoKey && !dynamicSeo) {
+    const meta = getPageMeta(seoKey as any)
+    updateMetaTags({
+      ...meta,
+      url: to.path,
+    })
+  } else if (!dynamicSeo) {
+    // Fallback for pages without seoKey
+    const title = to.meta.title as string
+    updateMetaTags({
+      title: title || 'Thailand Travel Guide',
+      description: 'Your personalized Thailand travel guide with AI-powered recommendations.',
+      url: to.path,
+    })
+  }
+  // dynamicSeo pages (like attraction-detail) handle their own meta in the component
+
   next()
 })
 

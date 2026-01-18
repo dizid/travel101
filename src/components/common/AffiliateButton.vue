@@ -34,6 +34,24 @@ const partnerConfig: Record<AffiliatePartner, { label: string; icon: string; col
     color: 'bg-emerald-500 text-white',
     hoverColor: 'hover:bg-emerald-600'
   },
+  safetywing: {
+    label: 'Get Insurance',
+    icon: '🛡️',
+    color: 'bg-sky-500 text-white',
+    hoverColor: 'hover:bg-sky-600'
+  },
+  airalo: {
+    label: 'Get eSIM',
+    icon: '📱',
+    color: 'bg-purple-500 text-white',
+    hoverColor: 'hover:bg-purple-600'
+  },
+  nordvpn: {
+    label: 'Get VPN',
+    icon: '🔐',
+    color: 'bg-indigo-500 text-white',
+    hoverColor: 'hover:bg-indigo-600'
+  },
 }
 
 const config = computed(() => partnerConfig[props.partner])

@@ -34,10 +34,10 @@ const quickLinks = [
 ]
 
 const proFeatures = [
-  { icon: '🎯', label: 'AI-Powered Itineraries', description: 'Get personalized trip plans' },
-  { icon: '💎', label: 'Smart Matching', description: 'Find places that match your style' },
-  { icon: '🔔', label: 'Oversight Alerts', description: 'Visa reminders & travel tips' },
-  { icon: '💬', label: 'Expert Q&A', description: 'Ask anything about Thailand' },
+  { icon: '🎯', label: 'AI-Powered Itineraries', description: 'Get personalized trip plans', path: '/itinerary' },
+  { icon: '💎', label: 'Smart Matching', description: 'Find places that match your style', path: '/smart-match' },
+  { icon: '🔔', label: 'Oversight Alerts', description: 'Visa reminders & travel tips', path: '/alerts' },
+  { icon: '💬', label: 'Expert Q&A', description: 'Ask anything about Thailand', path: '/attractions' },
 ]
 
 const profileCompleteness = computed(() => {
@@ -219,10 +219,22 @@ const profileCompleteness = computed(() => {
               <CrownOutlined class="text-primary-600" />
               <h3 class="font-semibold text-gray-900">Pro Member</h3>
             </div>
-            <p class="text-sm text-gray-600 mb-4">
-              You have access to all premium features!
-            </p>
-            <div class="space-y-2 text-sm">
+
+            <!-- Pro Feature Quick Access -->
+            <div class="space-y-2 mb-4">
+              <RouterLink
+                v-for="feature in proFeatures"
+                :key="feature.label"
+                :to="feature.path"
+                class="flex items-center gap-3 p-2 rounded-lg hover:bg-white transition-colors group"
+              >
+                <span class="text-lg">{{ feature.icon }}</span>
+                <span class="text-sm font-medium text-gray-700 group-hover:text-primary-600">{{ feature.label }}</span>
+                <RightOutlined class="text-xs text-gray-400 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
+              </RouterLink>
+            </div>
+
+            <div class="pt-4 border-t border-primary-200 space-y-2 text-sm">
               <div class="flex items-center justify-between">
                 <span class="text-gray-500">Status</span>
                 <span class="font-medium text-green-600">

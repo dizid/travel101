@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://happyroam.travel/sitemap.xml
+
+# Crawl-delay for polite crawling
+Crawl-delay: 1
+
+# Disallow admin/auth paths
+Disallow: /auth/
+Disallow: /api/

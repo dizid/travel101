@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { RouterLink } from 'vue-router'
+import NewsletterSignup from '@/components/ui/NewsletterSignup.vue'
 
 const currentYear = new Date().getFullYear()
 
@@ -90,6 +91,13 @@ const footerLinks = {
               </RouterLink>
             </li>
           </ul>
+        </div>
+      </div>
+
+      <!-- Newsletter Section -->
+      <div class="mt-12 pt-8 border-t border-gray-800">
+        <div class="max-w-md">
+          <NewsletterSignup />
         </div>
       </div>
     </div>

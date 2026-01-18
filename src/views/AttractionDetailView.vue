@@ -10,7 +10,7 @@ import {
   StarFilled,
   LeftOutlined,
   HeartOutlined,
-  ShareAltOutlined,
+  HeartFilled,
   ClockCircleOutlined,
   CarOutlined,
   DollarOutlined,
@@ -30,14 +30,20 @@ import {
 } from '@ant-design/icons-vue'
 import type { TipType, SecretType, RecommendationType } from '@/types'
 import { generateAffiliateUrl, trackAffiliateClick, generateHeritageHotelUrl, generateTransportUrl } from '@/utils/affiliates'
+import { useAttractionMeta, useAttractionSchema } from '@/composables/useSeo'
+import { useFavorites } from '@/composables/useFavorites'
+import ShareButton from '@/components/ui/ShareButton.vue'
+import MatchScoreCard from '@/components/ui/MatchScoreCard.vue'
 
 const route = useRoute()
 const countryStore = useCountryStore()
 const userStore = useUserStore()
 const { getPersonalizedIntro } = useAI()
+const { toggleFavorite, isFavorite } = useFavorites()
 
 const activeTab = ref<'tips' | 'secrets' | 'recommendations'>('tips')
 const matchInfo = ref<{ score: number; reasons: string[] } | null>(null)
+const showMatchCard = ref(false)
 
 // AI personalization state
 const personalizedIntro = ref<string | null>(null)
@@ -97,6 +103,42 @@ function closeChat() {
 const attraction = computed(() => countryStore.currentAttraction)
 const isLoading = computed(() => countryStore.attractionsLoading)
 const isPro = computed(() => userStore.profile.isPro)
+const isSaved = computed(() => attraction.value ? isFavorite(attraction.value.slug) : false)
+
+function handleToggleFavorite() {
+  if (attraction.value) {
+    toggleFavorite(attraction.value.slug)
+  }
+}
+
+// SEO: Dynamic meta tags and structured data
+const attractionForSeo = computed(() => {
+  if (!attraction.value) return null
+  return {
+    name: attraction.value.name,
+    description: attraction.value.description,
+    slug: attraction.value.slug,
+    province: attraction.value.province,
+    image_url: attraction.value.imageUrl,
+  }
+})
+
+const attractionForSchema = computed(() => {
+  if (!attraction.value) return null
+  return {
+    name: attraction.value.name,
+    description: attraction.value.description,
+    image: attraction.value.imageUrl,
+    address: attraction.value.location,
+    province: attraction.value.province,
+    slug: attraction.value.slug,
+    categories: attraction.value.categories,
+    isHiddenGem: attraction.value.isHiddenGem,
+  }
+})
+
+useAttractionMeta(attractionForSeo)
+useAttractionSchema(attractionForSchema)
 
 // Check if attraction has rich content
 const hasRichContent = computed(() => {
@@ -332,27 +374,41 @@ const gradientClass = computed(() => {
         </div>
 
         <!-- Match score badge -->
-        <div v-if="matchInfo" class="absolute bottom-4 left-4">
-          <span
-            class="inline-flex items-center gap-1 px-3 py-1.5 bg-white/90 backdrop-blur rounded-full text-sm font-semibold"
+        <div v-if="matchInfo" class="absolute bottom-4 left-4 flex items-center gap-2">
+          <button
+            @click="showMatchCard = true"
+            class="inline-flex items-center gap-1 px-3 py-1.5 bg-white/90 backdrop-blur rounded-full text-sm font-semibold hover:bg-white transition-colors cursor-pointer"
             :class="{
               'text-green-600': matchInfo.score >= 80,
               'text-amber-600': matchInfo.score >= 50 && matchInfo.score < 80,
               'text-gray-600': matchInfo.score < 50,
             }"
+            title="Share your match!"
           >
             {{ matchInfo.score }}% match for you
-          </span>
+            <svg class="w-3.5 h-3.5 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+            </svg>
+          </button>
         </div>
 
         <!-- Actions -->
         <div class="absolute top-4 right-4 flex gap-2">
-          <button class="w-10 h-10 bg-white/90 backdrop-blur rounded-full flex items-center justify-center hover:bg-white transition-colors">
-            <HeartOutlined class="text-gray-600" />
+          <button
+            @click="handleToggleFavorite"
+            class="w-10 h-10 bg-white/90 backdrop-blur rounded-full flex items-center justify-center hover:bg-white transition-colors"
+            :class="isSaved ? 'text-rose-500' : 'text-gray-600 hover:text-rose-400'"
+            :title="isSaved ? 'Remove from saved' : 'Save this place'"
+          >
+            <HeartFilled v-if="isSaved" />
+            <HeartOutlined v-else />
           </button>
-          <button class="w-10 h-10 bg-white/90 backdrop-blur rounded-full flex items-center justify-center hover:bg-white transition-colors">
-            <ShareAltOutlined class="text-gray-600" />
-          </button>
+          <ShareButton
+            v-if="attraction"
+            :title="attraction.name"
+            :description="`Discover ${attraction.name} in ${attraction.province}, Thailand`"
+            :hashtags="['Thailand', 'Travel', attraction.province?.replace(/\s+/g, '')]"
+          />
         </div>
       </div>
 
@@ -444,8 +500,10 @@ const gradientClass = computed(() => {
                   class="py-3 border-b-2 font-medium text-sm transition-colors flex items-center gap-1"
                 >
                   Local Secrets
-                  <LockOutlined v-if="!isPro" class="text-xs text-gray-400" />
-                  <span v-if="attraction.secrets?.length" class="ml-1 text-xs text-gray-400">
+                  <span v-if="attraction.secrets?.length && !isPro" class="ml-1 px-2 py-0.5 text-xs bg-amber-100 text-amber-700 rounded-full font-medium animate-pulse">
+                    {{ attraction.secrets.length }} hidden
+                  </span>
+                  <span v-else-if="attraction.secrets?.length" class="ml-1 text-xs text-gray-400">
                     ({{ attraction.secrets.length }})
                   </span>
                 </button>
@@ -503,22 +561,85 @@ const gradientClass = computed(() => {
 
             <!-- Secrets Tab -->
             <div v-if="activeTab === 'secrets'" class="py-6">
-              <div v-if="!isPro" class="text-center py-12">
-                <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-100 flex items-center justify-center">
-                  <LockOutlined class="text-2xl text-gray-400" />
-                </div>
-                <h3 class="text-lg font-semibold text-gray-900 mb-2">Pro Feature</h3>
-                <p class="text-gray-600 mb-6 max-w-md mx-auto">
-                  Unlock local secrets and hidden spots that most tourists never discover.
-                  These are the places locals actually go!
-                </p>
-                <RouterLink to="/upgrade" class="btn-thai">
-                  Upgrade to Pro
-                </RouterLink>
-              </div>
-              <div v-else-if="!attraction.secrets?.length" class="text-center py-8 text-gray-500">
+              <!-- No secrets available -->
+              <div v-if="!attraction.secrets?.length" class="text-center py-8 text-gray-500">
                 No local secrets available yet for this place.
               </div>
+
+              <!-- Non-Pro: Show teaser with blur -->
+              <div v-else-if="!isPro" class="space-y-4">
+                <!-- Urgency Banner -->
+                <div class="bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl p-4 flex items-center justify-between">
+                  <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+                      <LockOutlined class="text-lg" />
+                    </div>
+                    <div>
+                      <p class="font-semibold">{{ attraction.secrets.length }} insider secret{{ attraction.secrets.length === 1 ? '' : 's' }} hidden</p>
+                      <p class="text-sm text-white/80">Discover what locals don't share with tourists</p>
+                    </div>
+                  </div>
+                  <RouterLink to="/dashboard?upgrade=true" class="px-4 py-2 bg-white text-amber-600 rounded-full font-semibold text-sm hover:bg-amber-50 transition-colors whitespace-nowrap">
+                    Unlock All
+                  </RouterLink>
+                </div>
+
+                <!-- Blurred Preview of First Secret -->
+                <div v-if="attraction.secrets[0]" class="relative">
+                  <div class="p-4 bg-gradient-to-r from-primary-50 to-accent-50 rounded-xl filter blur-sm select-none pointer-events-none">
+                    <span class="text-xs font-medium text-primary-600 uppercase tracking-wide">
+                      {{ secretTypeConfig[attraction.secrets[0].secretType]?.label || attraction.secrets[0].secretType }}
+                    </span>
+                    <h4 class="font-semibold text-gray-900 mt-1">{{ attraction.secrets[0].title }}</h4>
+                    <p class="text-gray-600 mt-2 text-sm">{{ attraction.secrets[0].content.substring(0, 100) }}...</p>
+                  </div>
+                  <div class="absolute inset-0 flex items-center justify-center">
+                    <RouterLink to="/dashboard?upgrade=true" class="flex items-center gap-2 px-6 py-3 bg-white shadow-lg rounded-full text-gray-900 font-semibold hover:shadow-xl transition-shadow">
+                      <LockOutlined class="text-amber-500" />
+                      Reveal Secret
+                    </RouterLink>
+                  </div>
+                </div>
+
+                <!-- More secrets indicator -->
+                <div v-if="attraction.secrets.length > 1" class="flex justify-center gap-2 pt-4">
+                  <div v-for="i in Math.min(attraction.secrets.length - 1, 3)" :key="i" class="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center">
+                    <LockOutlined class="text-gray-400" />
+                  </div>
+                  <div v-if="attraction.secrets.length > 4" class="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center text-sm text-gray-500 font-medium">
+                    +{{ attraction.secrets.length - 4 }}
+                  </div>
+                </div>
+
+                <!-- Benefits List -->
+                <div class="bg-gray-50 rounded-xl p-6 mt-6">
+                  <h4 class="font-semibold text-gray-900 mb-4">What Pro members get:</h4>
+                  <ul class="space-y-3">
+                    <li class="flex items-start gap-3">
+                      <CheckCircleOutlined class="text-green-500 mt-0.5" />
+                      <span class="text-gray-600">Hidden spots locals actually visit</span>
+                    </li>
+                    <li class="flex items-start gap-3">
+                      <CheckCircleOutlined class="text-green-500 mt-0.5" />
+                      <span class="text-gray-600">Secret local food stalls & restaurants</span>
+                    </li>
+                    <li class="flex items-start gap-3">
+                      <CheckCircleOutlined class="text-green-500 mt-0.5" />
+                      <span class="text-gray-600">Best times to avoid crowds</span>
+                    </li>
+                    <li class="flex items-start gap-3">
+                      <CheckCircleOutlined class="text-green-500 mt-0.5" />
+                      <span class="text-gray-600">AI-powered personalized recommendations</span>
+                    </li>
+                  </ul>
+                  <RouterLink to="/dashboard?upgrade=true" class="mt-6 w-full btn-thai flex items-center justify-center gap-2">
+                    <StarFilled />
+                    Upgrade to Pro
+                  </RouterLink>
+                </div>
+              </div>
+
+              <!-- Pro: Show all secrets -->
               <div v-else class="space-y-4">
                 <div
                   v-for="secret in attraction.secrets"
@@ -698,5 +819,38 @@ const gradientClass = computed(() => {
       :attraction-name="attraction.name"
       @close="closeChat"
     />
+
+    <!-- Match Score Share Modal -->
+    <Teleport to="body">
+      <Transition
+        enter-active-class="transition duration-200 ease-out"
+        enter-from-class="opacity-0"
+        enter-to-class="opacity-100"
+        leave-active-class="transition duration-150 ease-in"
+        leave-from-class="opacity-100"
+        leave-to-class="opacity-0"
+      >
+        <div
+          v-if="showMatchCard && attraction && matchInfo"
+          class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+          @click.self="showMatchCard = false"
+        >
+          <div class="w-full max-w-sm">
+            <MatchScoreCard
+              :place-name="attraction.name"
+              :match-score="matchInfo.score"
+              :category="categoryLabels[attraction.category]?.label || attraction.category"
+              :province="attraction.province"
+            />
+            <button
+              @click="showMatchCard = false"
+              class="mt-4 w-full py-2 text-white/80 hover:text-white text-sm transition-colors"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
   </div>
 </template>

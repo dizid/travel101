@@ -18,6 +18,18 @@
   to = "/assets/:splat"
   status = 200
 
+# Sitemap (dynamic from function)
+[[redirects]]
+  from = "/sitemap.xml"
+  to = "/.netlify/functions/sitemap"
+  status = 200
+
+# Robots.txt
+[[redirects]]
+  from = "/robots.txt"
+  to = "/robots.txt"
+  status = 200
+
 # SPA redirect - all other routes go to index.html
 [[redirects]]
   from = "/*"

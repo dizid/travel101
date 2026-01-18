@@ -23,6 +23,9 @@ const displayTitle = computed(() => {
     destination: 'Plan Your Trip',
     itinerary: 'Book Your Trip',
     dashboard: 'Recommended for You',
+    essentials: 'Travel Essentials',
+    nomad: 'Nomad Must-Haves',
+    visa: 'Protect Your Trip',
   }
   return titles[props.context] || 'Book Now'
 })

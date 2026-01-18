@@ -2,8 +2,9 @@
 import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
 import type { Attraction, AttractionCategory } from '@/types'
-import { EnvironmentOutlined, StarFilled } from '@ant-design/icons-vue'
+import { EnvironmentOutlined, StarFilled, HeartOutlined, HeartFilled } from '@ant-design/icons-vue'
 import { generateAffiliateUrl, generateHeritageHotelUrl, trackAffiliateClick } from '@/utils/affiliates'
+import { useFavorites } from '@/composables/useFavorites'
 
 const props = defineProps<{
   attraction: Attraction
@@ -11,6 +12,15 @@ const props = defineProps<{
   matchScore?: number
   matchReason?: string
 }>()
+
+const { toggleFavorite, isFavorite } = useFavorites()
+const isLiked = computed(() => isFavorite(props.attraction.slug))
+
+function handleFavoriteClick(event: Event) {
+  event.preventDefault()
+  event.stopPropagation()
+  toggleFavorite(props.attraction.slug)
+}
 
 const isHeritage = computed(() => props.attraction.placeType === 'heritage')
 
@@ -93,17 +103,31 @@ const gradientClass = computed(() => {
         Hidden Gem
       </div>
 
-      <!-- Match score -->
-      <div
-        v-if="showMatch && matchScore"
-        class="absolute top-3 right-3 flex items-center gap-1 px-2 py-1 bg-white/90 backdrop-blur rounded-full text-xs font-semibold"
-        :class="{
-          'text-green-600': matchScore >= 80,
-          'text-amber-600': matchScore >= 50 && matchScore < 80,
-          'text-gray-600': matchScore < 50,
-        }"
-      >
-        {{ matchScore }}% match
+      <!-- Top right area: favorite button + match score -->
+      <div class="absolute top-3 right-3 flex items-center gap-2">
+        <!-- Favorite button -->
+        <button
+          @click="handleFavoriteClick"
+          class="w-8 h-8 flex items-center justify-center bg-white/90 backdrop-blur rounded-full shadow-sm hover:bg-white transition-colors"
+          :class="isLiked ? 'text-rose-500' : 'text-gray-400 hover:text-rose-400'"
+          :title="isLiked ? 'Remove from saved' : 'Save this place'"
+        >
+          <HeartFilled v-if="isLiked" class="text-lg" />
+          <HeartOutlined v-else class="text-lg" />
+        </button>
+
+        <!-- Match score -->
+        <div
+          v-if="showMatch && matchScore"
+          class="flex items-center gap-1 px-2 py-1 bg-white/90 backdrop-blur rounded-full text-xs font-semibold"
+          :class="{
+            'text-green-600': matchScore >= 80,
+            'text-amber-600': matchScore >= 50 && matchScore < 80,
+            'text-gray-600': matchScore < 50,
+          }"
+        >
+          {{ matchScore }}% match
+        </div>
       </div>
 
       <!-- Category badge -->

@@ -7,6 +7,7 @@ import {
   CloseOutlined,
   UserOutlined,
   CrownOutlined,
+  HeartOutlined,
 } from '@ant-design/icons-vue'
 
 const route = useRoute()
@@ -93,6 +94,15 @@ const closeMobileMenu = () => {
             <span>Pro</span>
           </div>
 
+          <!-- Saved Places -->
+          <RouterLink
+            to="/saved"
+            class="hidden sm:flex w-9 h-9 rounded-full bg-gray-100 items-center justify-center text-gray-600 hover:bg-rose-50 hover:text-rose-500 transition-colors"
+            title="Saved Places"
+          >
+            <HeartOutlined />
+          </RouterLink>
+
           <!-- Profile / Dashboard -->
           <RouterLink
             to="/dashboard"
@@ -144,6 +154,14 @@ const closeMobileMenu = () => {
           </RouterLink>
 
           <div class="pt-3 mt-3 border-t border-gray-100">
+            <RouterLink
+              to="/saved"
+              class="flex items-center gap-3 px-4 py-3 rounded-xl text-base font-medium text-gray-600 hover:bg-gray-50"
+              @click="closeMobileMenu"
+            >
+              <span class="text-xl">❤️</span>
+              Saved Places
+            </RouterLink>
             <RouterLink
               to="/dashboard"
               class="flex items-center gap-3 px-4 py-3 rounded-xl text-base font-medium text-gray-600 hover:bg-gray-50"
