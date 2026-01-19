@@ -1,15 +1,16 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useCountryStore } from '@stores/countryStore'
 import { useUserStore } from '@stores/userStore'
 import { useMatcher } from '@/composables/useMatcher'
 import AttractionCard from '@components/features/AttractionCard.vue'
 import AffiliateCard from '@components/common/AffiliateCard.vue'
 import type { AttractionCategory } from '@/types'
-import { SearchOutlined, StarFilled, LoadingOutlined } from '@ant-design/icons-vue'
+import { SearchOutlined, StarFilled, LoadingOutlined, EnvironmentOutlined } from '@ant-design/icons-vue'
 
 const route = useRoute()
+const router = useRouter()
 const countryStore = useCountryStore()
 const userStore = useUserStore()
 const { calculateLocalScore, getMatchReason, sortedByMatch, hasProfile } = useMatcher()
@@ -18,6 +19,9 @@ const searchQuery = ref('')
 const activeCategory = ref<AttractionCategory | 'all' | 'hidden'>('all')
 const showHiddenOnly = ref(route.query.hidden === 'true')
 const showPersonalized = ref(true)
+const showSuggestions = ref(false)
+const selectedSuggestionIndex = ref(-1)
+const searchInputRef = ref<HTMLInputElement | null>(null)
 
 // Fetch attractions on mount
 onMounted(async () => {
@@ -46,6 +50,137 @@ const categories: { value: AttractionCategory | 'all' | 'hidden'; label: string;
   { value: 'wellness', label: 'Wellness', icon: '🧘' },
   { value: 'adventure', label: 'Adventure', icon: '⛰️' },
 ]
+
+// Search suggestions
+interface Suggestion {
+  type: 'place' | 'province' | 'category'
+  label: string
+  subLabel?: string
+  icon: string
+  slug?: string
+  category?: AttractionCategory | 'all' | 'hidden'
+}
+
+const suggestions = computed<Suggestion[]>(() => {
+  if (!searchQuery.value || searchQuery.value.length < 2) return []
+
+  const query = searchQuery.value.toLowerCase()
+  const results: Suggestion[] = []
+
+  // Match attractions by name (limit to 5)
+  const matchingPlaces = countryStore.attractions
+    .filter(a => a.name.toLowerCase().includes(query))
+    .slice(0, 5)
+    .map(a => ({
+      type: 'place' as const,
+      label: a.name,
+      subLabel: a.province,
+      icon: a.isHiddenGem ? '💎' : '📍',
+      slug: a.slug,
+    }))
+  results.push(...matchingPlaces)
+
+  // Match provinces (unique, limit to 3)
+  const provinces = [...new Set(countryStore.attractions.map(a => a.province))]
+  const matchingProvinces = provinces
+    .filter(p => p.toLowerCase().includes(query))
+    .slice(0, 3)
+    .map(p => ({
+      type: 'province' as const,
+      label: p,
+      subLabel: `${countryStore.attractions.filter(a => a.province === p).length} places`,
+      icon: '🗺️',
+    }))
+  results.push(...matchingProvinces)
+
+  // Match categories (limit to 2)
+  const matchingCategories = categories
+    .filter(c => c.value !== 'all' && c.label.toLowerCase().includes(query))
+    .slice(0, 2)
+    .map(c => ({
+      type: 'category' as const,
+      label: c.label,
+      subLabel: 'Category',
+      icon: c.icon,
+      category: c.value,
+    }))
+  results.push(...matchingCategories)
+
+  return results.slice(0, 8) // Max 8 suggestions
+})
+
+// Keyboard navigation for suggestions
+function handleKeydown(e: KeyboardEvent) {
+  if (!showSuggestions.value || suggestions.value.length === 0) {
+    if (e.key === 'ArrowDown' && suggestions.value.length > 0) {
+      showSuggestions.value = true
+      selectedSuggestionIndex.value = 0
+      e.preventDefault()
+    }
+    return
+  }
+
+  switch (e.key) {
+    case 'ArrowDown':
+      e.preventDefault()
+      selectedSuggestionIndex.value = Math.min(
+        selectedSuggestionIndex.value + 1,
+        suggestions.value.length - 1
+      )
+      break
+    case 'ArrowUp':
+      e.preventDefault()
+      selectedSuggestionIndex.value = Math.max(selectedSuggestionIndex.value - 1, -1)
+      break
+    case 'Enter':
+      if (selectedSuggestionIndex.value >= 0) {
+        e.preventDefault()
+        selectSuggestion(suggestions.value[selectedSuggestionIndex.value])
+      }
+      break
+    case 'Escape':
+      showSuggestions.value = false
+      selectedSuggestionIndex.value = -1
+      break
+  }
+}
+
+function selectSuggestion(suggestion: Suggestion) {
+  if (suggestion.type === 'place' && suggestion.slug) {
+    router.push(`/attractions/${suggestion.slug}`)
+  } else if (suggestion.type === 'province') {
+    searchQuery.value = suggestion.label
+  } else if (suggestion.type === 'category' && suggestion.category) {
+    setCategory(suggestion.category)
+    searchQuery.value = ''
+  }
+  showSuggestions.value = false
+  selectedSuggestionIndex.value = -1
+}
+
+function handleFocus() {
+  if (searchQuery.value.length >= 2) {
+    showSuggestions.value = true
+  }
+}
+
+function handleBlur() {
+  // Delay to allow click on suggestion
+  setTimeout(() => {
+    showSuggestions.value = false
+    selectedSuggestionIndex.value = -1
+  }, 200)
+}
+
+// Reset selection when query changes
+watch(searchQuery, () => {
+  selectedSuggestionIndex.value = -1
+  if (searchQuery.value.length >= 2) {
+    showSuggestions.value = true
+  } else {
+    showSuggestions.value = false
+  }
+})
 
 const filteredAttractions = computed(() => {
   // Use personalized sorting if enabled and user has profile
@@ -102,16 +237,75 @@ function setCategory(cat: typeof activeCategory.value) {
           </p>
         </div>
 
-        <!-- Search -->
+        <!-- Search with autocomplete -->
         <div class="max-w-xl mx-auto mt-8">
           <div class="relative">
-            <SearchOutlined class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+            <SearchOutlined class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 z-10" />
             <input
+              ref="searchInputRef"
               v-model="searchQuery"
               type="text"
               placeholder="Search places, provinces..."
               class="input-thai pl-11"
+              autocomplete="off"
+              @keydown="handleKeydown"
+              @focus="handleFocus"
+              @blur="handleBlur"
             />
+
+            <!-- Suggestions dropdown -->
+            <Transition
+              enter-active-class="transition ease-out duration-100"
+              enter-from-class="opacity-0 translate-y-1"
+              enter-to-class="opacity-100 translate-y-0"
+              leave-active-class="transition ease-in duration-75"
+              leave-from-class="opacity-100 translate-y-0"
+              leave-to-class="opacity-0 translate-y-1"
+            >
+              <div
+                v-if="showSuggestions && suggestions.length > 0"
+                class="absolute top-full left-0 right-0 mt-1 bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden z-50"
+              >
+                <ul class="py-2 max-h-80 overflow-y-auto">
+                  <li
+                    v-for="(suggestion, index) in suggestions"
+                    :key="`${suggestion.type}-${suggestion.label}`"
+                    @click="selectSuggestion(suggestion)"
+                    @mouseenter="selectedSuggestionIndex = index"
+                    class="px-4 py-2.5 cursor-pointer flex items-center gap-3 transition-colors"
+                    :class="[
+                      selectedSuggestionIndex === index
+                        ? 'bg-primary-50 text-primary-700'
+                        : 'hover:bg-gray-50'
+                    ]"
+                  >
+                    <span class="text-lg flex-shrink-0">{{ suggestion.icon }}</span>
+                    <div class="flex-1 min-w-0">
+                      <div class="font-medium text-gray-900 truncate">{{ suggestion.label }}</div>
+                      <div class="text-xs text-gray-500 flex items-center gap-1">
+                        <EnvironmentOutlined v-if="suggestion.type === 'place'" class="text-[10px]" />
+                        <span>{{ suggestion.subLabel }}</span>
+                      </div>
+                    </div>
+                    <span
+                      class="text-[10px] px-1.5 py-0.5 rounded-full flex-shrink-0"
+                      :class="[
+                        suggestion.type === 'place' ? 'bg-blue-100 text-blue-700' :
+                        suggestion.type === 'province' ? 'bg-green-100 text-green-700' :
+                        'bg-purple-100 text-purple-700'
+                      ]"
+                    >
+                      {{ suggestion.type === 'place' ? 'Place' : suggestion.type === 'province' ? 'Province' : 'Category' }}
+                    </span>
+                  </li>
+                </ul>
+                <div class="px-4 py-2 bg-gray-50 border-t border-gray-100 text-xs text-gray-500">
+                  <kbd class="px-1.5 py-0.5 bg-white rounded border border-gray-200 text-[10px]">↑↓</kbd> to navigate
+                  <kbd class="px-1.5 py-0.5 bg-white rounded border border-gray-200 text-[10px] ml-2">Enter</kbd> to select
+                  <kbd class="px-1.5 py-0.5 bg-white rounded border border-gray-200 text-[10px] ml-2">Esc</kbd> to close
+                </div>
+              </div>
+            </Transition>
           </div>
         </div>
       </div>
