@@ -69,6 +69,18 @@ const routes: RouteRecordRaw[] = [
     meta: { title: 'Smart Match', requiresPro: true },
   },
   {
+    path: '/packing',
+    name: 'packing',
+    component: () => import('@views/PackingView.vue'),
+    meta: { title: 'AI Packing Assistant', requiresPro: true },
+  },
+  {
+    path: '/safety',
+    name: 'safety',
+    component: () => import('@views/SafetyView.vue'),
+    meta: { title: 'Thailand Safety Guide', requiresPro: true },
+  },
+  {
     path: '/saved',
     name: 'saved',
     component: () => import('@views/SavedPlacesView.vue'),

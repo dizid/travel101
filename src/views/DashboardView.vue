@@ -12,6 +12,8 @@ import {
   RightOutlined,
   LoadingOutlined,
 } from '@ant-design/icons-vue'
+import WeatherWidget from '@components/features/WeatherWidget.vue'
+import CurrencyCalculator from '@components/features/CurrencyCalculator.vue'
 
 const userStore = useUserStore()
 const route = useRoute()
@@ -267,6 +269,12 @@ const profileCompleteness = computed(() => {
               </div>
             </div>
           </div>
+
+          <!-- Weather Widget -->
+          <WeatherWidget location="Bangkok" />
+
+          <!-- Currency Calculator -->
+          <CurrencyCalculator />
         </div>
       </div>
     </div>

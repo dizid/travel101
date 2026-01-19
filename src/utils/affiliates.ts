@@ -81,11 +81,10 @@ const affiliateConfigs: Record<AffiliatePartner, AffiliateConfig> = {
     },
   },
   nordvpn: {
-    baseUrl: 'https://nordvpn.com',
-    buildUrl: (_destination, _attractionName, affiliateId) => {
-      // NordVPN for secure browsing in Thailand
-      const params = affiliateId ? `?ref=${affiliateId}` : ''
-      return `https://nordvpn.com/special/${params}`
+    baseUrl: 'https://refer-nordvpn.com',
+    buildUrl: () => {
+      // NordVPN Refer a Friend link (not a traditional affiliate program)
+      return 'https://refer-nordvpn.com/xxDLCBJrkfs'
     },
   },
 }
