@@ -14,7 +14,7 @@ export default async (req: Request, context: Context) => {
   const db = getDb()
   const userId = req.headers.get('x-user-id')
 
-  if (!userId && req.method !== 'POST') {
+  if (!userId) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), {
       status: 401,
       headers: { 'Content-Type': 'application/json' },
