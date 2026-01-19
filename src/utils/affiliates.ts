@@ -56,11 +56,15 @@ const affiliateConfigs: Record<AffiliatePartner, AffiliateConfig> = {
     baseUrl: 'https://www.getyourguide.com',
     buildUrl: (destination, attractionName, affiliateId) => {
       const query = attractionName
-        ? `${attractionName} ${destination}`
-        : destination
+        ? `${attractionName} ${destination} Thailand`
+        : `${destination} Thailand`
       const params = new URLSearchParams({
         q: query,
-        ...(affiliateId && { partner_id: affiliateId }),
+        searchSource: '1',
+        ...(affiliateId && {
+          partner_id: affiliateId,
+          utm_medium: 'online_publisher',
+        }),
       })
       return `https://www.getyourguide.com/s/?${params.toString()}`
     },
@@ -184,8 +188,8 @@ export function generateTransportUrl(
  * Affiliate link contexts - where to show which partners
  */
 export const affiliateContexts = {
-  // Attraction detail pages
-  attractionDetail: ['klook', 'agoda'] as AffiliatePartner[],
+  // Attraction detail pages - show both activity booking options
+  attractionDetail: ['klook', 'getyourguide', 'agoda'] as AffiliatePartner[],
 
   // Heritage hotels - prioritize Agoda
   heritageHotel: ['agoda'] as AffiliatePartner[],
@@ -197,13 +201,13 @@ export const affiliateContexts = {
   transport: ['12go'] as AffiliatePartner[],
 
   // Destination overview
-  destination: ['klook', 'agoda', '12go', 'getyourguide'] as AffiliatePartner[],
+  destination: ['klook', 'getyourguide', 'agoda', '12go'] as AffiliatePartner[],
 
   // Itinerary pages
-  itinerary: ['klook', 'agoda', '12go'] as AffiliatePartner[],
+  itinerary: ['klook', 'getyourguide', 'agoda', '12go'] as AffiliatePartner[],
 
   // Dashboard recommendations
-  dashboard: ['klook', 'agoda'] as AffiliatePartner[],
+  dashboard: ['klook', 'getyourguide', 'agoda'] as AffiliatePartner[],
 
   // Travel essentials (insurance, eSIM, VPN)
   essentials: ['safetywing', 'airalo', 'nordvpn'] as AffiliatePartner[],

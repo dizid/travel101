@@ -284,6 +284,11 @@ const klookUrl = computed(() => {
   return generateAffiliateUrl('klook', attraction.value.province || 'Thailand', attraction.value.name)
 })
 
+const getYourGuideUrl = computed(() => {
+  if (!attraction.value) return '#'
+  return generateAffiliateUrl('getyourguide', attraction.value.province || 'Thailand', attraction.value.name)
+})
+
 const agodaUrl = computed(() => {
   if (!attraction.value) return '#'
   return generateAffiliateUrl('agoda', attraction.value.province || 'Thailand')
@@ -299,7 +304,7 @@ const transportUrl = computed(() => {
   return generateTransportUrl('Bangkok', attraction.value.province || 'Thailand')
 })
 
-function handleAffiliateClick(partner: 'klook' | 'agoda' | '12go', url: string) {
+function handleAffiliateClick(partner: 'klook' | 'agoda' | '12go' | 'getyourguide', url: string) {
   trackAffiliateClick(partner, attraction.value?.province || 'Thailand', attraction.value?.slug)
   window.open(url, '_blank', 'noopener,noreferrer')
 }
@@ -738,13 +743,21 @@ const gradientClass = computed(() => {
             <p class="text-sm text-gray-600 mb-4">
               Find tours and experiences in {{ attraction.name }}.
             </p>
-            <button
-              @click="handleAffiliateClick('klook', klookUrl)"
-              class="btn-thai w-full justify-center"
-            >
-              View on Klook
-            </button>
-            <p class="text-xs text-gray-400 mt-2 text-center">Affiliate link</p>
+            <div class="space-y-2">
+              <button
+                @click="handleAffiliateClick('klook', klookUrl)"
+                class="btn-thai w-full justify-center"
+              >
+                View on Klook
+              </button>
+              <button
+                @click="handleAffiliateClick('getyourguide', getYourGuideUrl)"
+                class="w-full justify-center bg-[#FF5533] hover:bg-[#E64A2E] text-white font-medium py-2.5 px-4 rounded-lg transition-colors"
+              >
+                View on GetYourGuide
+              </button>
+            </div>
+            <p class="text-xs text-gray-400 mt-2 text-center">Affiliate links</p>
           </div>
 
           <!-- Book hotels card -->
