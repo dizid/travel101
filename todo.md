@@ -1,5 +1,11 @@
 # TODO: Smart Traveler Thailand
 
+
+Airalo uses Impact platform for affiliates - sign up at partners.airalo.com to get proper tracking links
+Once you have Impact affiliate link, update the Airalo URL format in affiliates.ts
+
+
+
 ## Affiliate Program Links
 - 12Go Asia: https://agent.12go.asia?referer=14551206
 - Agoda: https://partners.agoda.com/profile/addsites

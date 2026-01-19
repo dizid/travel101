@@ -34,6 +34,7 @@ import { useAttractionMeta, useAttractionSchema } from '@/composables/useSeo'
 import { useFavorites } from '@/composables/useFavorites'
 import ShareButton from '@/components/ui/ShareButton.vue'
 import MatchScoreCard from '@/components/ui/MatchScoreCard.vue'
+import WeatherWidget from '@/components/features/WeatherWidget.vue'
 
 const route = useRoute()
 const countryStore = useCountryStore()
@@ -787,6 +788,12 @@ const gradientClass = computed(() => {
               </div>
             </div>
           </div>
+
+          <!-- Weather widget -->
+          <WeatherWidget
+            :location="attraction.province || 'Bangkok'"
+            :compact="false"
+          />
         </div>
       </div>
     </div>
