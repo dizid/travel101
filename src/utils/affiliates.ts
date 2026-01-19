@@ -24,11 +24,12 @@ const affiliateConfigs: Record<AffiliatePartner, AffiliateConfig> = {
       const query = attractionName
         ? `${attractionName} ${destination}`
         : destination
-      const params = new URLSearchParams({
-        query,
-        ...(affiliateId && { aid: affiliateId }),
-      })
-      return `https://www.klook.com/search/?${params.toString()}`
+      // Use affiliate redirect domain to ensure tracking persists through redirects
+      const searchUrl = `https://www.klook.com/en-US/search/?query=${encodeURIComponent(query)}`
+      if (affiliateId) {
+        return `https://affiliate.klook.com/redirect?aid=${affiliateId}&url=${encodeURIComponent(searchUrl)}`
+      }
+      return searchUrl
     },
   },
   agoda: {
