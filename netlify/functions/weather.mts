@@ -85,22 +85,60 @@ function getPackingTips(forecast: WeatherData['forecast'], isMonsoon: boolean): 
   return tips.slice(0, 5)
 }
 
+// Generate fallback weather data for when API key is not configured
+function generateFallbackWeather(cityName: string, days: number): WeatherData {
+  const isMonsoon = isMonsoonSeason()
+  const baseTemp = isMonsoon ? 30 : 33
+  const rainChance = isMonsoon ? 65 : 25
+
+  const forecast = Array.from({ length: days }, (_, i) => {
+    const date = new Date()
+    date.setDate(date.getDate() + i)
+    return {
+      date: date.toISOString().split('T')[0],
+      maxtemp_c: baseTemp + Math.floor(Math.random() * 4),
+      mintemp_c: baseTemp - 6 + Math.floor(Math.random() * 3),
+      condition: isMonsoon ? 'Partly Cloudy' : 'Sunny',
+      icon: '//cdn.weatherapi.com/weather/64x64/day/116.png',
+      chance_of_rain: rainChance + Math.floor(Math.random() * 20),
+    }
+  })
+
+  return {
+    location: cityName,
+    current: {
+      temp_c: baseTemp + 1,
+      condition: isMonsoon ? 'Partly Cloudy' : 'Sunny',
+      icon: '//cdn.weatherapi.com/weather/64x64/day/116.png',
+      humidity: isMonsoon ? 75 : 60,
+      wind_kph: 12,
+      uv: 8,
+    },
+    forecast,
+    isMonsoon,
+    packingTips: getPackingTips(forecast, isMonsoon),
+  }
+}
+
 export default async (req: Request, context: Context) => {
   const apiKey = Netlify.env.get('WEATHERAPI_KEY')
-
-  if (!apiKey) {
-    return new Response(JSON.stringify({ error: 'Weather API not configured' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    })
-  }
-
   const url = new URL(req.url)
   const location = url.searchParams.get('location') || 'Bangkok'
   const days = Math.min(parseInt(url.searchParams.get('days') || '7'), 7)
 
   // Map slug to city name if needed
   const cityName = THAI_CITIES[location.toLowerCase()] || location
+
+  // Return fallback data if API key not configured
+  if (!apiKey) {
+    const fallbackData = generateFallbackWeather(cityName, days)
+    return new Response(JSON.stringify(fallbackData), {
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Weather-Source': 'fallback',
+      },
+    })
+  }
 
   try {
     // Check cache first
