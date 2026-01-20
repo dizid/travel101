@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import './__mocks__/db'
-import { setMockQueryResult, clearMockResults, wasQueryMade } from './__mocks__/db'
-import { setMockEnv, clearMockEnv } from './__tests__/setup'
-import { createMockRequest, parseResponse } from './__tests__/helpers'
+import '../__mocks__/db'
+import { setMockQueryResult, clearMockResults, wasQueryMade } from '../__mocks__/db'
+import { setMockEnv, clearMockEnv } from './setup.js'
+import { createMockRequest, parseResponse } from './helpers.js'
 
 // Mock Stripe responses
 const mockStripeResponses = {
@@ -52,7 +52,7 @@ vi.mock('stripe', () => ({
   default: vi.fn(() => mockStripe),
 }))
 
-import subscriptionHandler from './subscription.mts'
+import subscriptionHandler from '../subscription.mts'
 
 const mockContext = {
   geo: { city: 'Bangkok' },

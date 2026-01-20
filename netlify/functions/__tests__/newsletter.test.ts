@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { createMockRequest, parseResponse } from './__tests__/helpers'
+import { createMockRequest, parseResponse } from './helpers.js'
 
 // Mock neon directly (newsletter uses neon instead of getDb)
 const mockSqlFn = vi.fn()
@@ -7,7 +7,7 @@ vi.mock('@neondatabase/serverless', () => ({
   neon: vi.fn(() => mockSqlFn),
 }))
 
-import newsletterHandler from './newsletter.mts'
+import newsletterHandler from '../newsletter.mts'
 
 const mockContext = {
   geo: { city: 'Bangkok' },

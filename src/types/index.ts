@@ -391,3 +391,128 @@ export interface ModalState {
   component?: string
   props?: Record<string, unknown>
 }
+
+// =============================================
+// HERITAGE TYPES
+// =============================================
+
+// Thai historical eras
+export type ThaiEra =
+  | 'Prehistoric'
+  | 'Dvaravati Period'
+  | 'Srivijaya Period'
+  | 'Khmer Period'
+  | 'Sukhothai Period'
+  | 'Ayutthaya Period'
+  | 'Thonburi Period'
+  | 'Rattanakosin Period'
+  | 'Modern'
+
+// UNESCO World Heritage status
+export type UNESCOStatus = 'world_heritage_site' | 'tentative_list' | null
+
+// Heritage site types
+export type HeritageType =
+  | 'temple'
+  | 'palace'
+  | 'ruins'
+  | 'museum'
+  | 'monument'
+  | 'archaeological'
+  | 'natural'
+  | 'historical_park'
+
+// Heritage event types for timeline
+export type HeritageEventType =
+  | 'construction'
+  | 'destruction'
+  | 'restoration'
+  | 'designation'
+  | 'event'
+  | 'discovery'
+
+// Heritage-specific metadata (stored in attractions.metadata JSONB)
+export interface HeritageMetadata {
+  constructionDate?: string
+  constructionEra?: ThaiEra
+  architecturalStyles?: string[]
+  unescoStatus?: UNESCOStatus
+  unescoInscriptionYear?: number
+  unescoCriteria?: string[]
+  kingdomDynasty?: string
+  religiousSignificance?: string
+  entryFeeTHB?: number
+  entryFeeForeignerTHB?: number
+  openingHours?: string
+  dressCode?: string
+  bestTimeToVisit?: string
+  heritageType?: HeritageType
+  historicalSignificance?: string
+}
+
+// Image in heritage gallery
+export interface HeritageImage {
+  id: string
+  attractionId: string
+  imageUrl: string
+  thumbnailUrl?: string
+  caption?: string
+  altText: string
+  source?: 'unsplash' | 'wikimedia' | 'tat' | 'manual'
+  sourceUrl?: string
+  photographer?: string
+  photographerUrl?: string
+  license?: 'unsplash' | 'cc-by' | 'cc-by-sa' | 'public-domain'
+  isPrimary: boolean
+  displayOrder: number
+  width?: number
+  height?: number
+  blurHash?: string
+  createdAt?: Date
+}
+
+// Historical event in heritage timeline
+export interface HeritageEvent {
+  id: string
+  attractionId: string
+  eventYear?: number
+  eventYearEnd?: number
+  eventEra?: ThaiEra
+  title: string
+  description: string
+  eventType?: HeritageEventType
+  isApproximate: boolean
+  sortOrder: number
+  createdAt?: Date
+}
+
+// Full heritage site detail (extends AttractionDetail)
+export interface HeritageDetail extends AttractionDetail {
+  images: HeritageImage[]
+  timeline: HeritageEvent[]
+  heritageMetadata: HeritageMetadata
+}
+
+// Heritage list item (for cards in grid view)
+export interface HeritageSite extends Attraction {
+  primaryImage?: HeritageImage
+  heritageMetadata: HeritageMetadata
+  eventCount?: number
+  imageCount?: number
+}
+
+// Heritage list response
+export interface HeritageListResponse {
+  sites: HeritageSite[]
+  total: number
+  hasMore: boolean
+}
+
+// Heritage filter options
+export interface HeritageFilters {
+  era?: ThaiEra
+  region?: string
+  unescoOnly?: boolean
+  heritageType?: HeritageType
+  search?: string
+}

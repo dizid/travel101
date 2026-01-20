@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import './__mocks__/db'
-import { setMockQueryResult, clearMockResults, getMockQueryLog, mockSql } from './__mocks__/db'
-import { createMockRequest, parseResponse } from './__tests__/helpers'
-import userHandler from './user.mts'
+import '../__mocks__/db'
+import { setMockQueryResult, clearMockResults, getMockQueryLog, mockSql } from '../__mocks__/db'
+import { createMockRequest, parseResponse } from './helpers.js'
+import userHandler from '../user.mts'
 
 // Mock context
 const mockContext = {

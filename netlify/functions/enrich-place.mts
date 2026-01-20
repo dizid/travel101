@@ -31,6 +31,7 @@ interface EnrichmentResult {
   primary_category: string
   confidence: number
   reasoning: string
+  cost_tier: 'free' | 'budget' | 'mid_range' | 'luxury'
 }
 
 interface Place {
@@ -86,6 +87,12 @@ Description: ${place.description}
 ${place.about ? `About: ${place.about}` : ''}
 ${place.metadata && Object.keys(place.metadata).length > 0 ? `Additional info: ${JSON.stringify(place.metadata)}` : ''}
 
+COST TIER (assign one):
+- "free" - temples, parks, beaches, viewpoints, street markets
+- "budget" - under 500 THB (cheap eats, local tours, budget activities)
+- "mid_range" - 500-2000 THB (day tours, cooking classes, spa treatments)
+- "luxury" - over 2000 THB (fine dining, private tours, premium experiences)
+
 OUTPUT FORMAT (JSON only, no markdown):
 {
   "categories": {
@@ -94,8 +101,9 @@ OUTPUT FORMAT (JSON only, no markdown):
     ...
   },
   "primary_category": "culture",
+  "cost_tier": "free",
   "confidence": 0.85,
-  "reasoning": "Brief 1-2 sentence explanation of top scores"
+  "reasoning": "Brief 1-2 sentence explanation of top scores and cost tier"
 }`
 }
 
@@ -156,6 +164,49 @@ function validateScores(place: Place, scores: CategoryScores): { valid: boolean;
   return { valid: errors.length === 0, errors }
 }
 
+// Derive cost tier from place data and category scores
+function deriveCostTier(place: Place, scores: CategoryScores): 'free' | 'budget' | 'mid_range' | 'luxury' {
+  // Check metadata for explicit price
+  const meta = place.metadata as Record<string, unknown>
+  if (meta?.priceTHB) {
+    const price = Number(meta.priceTHB)
+    if (price === 0) return 'free'
+    if (price < 500) return 'budget'
+    if (price < 2000) return 'mid_range'
+    return 'luxury'
+  }
+
+  // Check for priceRange string
+  if (meta?.priceRange) {
+    const range = String(meta.priceRange)
+    if (range === '$') return 'budget'
+    if (range === '$$') return 'mid_range'
+    if (range === '$$$' || range === '$$$$') return 'luxury'
+  }
+
+  // Infer from place type
+  const freeTypes = ['temple', 'beach', 'viewpoint', 'park', 'market', 'monument']
+  if (freeTypes.some(t => place.place_type.includes(t) || place.category.includes(t))) {
+    return 'free'
+  }
+
+  // Infer from category scores
+  if ((scores.luxury || 0) > 0.7) return 'luxury'
+  if ((scores.budget || 0) > 0.7) return 'budget'
+
+  // Default based on place type
+  if (place.place_type === 'tour') return 'mid_range'
+  if (place.place_type === 'course') return 'mid_range'
+  if (place.place_type === 'coworking') return 'mid_range'
+  if (place.place_type === 'restaurant' && (scores.fine_dining || 0) > 0.5) return 'luxury'
+  if (place.place_type === 'restaurant') return 'budget'
+
+  // Default for attractions (temples, monuments, parks are often free)
+  if ((scores.temples || 0) > 0.5 || (scores.nature || 0) > 0.7) return 'free'
+
+  return 'budget'
+}
+
 // Call Claude to score a place
 async function scorePlace(anthropic: Anthropic, place: Place): Promise<EnrichmentResult> {
   const prompt = buildScoringPrompt(place)
@@ -202,10 +253,14 @@ async function enrichSinglePlace(db: ReturnType<typeof getDb>, anthropic: Anthro
   const validation = validateScores(place, result.categories)
   const status = validation.valid && result.confidence >= 0.7 ? 'ai_scored' : 'needs_review'
 
+  // Derive cost_tier from AI result or infer from scores
+  const costTier = result.cost_tier || deriveCostTier(place, result.categories)
+
   // Update database
   await db`
     UPDATE attractions SET
       categories = ${JSON.stringify(result.categories)},
+      cost_tier = ${costTier},
       ai_enriched_at = NOW(),
       verification_status = ${status},
       metadata = jsonb_set(
@@ -221,6 +276,7 @@ async function enrichSinglePlace(db: ReturnType<typeof getDb>, anthropic: Anthro
     slug: place.slug,
     categories: result.categories,
     primary_category: result.primary_category,
+    cost_tier: costTier,
     confidence: result.confidence,
     reasoning: result.reasoning,
     validation,
@@ -246,10 +302,12 @@ async function enrichBatch(db: ReturnType<typeof getDb>, anthropic: Anthropic, l
       const result = await scorePlace(anthropic, place)
       const validation = validateScores(place, result.categories)
       const status = validation.valid && result.confidence >= 0.7 ? 'ai_scored' : 'needs_review'
+      const costTier = result.cost_tier || deriveCostTier(place, result.categories)
 
       await db`
         UPDATE attractions SET
           categories = ${JSON.stringify(result.categories)},
+          cost_tier = ${costTier},
           ai_enriched_at = NOW(),
           verification_status = ${status},
           metadata = jsonb_set(
@@ -264,6 +322,7 @@ async function enrichBatch(db: ReturnType<typeof getDb>, anthropic: Anthropic, l
         placeId: place.id,
         slug: place.slug,
         status,
+        cost_tier: costTier,
         confidence: result.confidence,
         errors: validation.errors,
       })

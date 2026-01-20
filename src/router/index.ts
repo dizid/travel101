@@ -105,6 +105,18 @@ const routes: RouteRecordRaw[] = [
     meta: { title: 'Contact Us' },
   },
   {
+    path: '/heritage',
+    name: 'heritage',
+    component: () => import('@views/HeritageView.vue'),
+    meta: { title: 'Thailand Heritage Sites', seoKey: 'heritage' },
+  },
+  {
+    path: '/heritage/:slug',
+    name: 'heritage-detail',
+    component: () => import('@views/HeritageDetailView.vue'),
+    meta: { title: 'Heritage Site', dynamicSeo: true },
+  },
+  {
     path: '/:pathMatch(.*)*',
     name: 'not-found',
     component: () => import('@views/NotFoundView.vue'),

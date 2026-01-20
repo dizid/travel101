@@ -1,12 +1,12 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import './__mocks__/db'
-import './__mocks__/anthropic'
-import { setMockQueryResult, clearMockResults, wasQueryMade } from './__mocks__/db'
-import { setMockAIJsonResponse, resetAnthropicMocks, setMockAIError } from './__mocks__/anthropic'
-import { setMockEnv, clearMockEnv } from './__tests__/setup'
-import { createMockRequest, parseResponse } from './__tests__/helpers'
+import '../__mocks__/db'
+import '../__mocks__/anthropic'
+import { setMockQueryResult, clearMockResults, wasQueryMade } from '../__mocks__/db'
+import { setMockAIJsonResponse, resetAnthropicMocks, setMockAIError } from '../__mocks__/anthropic'
+import { setMockEnv, clearMockEnv } from './setup.js'
+import { createMockRequest, parseResponse } from './helpers.js'
 
-import itineraryHandler from './itinerary.mts'
+import itineraryHandler from '../itinerary.mts'
 
 const mockContext = {
   geo: { city: 'Bangkok' },

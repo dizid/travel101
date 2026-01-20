@@ -25,7 +25,9 @@
     "vue-router": "^4.3.0"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.11.0",
     "@netlify/functions": "^2.6.0",
+    "@playwright/test": "^1.57.0",
     "@types/node": "^20.11.25",
     "@typescript-eslint/eslint-plugin": "^7.2.0",
     "@typescript-eslint/parser": "^7.2.0",

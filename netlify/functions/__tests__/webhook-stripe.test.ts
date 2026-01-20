@@ -1,10 +1,10 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import './__mocks__/db'
-import './__mocks__/stripe'
-import { clearMockResults, getMockQueryLog, wasQueryMade } from './__mocks__/db'
-import { mockStripe, webhookEvents } from './__mocks__/stripe'
-import { setMockEnv, clearMockEnv } from './__tests__/setup'
-import webhookHandler from './webhook-stripe.mts'
+import '../__mocks__/db'
+import '../__mocks__/stripe'
+import { clearMockResults, getMockQueryLog, wasQueryMade } from '../__mocks__/db'
+import { mockStripe, webhookEvents } from '../__mocks__/stripe'
+import { setMockEnv, clearMockEnv } from './setup.js'
+import webhookHandler from '../webhook-stripe.mts'
 
 const mockContext = {
   geo: { city: 'Bangkok' },

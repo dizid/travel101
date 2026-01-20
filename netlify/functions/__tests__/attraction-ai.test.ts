@@ -1,12 +1,12 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import './__mocks__/db'
-import './__mocks__/anthropic'
-import { setMockQueryResult, clearMockResults, wasQueryMade } from './__mocks__/db'
-import { setMockAIResponse, resetAnthropicMocks, setMockAIError, mockAnthropic } from './__mocks__/anthropic'
-import { setMockEnv, clearMockEnv } from './__tests__/setup'
-import { createMockRequest, parseResponse } from './__tests__/helpers'
+import '../__mocks__/db'
+import '../__mocks__/anthropic'
+import { setMockQueryResult, clearMockResults, wasQueryMade } from '../__mocks__/db'
+import { setMockAIResponse, resetAnthropicMocks, setMockAIError, mockAnthropic } from '../__mocks__/anthropic'
+import { setMockEnv, clearMockEnv } from './setup.js'
+import { createMockRequest, parseResponse } from './helpers.js'
 
-import attractionAiHandler from './attraction-ai.mts'
+import attractionAiHandler from '../attraction-ai.mts'
 
 const mockContext = {
   geo: { city: 'Bangkok' },
@@ -448,7 +448,7 @@ describe('attraction-ai function', () => {
   describe('error handling', () => {
     it('should return 500 when database query fails', async () => {
       // Test error handling by making the database throw
-      const { setMockQueryError } = await import('./__mocks__/db')
+      const { setMockQueryError } = await import('../__mocks__/db')
       setMockQueryError(new Error('Database connection failed'))
 
       const req = createMockRequest('POST', '/api/attraction-ai', {

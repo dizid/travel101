@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { createMockRequest, parseResponse } from './__tests__/helpers'
-import { setMockEnv, clearMockEnv } from './__tests__/setup'
+import { createMockRequest, parseResponse } from './helpers.js'
+import { setMockEnv, clearMockEnv } from './setup.js'
 
 // Mock Anthropic
 const mockCreate = vi.fn()
@@ -10,7 +10,7 @@ vi.mock('@anthropic-ai/sdk', () => ({
   })),
 }))
 
-import packingHandler from './packing.mts'
+import packingHandler from '../packing.mts'
 
 const mockContext = {
   geo: { city: 'Bangkok' },

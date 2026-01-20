@@ -1,10 +1,10 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import './__mocks__/db'
-import { setMockQueryResult, clearMockResults, wasQueryMade, setMockQueryError } from './__mocks__/db'
-import { setMockEnv, clearMockEnv } from './__tests__/setup'
-import { createMockRequest, parseResponse } from './__tests__/helpers'
+import '../__mocks__/db'
+import { setMockQueryResult, clearMockResults, wasQueryMade, setMockQueryError } from '../__mocks__/db'
+import { setMockEnv, clearMockEnv } from './setup.js'
+import { createMockRequest, parseResponse } from './helpers.js'
 
-import safetyHandler from './safety.mts'
+import safetyHandler from '../safety.mts'
 
 const mockContext = {
   geo: { city: 'Bangkok' },
