@@ -51,7 +51,7 @@
 ## Technical
 
 ### Authentication
-- Clerk-powered user auth
+- Neon Auth powered user authentication
 - Persistent sessions with local storage backup
 
 ### Subscriptions (Stripe)
@@ -63,8 +63,18 @@
 ### Backend (Netlify Functions)
 - `user.mts` - User profile management
 - `ai.mts` - AI chat endpoints
+- `attraction-ai.mts` - Personalized attraction AI
+- `attractions.mts` - Attraction queries/filtering
+- `itinerary.mts` - AI itinerary generation
+- `matches.mts` - Profile-based matching
+- `packing.mts` - AI packing list generator
+- `weather.mts` - Weather forecasts
+- `alerts.mts` - Travel alerts
+- `currency.mts` - Currency conversion
 - `subscription.mts` - Stripe subscription handling
 - `webhook-stripe.mts` - Payment webhook processing
+- `newsletter.mts` - Email signups
+- `sitemap.mts` - Dynamic sitemap
 
 ### Database (Neon PostgreSQL)
 - User preferences (JSONB)

@@ -55,13 +55,28 @@ src/
 ├── types/               # TypeScript interfaces
 └── styles/              # Tailwind + global CSS
 
-netlify/functions/       # Serverless backend
+netlify/functions/       # Serverless backend (20 functions)
 ├── user.mts             # User profile CRUD
 ├── ai.mts               # Claude API for travel advice
 ├── attraction-ai.mts    # Personalized attraction AI (intros, tips, chat)
 ├── attractions.mts      # Attraction queries with filtering
+├── alerts.mts           # Travel alerts by location
+├── advisories.mts       # Safety advisories
+├── currency.mts         # Currency conversion rates
+├── flights.mts          # Flight search integration
+├── itinerary.mts        # AI itinerary generation
+├── matches.mts          # Profile-based attraction matching
+├── packing.mts          # AI packing list generator
+├── safety.mts           # Safety information by region
+├── weather.mts          # Weather forecasts
+├── newsletter.mts       # Email newsletter signup
+├── sitemap.mts          # Dynamic XML sitemap
+├── google-places.mts    # Google Places API integration
+├── enrich-place.mts     # AI place enrichment pipeline
+├── ingest-places.mts    # Bulk place ingestion
 ├── subscription.mts     # Stripe subscription management
 ├── webhook-stripe.mts   # Stripe webhook handler
+├── __tests__/           # Function unit tests (Vitest)
 └── lib/
     ├── db.mts           # Neon database wrapper
     └── matching.mts     # Backend matching logic

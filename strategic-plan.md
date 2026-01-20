@@ -549,6 +549,8 @@ Day 10: Launch
 - [ ] Move currency, emergency numbers to config
 - [ ] Create `src/config/countries/thailand.ts` as reference
 
+> Note: Auth uses Neon Auth (not Clerk as originally planned)
+
 **Day 2-3: Database Schema (Multi-Country Ready)**
 - [ ] Create `db/migrations/001_core_schema.sql`:
   - Add `country_id` column to existing `attractions` table
