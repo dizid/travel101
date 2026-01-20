@@ -1,0 +1,3 @@
+# Ignore test files from function bundling
+netlify/functions/*.test.ts
+netlify/functions/__mocks__
