@@ -277,24 +277,49 @@ watch(currentIndex, (newIndex, oldIndex) => {
             <p v-if="currentImage?.caption" class="text-sm mb-2">
               {{ currentImage.caption }}
             </p>
+            <!-- Attribution: Unsplash requires format "Photo by [Name] on [Unsplash]" with both linked -->
             <div
               v-if="currentImage?.photographer"
-              class="text-xs text-gray-400 flex items-center justify-center gap-2"
+              class="text-xs text-gray-400 flex items-center justify-center gap-1"
             >
-              <span>Photo by {{ currentImage.photographer }}</span>
+              <span>Photo by</span>
               <a
-                v-if="currentImage.sourceUrl"
-                :href="currentImage.sourceUrl"
+                v-if="currentImage.photographerUrl"
+                :href="currentImage.photographerUrl"
                 target="_blank"
                 rel="noopener noreferrer"
-                class="inline-flex items-center gap-1 hover:text-white transition-colors"
+                class="hover:text-white transition-colors underline"
                 @click.stop
               >
-                <LinkOutlined />
-                <span v-if="currentImage.source === 'unsplash'">Unsplash</span>
-                <span v-else-if="currentImage.source === 'wikimedia'">Wikimedia</span>
-                <span v-else>Source</span>
+                {{ currentImage.photographer }}
               </a>
+              <span v-else>{{ currentImage.photographer }}</span>
+              <template v-if="currentImage.source === 'unsplash'">
+                <span>on</span>
+                <a
+                  href="https://unsplash.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="hover:text-white transition-colors underline"
+                  @click.stop
+                >
+                  Unsplash
+                </a>
+              </template>
+              <template v-else-if="currentImage.sourceUrl">
+                <span>·</span>
+                <a
+                  :href="currentImage.sourceUrl"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="inline-flex items-center gap-1 hover:text-white transition-colors"
+                  @click.stop
+                >
+                  <LinkOutlined />
+                  <span v-if="currentImage.source === 'wikimedia'">Wikimedia</span>
+                  <span v-else>Source</span>
+                </a>
+              </template>
             </div>
           </div>
 
