@@ -9,7 +9,7 @@ export default defineConfig({
   reporter: 'html',
 
   use: {
-    baseURL: 'http://localhost:8888',
+    baseURL: 'http://localhost:3000',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
@@ -39,9 +39,9 @@ export default defineConfig({
   ],
 
   webServer: {
-    command: 'netlify dev',
-    url: 'http://localhost:8888',
+    command: 'npm run dev -- --port 3000 --strictPort',
+    url: 'http://localhost:3000',
     reuseExistingServer: !process.env.CI,
-    timeout: 120000,
+    timeout: 60000,
   },
 })
