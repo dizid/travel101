@@ -236,40 +236,93 @@ function getScoreBgColor(score: number) {
 
     <!-- Content -->
     <div class="max-w-5xl mx-auto px-4 sm:px-6 py-8">
-      <!-- Pro Gate -->
-      <div v-if="!isPro" class="card-thai text-center py-12">
-        <div class="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-pink-100 to-rose-200 flex items-center justify-center">
-          <LockOutlined class="text-3xl text-rose-600" />
-        </div>
-        <h2 class="text-2xl font-display font-bold text-gray-900 mb-3">
-          Find Your Perfect Matches
-        </h2>
-        <p class="text-gray-600 max-w-md mx-auto mb-6">
-          Get AI-powered recommendations based on your travel profile. See match scores, reasons why places fit you, and discover hidden gems.
-        </p>
+      <!-- Pro Gate with Preview -->
+      <div v-if="!isPro" class="space-y-6">
+        <!-- Preview Top Matches (blurred teaser) -->
+        <div v-if="hasProfile && sortedByMatch.length > 0" class="card-thai bg-gradient-to-r from-pink-50 to-rose-50 border-pink-200 overflow-hidden">
+          <div class="flex items-center gap-2 mb-4">
+            <StarFilled class="text-pink-500" />
+            <h2 class="text-lg font-bold text-gray-900">Your Top Matches</h2>
+            <span class="ml-auto text-xs bg-pink-100 text-pink-700 px-2 py-1 rounded-full">Preview</span>
+          </div>
 
-        <div class="grid sm:grid-cols-3 gap-4 max-w-xl mx-auto mb-8">
-          <div class="p-4 rounded-xl bg-gray-50">
-            <span class="text-2xl block mb-2">💯</span>
-            <span class="text-sm font-medium text-gray-700">Match Scores</span>
+          <!-- Show 3 preview cards -->
+          <div class="grid sm:grid-cols-3 gap-4 mb-4">
+            <div
+              v-for="(attraction, index) in sortedByMatch.slice(0, 3)"
+              :key="attraction.slug"
+              class="relative bg-white rounded-xl p-4"
+            >
+              <div
+                :class="[
+                  'absolute -top-2 -left-2 w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg',
+                  index === 0 ? 'bg-gradient-to-br from-yellow-400 to-amber-500' :
+                  index === 1 ? 'bg-gradient-to-br from-gray-300 to-gray-400' :
+                  'bg-gradient-to-br from-amber-600 to-amber-700'
+                ]"
+              >
+                {{ index + 1 }}
+              </div>
+
+              <div class="flex justify-end mb-2">
+                <span :class="['px-3 py-1 rounded-full text-sm font-bold', getScoreBgColor(calculateLocalScore(attraction))]">
+                  {{ calculateLocalScore(attraction) }}%
+                </span>
+              </div>
+
+              <h3 class="font-semibold text-gray-900 mb-1">{{ attraction.name }}</h3>
+              <p class="text-xs text-gray-500 flex items-center gap-1">
+                <EnvironmentOutlined />
+                {{ attraction.province }}
+              </p>
+            </div>
           </div>
-          <div class="p-4 rounded-xl bg-gray-50">
-            <span class="text-2xl block mb-2">💎</span>
-            <span class="text-sm font-medium text-gray-700">Hidden Gems</span>
-          </div>
-          <div class="p-4 rounded-xl bg-gray-50">
-            <span class="text-2xl block mb-2">🎯</span>
-            <span class="text-sm font-medium text-gray-700">Personalized</span>
+
+          <!-- Blurred additional matches -->
+          <div class="relative">
+            <div class="absolute inset-0 bg-gradient-to-b from-transparent via-white/70 to-white z-10 pointer-events-none" />
+            <div class="filter blur-sm opacity-60">
+              <div class="grid sm:grid-cols-3 gap-4">
+                <div
+                  v-for="attraction in sortedByMatch.slice(3, 6)"
+                  :key="attraction.slug"
+                  class="bg-white rounded-xl p-4"
+                >
+                  <div class="flex justify-end mb-2">
+                    <span class="px-3 py-1 rounded-full text-sm font-bold bg-gray-100 text-gray-600">
+                      {{ calculateLocalScore(attraction) }}%
+                    </span>
+                  </div>
+                  <h3 class="font-semibold text-gray-700 mb-1">{{ attraction.name }}</h3>
+                  <p class="text-xs text-gray-400">{{ attraction.province }}</p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
-        <RouterLink
-          to="/dashboard#pro"
-          class="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-pink-500 to-rose-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all"
-        >
-          <CrownFilled />
-          Upgrade to Pro - $10/mo
-        </RouterLink>
+        <!-- Upgrade CTA -->
+        <div class="card-thai text-center py-8 bg-gradient-to-br from-white to-pink-50 border-pink-200">
+          <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-pink-500 to-rose-600 flex items-center justify-center text-white">
+            <LockOutlined class="text-2xl" />
+          </div>
+
+          <h2 class="text-xl font-display font-bold text-gray-900 mb-2">
+            {{ sortedByMatch.length - 3 > 0 ? `${sortedByMatch.length - 3} more matches waiting` : 'Unlock Your Matches' }}
+          </h2>
+          <p class="text-gray-600 max-w-md mx-auto mb-6">
+            See detailed match breakdowns, save favorites, add to itineraries, and discover hidden gems perfect for you.
+          </p>
+
+          <RouterLink
+            to="/dashboard#pro"
+            class="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-pink-500 to-rose-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all"
+          >
+            <CrownFilled />
+            Start Free Trial
+          </RouterLink>
+          <p class="text-xs text-gray-400 mt-3">7 days free · $10/month after · Cancel anytime</p>
+        </div>
       </div>
 
       <!-- Profile Required -->

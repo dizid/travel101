@@ -61,7 +61,7 @@ async function fetchSite() {
   error.value = null
 
   try {
-    const response = await get<{ site: HeritageDetail }>(`/api/heritage/${slug}`)
+    const response = await get<{ site: HeritageDetail }>(`/heritage/${slug}`)
     if (response) {
       site.value = response.site
     }
