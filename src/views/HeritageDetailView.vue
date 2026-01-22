@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useApi } from '@/composables/useApi'
-import type { HeritageDetail, HeritageImage, HeritageEvent, HeritageMetadata } from '@/types'
+import { useWeather } from '@/composables/useWeather'
+import { useFestivals } from '@/composables/useFestivals'
+import type { HeritageDetail, HeritageImage, HeritageEvent, HeritageMetadata, UpcomingFestival } from '@/types'
 import HeritageGallery from '@/components/features/heritage/HeritageGallery.vue'
 import HeritageTimeline from '@/components/features/heritage/HeritageTimeline.vue'
 import LoadingSpinner from '@/components/ui/LoadingSpinner.vue'
@@ -26,6 +28,13 @@ const site = ref<HeritageDetail | null>(null)
 const loading = ref(true)
 const error = ref<string | null>(null)
 const activeTab = ref<'overview' | 'history' | 'tips' | 'nearby'>('overview')
+
+// Weather
+const { fetchWeather, weatherData, weatherIcon, currentTemp, rainChanceToday, uvLevel } = useWeather()
+
+// Festivals
+const { fetchByProvince, getFestivalEmoji, formatFestivalDate } = useFestivals()
+const provinceFestivals = ref<UpcomingFestival[]>([])
 
 // Computed
 const metadata = computed<HeritageMetadata>(() => site.value?.heritageMetadata || {})
@@ -86,6 +95,34 @@ function share() {
     })
   }
 }
+
+// Fetch weather and festivals when site loads
+watch(() => site.value?.province, async (province) => {
+  if (province) {
+    // Fetch weather for the province
+    fetchWeather(province, 3)
+
+    // Fetch upcoming festivals in this province
+    const festivals = await fetchByProvince(province)
+    const today = new Date()
+    const year = today.getFullYear()
+    provinceFestivals.value = festivals
+      .filter((f) => {
+        const dateStr = year === 2025 ? f.date2025 : f.date2026
+        return dateStr && new Date(dateStr) >= today
+      })
+      .map((f) => {
+        const dateStr = (year === 2025 ? f.date2025 : f.date2026)!
+        return {
+          ...f,
+          nextDate: dateStr,
+          daysUntil: Math.ceil((new Date(dateStr).getTime() - today.getTime()) / (1000 * 60 * 60 * 24)),
+        }
+      })
+      .sort((a, b) => a.daysUntil - b.daysUntil)
+      .slice(0, 2)
+  }
+}, { immediate: true })
 
 onMounted(() => {
   fetchSite()
@@ -398,6 +435,63 @@ onMounted(() => {
                   <dd class="text-gray-900">{{ metadata.bestTimeToVisit }}</dd>
                 </div>
               </dl>
+            </div>
+
+            <!-- Weather Card -->
+            <div v-if="weatherData" class="bg-white rounded-xl shadow-sm p-6">
+              <h3 class="font-semibold text-gray-900 mb-4">Current Weather</h3>
+              <div class="flex items-center gap-4 mb-4">
+                <span class="text-4xl">{{ weatherIcon }}</span>
+                <div>
+                  <div class="text-2xl font-bold text-gray-900">{{ currentTemp }}°C</div>
+                  <div class="text-sm text-gray-600">{{ weatherData.current.condition }}</div>
+                </div>
+              </div>
+              <div class="space-y-2 text-sm">
+                <div class="flex justify-between">
+                  <span class="text-gray-500">Rain chance</span>
+                  <span :class="rainChanceToday > 50 ? 'text-blue-600 font-medium' : 'text-gray-900'">
+                    {{ rainChanceToday }}%
+                  </span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-gray-500">UV Index</span>
+                  <span :class="uvLevel.color">{{ uvLevel.level }}</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-gray-500">Humidity</span>
+                  <span class="text-gray-900">{{ weatherData.current.humidity }}%</span>
+                </div>
+              </div>
+              <div v-if="rainChanceToday > 40" class="mt-4 p-3 bg-blue-50 rounded-lg text-sm text-blue-700">
+                💡 Bring an umbrella - rain is likely
+              </div>
+              <div v-else-if="uvLevel.level === 'Very High' || uvLevel.level === 'Extreme'" class="mt-4 p-3 bg-amber-50 rounded-lg text-sm text-amber-700">
+                ☀️ {{ uvLevel.advice }} - bring sunscreen
+              </div>
+            </div>
+
+            <!-- Upcoming Festivals Card -->
+            <div v-if="provinceFestivals.length > 0" class="bg-white rounded-xl shadow-sm p-6">
+              <h3 class="font-semibold text-gray-900 mb-4">Upcoming Festivals</h3>
+              <div class="space-y-3">
+                <div
+                  v-for="festival in provinceFestivals"
+                  :key="festival.slug"
+                  class="flex items-start gap-3"
+                >
+                  <span class="text-2xl">{{ getFestivalEmoji(festival) }}</span>
+                  <div>
+                    <div class="font-medium text-gray-900">{{ festival.name }}</div>
+                    <div class="text-sm text-gray-500">
+                      {{ formatFestivalDate(festival.nextDate, festival.durationDays) }}
+                      <span class="text-primary-600 ml-1">
+                        ({{ festival.daysUntil === 0 ? 'Today!' : festival.daysUntil === 1 ? 'Tomorrow!' : `in ${festival.daysUntil} days` }})
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <!-- Book Tour Card -->

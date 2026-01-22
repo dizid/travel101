@@ -3,6 +3,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useApi } from '@/composables/useApi'
 import type { HeritageSite, HeritageImage } from '@/types'
 import HeritageCard from '@/components/features/heritage/HeritageCard.vue'
+import UpcomingFestivalBanner from '@/components/features/UpcomingFestivalBanner.vue'
 import LoadingSpinner from '@/components/ui/LoadingSpinner.vue'
 import {
   SearchOutlined,
@@ -246,6 +247,9 @@ onMounted(() => {
 
     <!-- Content -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <!-- Upcoming Festivals Banner -->
+      <UpcomingFestivalBanner :limit="3" />
+
       <!-- Loading State -->
       <div v-if="loading" class="flex items-center justify-center py-20">
         <LoadingSpinner size="lg" />

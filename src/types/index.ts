@@ -516,3 +516,48 @@ export interface HeritageFilters {
   heritageType?: HeritageType
   search?: string
 }
+
+// =============================================
+// FESTIVAL TYPES
+// =============================================
+
+export type FestivalType = 'religious' | 'cultural' | 'royal' | 'modern'
+export type FestivalReligion = 'buddhist' | 'hindu' | 'taoist' | 'animist' | 'secular'
+
+export interface Festival {
+  id: string
+  slug: string
+  name: string
+  nameThai?: string
+  description?: string
+  monthTypical?: number
+  dateType: 'fixed' | 'lunar' | 'variable'
+  dateFixed?: string
+  durationDays: number
+  date2025?: string
+  date2026?: string
+  provinces?: string[]
+  isNationwide: boolean
+  bestLocations?: string[]
+  imageUrl?: string
+  activities?: string[]
+  tips?: string[]
+  dressCode?: string
+  festivalType?: FestivalType
+  religion?: FestivalReligion
+}
+
+export interface UpcomingFestival extends Festival {
+  nextDate: string
+  daysUntil: number
+}
+
+export interface FestivalListResponse {
+  festivals: Festival[]
+  count: number
+}
+
+export interface UpcomingFestivalResponse {
+  festivals: UpcomingFestival[]
+  count: number
+}
