@@ -26,9 +26,12 @@ const hasMultipleImages = computed(() => props.images.length > 1)
 
 // Track Unsplash downloads for API compliance
 async function trackUnsplashDownload(image: HeritageImage) {
-  if (image.source !== 'unsplash' || !image.id) return
+  if (image.source !== 'unsplash' || !image.sourceUrl) return
   try {
-    await fetch(`/api/unsplash-track?id=${image.id}`)
+    // Extract Unsplash photo ID from sourceUrl (https://unsplash.com/photos/abc123)
+    const photoId = image.sourceUrl.split('/photos/')[1]?.split(/[/?]/)[0]
+    if (!photoId) return
+    await fetch(`/api/unsplash-track?id=${photoId}`)
   } catch (e) {
     console.warn('Unsplash tracking failed:', e)
   }
