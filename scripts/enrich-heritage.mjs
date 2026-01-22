@@ -670,9 +670,10 @@ async function main() {
       process.exit(1)
     }
 
+    const rawMetadata = existing[0].metadata
     const site = {
       ...existing[0],
-      metadata: existing[0].metadata || {},
+      metadata: typeof rawMetadata === 'string' ? JSON.parse(rawMetadata) : (rawMetadata || {}),
     }
 
     await enrichSite(site)
@@ -685,10 +686,11 @@ async function main() {
 
     console.log(`Found ${sites.length} heritage sites to enrich\n`)
 
-    for (const site of sites) {
+    for (const siteRow of sites) {
+      const rawMetadata = siteRow.metadata
       await enrichSite({
-        ...site,
-        metadata: site.metadata || {},
+        ...siteRow,
+        metadata: typeof rawMetadata === 'string' ? JSON.parse(rawMetadata) : (rawMetadata || {}),
       })
       // Rate limiting
       await new Promise(resolve => setTimeout(resolve, 1000))
