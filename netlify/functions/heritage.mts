@@ -230,8 +230,26 @@ async function handleList(db: ReturnType<typeof getDb>, url: URL) {
     `
   }
 
-  // Create a map of images by attraction_id
-  const imageMap = new Map(primaryImages.map(img => [img.attraction_id, img]))
+  // Transform and create a map of images by attraction_id
+  const transformImage = (img: HeritageImage) => ({
+    id: img.id,
+    attractionId: img.attraction_id,
+    imageUrl: img.image_url,
+    thumbnailUrl: img.thumbnail_url,
+    caption: img.caption,
+    altText: img.alt_text,
+    source: img.source,
+    sourceUrl: img.source_url,
+    photographer: img.photographer,
+    photographerUrl: img.photographer_url,
+    license: img.license,
+    isPrimary: img.is_primary,
+    displayOrder: img.display_order,
+    width: img.width,
+    height: img.height,
+    blurHash: img.blur_hash,
+  })
+  const imageMap = new Map(primaryImages.map(img => [img.attraction_id, transformImage(img)]))
 
   // Get image and event counts
   let imageCounts: { attraction_id: string; count: string }[] = []
@@ -337,12 +355,45 @@ async function handleDetail(db: ReturnType<typeof getDb>, slug: string) {
     ORDER BY sort_order, created_at
   `
 
+  // Transform snake_case to camelCase for frontend
+  const transformedImages = images.map(img => ({
+    id: img.id,
+    attractionId: img.attraction_id,
+    imageUrl: img.image_url,
+    thumbnailUrl: img.thumbnail_url,
+    caption: img.caption,
+    altText: img.alt_text,
+    source: img.source,
+    sourceUrl: img.source_url,
+    photographer: img.photographer,
+    photographerUrl: img.photographer_url,
+    license: img.license,
+    isPrimary: img.is_primary,
+    displayOrder: img.display_order,
+    width: img.width,
+    height: img.height,
+    blurHash: img.blur_hash,
+  }))
+
+  const transformedTimeline = timeline.map(evt => ({
+    id: evt.id,
+    attractionId: evt.attraction_id,
+    eventYear: evt.event_year,
+    eventYearEnd: evt.event_year_end,
+    eventEra: evt.event_era,
+    title: evt.title,
+    description: evt.description,
+    eventType: evt.event_type,
+    isApproximate: evt.is_approximate,
+    sortOrder: evt.sort_order,
+  }))
+
   return json({
     site: {
       ...site,
       heritageMetadata: site.metadata || {},
-      images,
-      timeline,
+      images: transformedImages,
+      timeline: transformedTimeline,
       tips,
       secrets,
       recommendations,
