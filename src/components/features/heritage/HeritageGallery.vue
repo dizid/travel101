@@ -28,9 +28,9 @@ const hasMultipleImages = computed(() => props.images.length > 1)
 async function trackUnsplashDownload(image: HeritageImage) {
   if (image.source !== 'unsplash' || !image.sourceUrl) return
   try {
-    // Extract Unsplash photo ID from sourceUrl (e.g., https://unsplash.com/photos/description-slug-PHOTOID)
+    // Extract 11-char Unsplash photo ID from end of URL (IDs can contain hyphens like TojXlmfo-3o)
     const pathSegment = image.sourceUrl.split('/photos/')[1]?.split(/[?#]/)[0]
-    const photoId = pathSegment?.split('-').pop()
+    const photoId = pathSegment?.match(/[a-zA-Z0-9_-]{11}$/)?.[0]
     if (!photoId) return
     await fetch(`/api/unsplash-track?id=${photoId}`)
   } catch (e) {
