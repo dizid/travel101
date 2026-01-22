@@ -75,6 +75,9 @@ export default async (req: Request, context: Context) => {
             success_url: `${baseUrl}/dashboard?upgrade=success`,
             cancel_url: `${baseUrl}/dashboard?upgrade=canceled`,
             metadata: { user_id: userId as string },
+            subscription_data: {
+              trial_period_days: 7,
+            },
           })
 
           return new Response(JSON.stringify({ url: session.url }), {

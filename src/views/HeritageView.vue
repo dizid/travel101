@@ -77,7 +77,7 @@ async function fetchSites() {
       sites: (HeritageSite & { primaryImage?: HeritageImage; imageCount?: number; eventCount?: number })[]
       total: number
       hasMore: boolean
-    }>(`/api/heritage?${params.toString()}`)
+    }>(`/heritage?${params.toString()}`)
 
     if (response) {
       sites.value = response.sites
@@ -95,8 +95,8 @@ async function fetchSites() {
 async function fetchFilterOptions() {
   try {
     const [erasResponse, regionsResponse] = await Promise.all([
-      get<{ eras: string[] }>('/api/heritage/eras'),
-      get<{ regions: { name: string; count: number }[] }>('/api/heritage/regions'),
+      get<{ eras: string[] }>('/heritage/eras'),
+      get<{ regions: { name: string; count: number }[] }>('/heritage/regions'),
     ])
 
     if (erasResponse) {

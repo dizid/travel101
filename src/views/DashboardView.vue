@@ -176,12 +176,12 @@ const profileCompleteness = computed(() => {
             id="pro"
             class="card-thai bg-gradient-to-br from-primary-500 to-primary-700 text-white p-6"
           >
-            <div class="flex items-center gap-2 mb-4">
+            <div class="flex items-center gap-2 mb-3">
               <CrownOutlined class="text-xl" />
-              <h3 class="font-semibold">Upgrade to Pro</h3>
+              <h3 class="font-semibold">Plan Your Perfect Trip</h3>
             </div>
             <p class="text-primary-100 text-sm mb-4">
-              Unlock AI-powered features for the ultimate Thailand experience.
+              AI creates personalized itineraries, finds hidden gems that match your style, and keeps you visa-compliant.
             </p>
 
             <ul class="space-y-3 mb-6">
@@ -199,16 +199,17 @@ const profileCompleteness = computed(() => {
             </ul>
 
             <div class="text-center">
-              <p class="text-2xl font-bold mb-1">$10<span class="text-sm font-normal">/month</span></p>
+              <p class="text-xs text-primary-200 mb-1">7-day free trial</p>
+              <p class="text-2xl font-bold mb-2">$10<span class="text-sm font-normal">/month after trial</span></p>
               <button
                 @click="startCheckout"
                 :disabled="subLoading"
                 class="w-full py-3 bg-white text-primary-600 font-semibold rounded-xl hover:bg-primary-50 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 <LoadingOutlined v-if="subLoading" class="animate-spin" />
-                {{ subLoading ? 'Loading...' : 'Start Pro Trial' }}
+                {{ subLoading ? 'Loading...' : 'Start Free Trial' }}
               </button>
-              <p class="text-xs text-primary-200 mt-2">Cancel anytime</p>
+              <p class="text-xs text-primary-200 mt-2">No charge for 7 days · Cancel anytime</p>
             </div>
           </div>
 
