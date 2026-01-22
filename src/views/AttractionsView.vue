@@ -4,9 +4,10 @@ import { useRoute, useRouter } from 'vue-router'
 import { useCountryStore } from '@stores/countryStore'
 import { useUserStore } from '@stores/userStore'
 import { useMatcher } from '@/composables/useMatcher'
+import { useFestivals } from '@/composables/useFestivals'
 import AttractionCard from '@components/features/AttractionCard.vue'
 import AffiliateCard from '@components/common/AffiliateCard.vue'
-import type { AttractionCategory } from '@/types'
+import type { AttractionCategory, UpcomingFestival } from '@/types'
 import { SearchOutlined, StarFilled, LoadingOutlined, EnvironmentOutlined } from '@ant-design/icons-vue'
 
 const route = useRoute()
@@ -23,11 +24,19 @@ const showSuggestions = ref(false)
 const selectedSuggestionIndex = ref(-1)
 const searchInputRef = ref<HTMLInputElement | null>(null)
 
+// Festivals
+const { fetchUpcoming, getFestivalEmoji, formatFestivalDate } = useFestivals()
+const upcomingFestivals = ref<UpcomingFestival[]>([])
+
 // Fetch attractions on mount
 onMounted(async () => {
   if (!countryStore.attractionsLoaded) {
     await countryStore.fetchAttractions({ personalized: hasProfile.value })
   }
+  // Fetch upcoming festivals for sidebar
+  fetchUpcoming(60).then(festivals => {
+    upcomingFestivals.value = festivals.slice(0, 3)
+  })
 })
 
 // Re-fetch when user profile changes
@@ -405,6 +414,29 @@ function setCategory(cat: typeof activeCategory.value) {
                 <div class="flex justify-between">
                   <span class="text-gray-500">Hidden Gems</span>
                   <span class="font-medium">{{ countryStore.attractions.filter(a => a.isHiddenGem).length }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Upcoming Festivals -->
+            <div v-if="upcomingFestivals.length > 0" class="card-thai">
+              <h3 class="font-semibold text-gray-900 mb-3">Upcoming Festivals</h3>
+              <div class="space-y-3">
+                <div
+                  v-for="festival in upcomingFestivals"
+                  :key="festival.slug"
+                  class="flex items-start gap-2"
+                >
+                  <span class="text-xl">{{ getFestivalEmoji(festival) }}</span>
+                  <div class="text-sm">
+                    <div class="font-medium text-gray-900">{{ festival.name }}</div>
+                    <div class="text-gray-500">
+                      {{ formatFestivalDate(festival.nextDate, festival.durationDays) }}
+                      <span class="text-primary-600">
+                        ({{ festival.daysUntil <= 7 ? `${festival.daysUntil}d` : `${Math.ceil(festival.daysUntil / 7)}w` }})
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
