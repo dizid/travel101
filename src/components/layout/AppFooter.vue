@@ -105,6 +105,10 @@ const footerLinks = {
     <!-- Bottom bar -->
     <div class="border-t border-gray-800">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <!-- AI Disclaimer -->
+        <p class="text-sm text-gray-500 text-center mb-4">
+          ✨ AI-assisted content — please verify important travel details independently.
+        </p>
         <div class="flex flex-col md:flex-row items-center justify-between gap-4">
           <p class="text-sm text-gray-500">
             © {{ currentYear }} Global Smart Traveler. Made with 💛 for Thailand lovers.
