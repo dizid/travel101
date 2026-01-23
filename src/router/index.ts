@@ -117,6 +117,18 @@ const routes: RouteRecordRaw[] = [
     meta: { title: 'Heritage Site', dynamicSeo: true },
   },
   {
+    path: '/festivals',
+    name: 'festivals',
+    component: () => import('@views/FestivalsView.vue'),
+    meta: { title: 'Thai Festivals & Events', seoKey: 'festivals' },
+  },
+  {
+    path: '/festivals/:slug',
+    name: 'festival-detail',
+    component: () => import('@views/FestivalDetailView.vue'),
+    meta: { title: 'Festival', dynamicSeo: true },
+  },
+  {
     path: '/:pathMatch(.*)*',
     name: 'not-found',
     component: () => import('@views/NotFoundView.vue'),

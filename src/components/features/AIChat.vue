@@ -11,6 +11,7 @@ import {
   LoadingOutlined,
   DeleteOutlined,
   PlusOutlined,
+  CrownOutlined,
 } from '@ant-design/icons-vue'
 
 const {
@@ -129,6 +130,26 @@ function handleKeydown(e: KeyboardEvent) {
           <DeleteOutlined />
         </button>
       </div>
+    </div>
+
+    <!-- Pro Feature Banner - show for non-Pro users -->
+    <div
+      v-if="!isProUsage"
+      class="flex items-center justify-between px-4 py-2 bg-gradient-to-r from-amber-100 to-yellow-100 border-b border-amber-200"
+    >
+      <div class="flex items-center gap-2">
+        <CrownOutlined class="text-amber-600" />
+        <div class="text-sm">
+          <span class="font-semibold text-amber-800">Pro Feature</span>
+          <span class="text-amber-700 ml-1">• 1 free chat/day</span>
+        </div>
+      </div>
+      <router-link
+        to="/dashboard#pro"
+        class="text-sm font-medium text-amber-700 hover:text-amber-900 transition-colors"
+      >
+        Go Pro →
+      </router-link>
     </div>
 
     <!-- Resumed banner -->

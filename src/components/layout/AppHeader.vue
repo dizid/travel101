@@ -18,6 +18,7 @@ const navigation = [
   { name: 'Visa Guide', path: '/visa', icon: '🛂' },
   { name: 'TDAC', path: '/tdac', icon: '📝' },
   { name: 'Good to Know', path: '/warnings', icon: '💡' },
+  { name: 'Festivals', path: '/festivals', icon: '🎉' },
   { name: 'Heritage', path: '/heritage', icon: '🏛️' },
   { name: 'Places', path: '/attractions', icon: '🗺️' },
 ]

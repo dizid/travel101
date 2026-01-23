@@ -521,8 +521,10 @@ export interface HeritageFilters {
 // FESTIVAL TYPES
 // =============================================
 
-export type FestivalType = 'religious' | 'cultural' | 'royal' | 'modern'
+export type FestivalType = 'religious' | 'cultural' | 'royal' | 'modern' | 'harvest' | 'water'
 export type FestivalReligion = 'buddhist' | 'hindu' | 'taoist' | 'animist' | 'secular'
+export type FestivalRegion = 'North' | 'Isan' | 'Central' | 'South' | 'Bangkok' | 'East' | 'West'
+export type CrowdLevel = 'low' | 'medium' | 'high' | 'extreme'
 
 export interface Festival {
   id: string
@@ -539,12 +541,16 @@ export interface Festival {
   provinces?: string[]
   isNationwide: boolean
   bestLocations?: string[]
+  region?: FestivalRegion
   imageUrl?: string
   activities?: string[]
   tips?: string[]
   dressCode?: string
   festivalType?: FestivalType
   religion?: FestivalReligion
+  isHiddenGem: boolean
+  crowdLevel?: CrowdLevel
+  foreignerFriendly?: number
 }
 
 export interface UpcomingFestival extends Festival {
@@ -555,9 +561,19 @@ export interface UpcomingFestival extends Festival {
 export interface FestivalListResponse {
   festivals: Festival[]
   count: number
+  total?: number
+  hasMore?: boolean
 }
 
 export interface UpcomingFestivalResponse {
   festivals: UpcomingFestival[]
   count: number
+}
+
+export interface FestivalFilters {
+  type?: FestivalType
+  region?: FestivalRegion
+  hidden?: boolean
+  month?: number
+  search?: string
 }

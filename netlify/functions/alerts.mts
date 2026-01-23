@@ -69,13 +69,22 @@ export default async (req: Request, context: Context) => {
 
         // Get all alerts
         const showDismissed = url.searchParams.get('showDismissed') === 'true'
-        const alerts = await db`
-          SELECT * FROM user_alerts
-          WHERE user_id = ${userId}
-          ${showDismissed ? db`` : db`AND is_dismissed = false`}
-          ORDER BY trigger_date DESC, priority DESC
-          LIMIT 50
-        `
+        let alerts
+        if (showDismissed) {
+          alerts = await db`
+            SELECT * FROM user_alerts
+            WHERE user_id = ${userId}
+            ORDER BY trigger_date DESC, priority DESC
+            LIMIT 50
+          `
+        } else {
+          alerts = await db`
+            SELECT * FROM user_alerts
+            WHERE user_id = ${userId} AND is_dismissed = false
+            ORDER BY trigger_date DESC, priority DESC
+            LIMIT 50
+          `
+        }
         return json({ alerts })
       }
 

@@ -309,6 +309,13 @@ function handleAffiliateClick(partner: 'klook' | 'agoda' | '12go' | 'getyourguid
   window.open(url, '_blank', 'noopener,noreferrer')
 }
 
+// Google Maps URL for location
+const googleMapsUrl = computed(() => {
+  if (!attraction.value) return '#'
+  const query = `${attraction.value.location}, ${attraction.value.province}, Thailand`
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`
+})
+
 const gradientClass = computed(() => {
   if (!attraction.value) return 'from-gray-400 to-gray-500'
   const gradients: Record<string, string> = {
@@ -793,13 +800,21 @@ const gradientClass = computed(() => {
           <!-- Location card -->
           <div class="card-thai">
             <h3 class="font-semibold text-gray-900 mb-2">Location</h3>
-            <div class="flex items-start gap-2">
-              <EnvironmentOutlined class="text-gray-400 mt-1" />
+            <a
+              :href="googleMapsUrl"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="flex items-start gap-2 group"
+            >
+              <EnvironmentOutlined class="text-gray-400 mt-1 group-hover:text-primary-500 transition-colors" />
               <div>
-                <p class="text-gray-900">{{ attraction.location }}</p>
+                <p class="text-gray-900 group-hover:text-primary-600 transition-colors">{{ attraction.location }}</p>
                 <p class="text-sm text-gray-500">{{ attraction.province }} Province</p>
+                <span class="text-xs text-primary-500 group-hover:text-primary-600 transition-colors">
+                  Open in Maps →
+                </span>
               </div>
-            </div>
+            </a>
           </div>
 
           <!-- Weather widget -->

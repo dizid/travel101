@@ -17,11 +17,11 @@ export interface UsageResponse {
 // Default limits used before API response is available
 // These values are fetched from the API and should be accessed via usageData.value.limits
 const DEFAULT_LIMITS = {
-  general_chat: 5,
-  attraction_intro: 3,
-  attraction_tips: 3,
-  attraction_chat: 5,
-  packing: 2,
+  general_chat: 1,
+  attraction_intro: 1,
+  attraction_tips: 1,
+  attraction_chat: 1,
+  packing: 1,
 }
 
 export type FeatureType = keyof typeof DEFAULT_LIMITS

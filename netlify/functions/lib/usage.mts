@@ -1,12 +1,12 @@
 import type { NeonQueryFunction } from '@neondatabase/serverless'
 
-// Daily limits for free users
+// Daily limits for free users (1 per feature to encourage Pro upgrade)
 export const FREE_LIMITS = {
-  general_chat: 5,
-  attraction_intro: 3,
-  attraction_tips: 3,
-  attraction_chat: 5,
-  packing: 2,
+  general_chat: 1,
+  attraction_intro: 1,
+  attraction_tips: 1,
+  attraction_chat: 1,
+  packing: 1,
 } as const
 
 export type FeatureType = keyof typeof FREE_LIMITS
