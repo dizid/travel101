@@ -55,5 +55,5 @@
 [dev]
   command = "npm run dev"
   port = 8888
-  targetPort = 3000
+  targetPort = 5173
   autoLaunch = false

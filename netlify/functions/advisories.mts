@@ -114,14 +114,14 @@ export default async (req: Request, context: Context) => {
     // Check cache first (24 hour TTL for advisories)
     const cacheKey = `advisories_thailand_${province || 'all'}`
     const cached = await db`
-      SELECT response_data FROM ai_cache
+      SELECT data FROM ai_cache
       WHERE cache_key = ${cacheKey}
       AND created_at > NOW() - INTERVAL '24 hours'
       LIMIT 1
     `
 
     if (cached.length > 0) {
-      return new Response(JSON.stringify(cached[0].response_data), {
+      return new Response(JSON.stringify(cached[0].data), {
         headers: { 'Content-Type': 'application/json' },
       })
     }
@@ -158,11 +158,11 @@ export default async (req: Request, context: Context) => {
 
     // Cache the response
     await db`
-      INSERT INTO ai_cache (cache_key, response_data)
+      INSERT INTO ai_cache (cache_key, data)
       VALUES (${cacheKey}, ${JSON.stringify(response)})
       ON CONFLICT (cache_key) DO UPDATE SET
-        response_data = EXCLUDED.response_data,
-        created_at = NOW()
+        data = EXCLUDED.data,
+        updated_at = NOW()
     `
 
     return new Response(JSON.stringify({

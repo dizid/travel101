@@ -13,13 +13,42 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Payments**: Stripe 14.0
 - **AI**: Anthropic Claude SDK (claude-sonnet-4-20250514)
 
+## Development Server
+
+**IMPORTANT**: This app uses Netlify Functions for the API backend.
+
+| Command | Port | What it runs | API available? |
+|---------|------|--------------|----------------|
+| `npm run dev` | 3000 (or 3001, 3002 if occupied) | Vite only | ❌ No |
+| `netlify dev` | 8888 (proxy) → 3000 (Vite) | Full stack | ✅ Yes |
+
+### How it works
+
+```
+Browser → localhost:8888 (Netlify CLI)
+              ├── /api/* → Serverless Functions
+              └── /* → localhost:3000 (Vite)
+```
+
+- **Vite** runs the Vue frontend with HMR on port 3000
+- **Netlify CLI** proxies requests on port 8888:
+  - `/api/*` routes go to serverless functions
+  - Everything else forwards to Vite
+- **Without Netlify CLI**, API calls fail (Vite returns HTML 404)
+
+### For development with API:
+```bash
+netlify dev    # Access app at localhost:8888
+```
+
+### For frontend-only (no API):
+```bash
+npm run dev    # Access app at localhost:3000
+```
+
 ## Commands
 
 ```bash
-# Development
-npm run dev              # Start Vite dev server (port 3000)
-netlify dev              # Start with Netlify Functions (port 8888)
-
 # Build & Deploy
 npm run build            # Type-check + production build
 npm run preview          # Preview production build locally

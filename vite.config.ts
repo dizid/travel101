@@ -1,9 +1,10 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
+import netlify from '@netlify/vite-plugin'
 import { resolve } from 'path'
 
 export default defineConfig({
-  plugins: [vue()],
+  plugins: [vue(), netlify()],
   resolve: {
     alias: {
       '@': resolve(__dirname, 'src'),
@@ -15,7 +16,8 @@ export default defineConfig({
     },
   },
   server: {
-    port: 3000,
+    port: 5173,
+    strictPort: false,  // Allow fallback to 5174, 5175 if busy
   },
   build: {
     rollupOptions: {

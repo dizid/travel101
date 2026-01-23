@@ -1,15 +1,18 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import { watchDebounced } from '@vueuse/core'
 import { useUserStore } from '@stores/userStore'
+import { useAuth } from '@composables/useAuth'
 import type { TravelStyle, Interest, GroupType, BudgetLevel, TripType, AgeGroup } from '@/types'
 import { countryOptions, filterCountry } from '@/data/countries'
 import {
   UserOutlined,
-  SaveOutlined,
   CheckCircleFilled,
+  LoadingOutlined,
 } from '@ant-design/icons-vue'
 
 const userStore = useUserStore()
+const { savePreferences } = useAuth()
 
 // Local state for form
 const formData = ref({
@@ -22,7 +25,8 @@ const formData = ref({
   ageGroup: userStore.profile.prefs.ageGroup,
 })
 
-const saved = ref(false)
+// Auto-save status indicator
+const saveStatus = ref<'idle' | 'saving' | 'saved'>('idle')
 
 const travelStyles: { value: TravelStyle; label: string; icon: string }[] = [
   { value: 'party', label: 'Party', icon: '🎉' },
@@ -84,21 +88,33 @@ function toggleInterest(interest: Interest) {
   }
 }
 
-function saveProfile() {
-  userStore.updatePreferences({
-    nationality: formData.value.nationality,
-    travelStyle: formData.value.travelStyle,
-    interests: formData.value.interests,
-    groupType: formData.value.groupType,
-    budget: formData.value.budget,
-    tripType: formData.value.tripType,
-    ageGroup: formData.value.ageGroup,
-  })
-  saved.value = true
-  setTimeout(() => {
-    saved.value = false
-  }, 3000)
-}
+// Auto-save profile changes with debounce
+watchDebounced(
+  formData,
+  async () => {
+    saveStatus.value = 'saving'
+
+    // Update store (triggers localStorage + Vue reactivity)
+    userStore.updatePreferences({
+      nationality: formData.value.nationality,
+      travelStyle: formData.value.travelStyle,
+      interests: formData.value.interests,
+      groupType: formData.value.groupType,
+      budget: formData.value.budget,
+      tripType: formData.value.tripType,
+      ageGroup: formData.value.ageGroup,
+    })
+
+    // Sync to backend if authenticated
+    await savePreferences()
+
+    saveStatus.value = 'saved'
+    setTimeout(() => {
+      saveStatus.value = 'idle'
+    }, 2000)
+  },
+  { debounce: 500, deep: true }
+)
 </script>
 
 <template>
