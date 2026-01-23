@@ -1,5 +1,7 @@
 import type { Context, Config } from '@netlify/functions'
 import Anthropic from '@anthropic-ai/sdk'
+import { getDb } from './lib/db.mts'
+import { checkAndIncrementUsage } from './lib/usage.mts'
 
 interface PackingRequest {
   destinations: string[]
@@ -103,6 +105,28 @@ export default async (req: Request, context: Context) => {
         status: 400,
         headers: { 'Content-Type': 'application/json' },
       })
+    }
+
+    // Check usage limits for authenticated users
+    const userId = req.headers.get('x-user-id')
+    if (userId) {
+      const db = getDb()
+      const usageCheck = await checkAndIncrementUsage(db, userId, 'packing')
+      if (!usageCheck.allowed) {
+        return new Response(JSON.stringify({
+          error: 'Daily packing list limit reached',
+          code: 'LIMIT_REACHED',
+          usage: {
+            current: usageCheck.currentUsage,
+            limit: usageCheck.limit,
+            remaining: 0,
+          },
+          upgradeUrl: '/dashboard#pro',
+        }), {
+          status: 429,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      }
     }
 
     const anthropic = new Anthropic({ apiKey })

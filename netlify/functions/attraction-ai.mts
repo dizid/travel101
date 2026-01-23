@@ -1,6 +1,7 @@
 import type { Context, Config } from '@netlify/functions'
 import Anthropic from '@anthropic-ai/sdk'
 import { getDb } from './lib/db.mts'
+import { checkAndIncrementUsage, type FeatureType } from './lib/usage.mts'
 
 interface UserPrefs {
   nationality?: string
@@ -104,6 +105,31 @@ export default async (req: Request, context: Context) => {
 
     const attraction = attractions[0]
     const anthropic = new Anthropic({ apiKey })
+
+    // Map action to feature type for usage tracking
+    const featureMap: Record<string, FeatureType> = {
+      personalized_intro: 'attraction_intro',
+      tailored_tips: 'attraction_tips',
+      chat: 'attraction_chat',
+    }
+    const featureType = featureMap[action]
+
+    // Check usage limits
+    if (featureType) {
+      const usageCheck = await checkAndIncrementUsage(db, userId, featureType)
+      if (!usageCheck.allowed) {
+        return json({
+          error: `Daily ${action.replace('_', ' ')} limit reached`,
+          code: 'LIMIT_REACHED',
+          usage: {
+            current: usageCheck.currentUsage,
+            limit: usageCheck.limit,
+            remaining: 0,
+          },
+          upgradeUrl: '/dashboard#pro',
+        }, 429)
+      }
+    }
 
     switch (action) {
       case 'personalized_intro':

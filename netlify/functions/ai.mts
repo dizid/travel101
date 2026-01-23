@@ -1,6 +1,7 @@
 import type { Context, Config } from '@netlify/functions'
 import Anthropic from '@anthropic-ai/sdk'
 import { getDb } from './lib/db.mts'
+import { checkAndIncrementUsage } from './lib/usage.mts'
 
 function requirePro(
   db: ReturnType<typeof getDb> extends Promise<infer U> ? U : never,
@@ -178,6 +179,32 @@ export default async (req: Request, context: Context) => {
         status: 400,
         headers: { 'Content-Type': 'application/json' },
       })
+    }
+
+    // Check usage limits for authenticated users
+    if (userId) {
+      try {
+        const db = await getDb()
+        const usageCheck = await checkAndIncrementUsage(db, userId, 'general_chat')
+        if (!usageCheck.allowed) {
+          return new Response(JSON.stringify({
+            error: 'Daily AI chat limit reached',
+            code: 'LIMIT_REACHED',
+            usage: {
+              current: usageCheck.currentUsage,
+              limit: usageCheck.limit,
+              remaining: 0,
+            },
+            upgradeUrl: '/dashboard#pro',
+          }), {
+            status: 429,
+            headers: { 'Content-Type': 'application/json' },
+          })
+        }
+      } catch (usageError) {
+        // Log error but continue with request - fail open for better UX
+        console.error('Usage check failed:', usageError)
+      }
     }
 
     const anthropic = new Anthropic({ apiKey })

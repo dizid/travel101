@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { ref, nextTick, onMounted, watch } from 'vue'
 import { useAI } from '@/composables/useAI'
-import { useUserStore } from '@/stores/userStore'
+import { useAIUsage } from '@/composables/useAIUsage'
+import AILimitBanner from '@components/ui/AILimitBanner.vue'
+import UpgradeModal from '@components/ui/UpgradeModal.vue'
 import {
   SendOutlined,
   RobotOutlined,
@@ -11,7 +13,6 @@ import {
   PlusOutlined,
 } from '@ant-design/icons-vue'
 
-const userStore = useUserStore()
 const {
   ask,
   loading,
@@ -23,12 +24,24 @@ const {
   isPro,
 } = useAI()
 
+const {
+  chatUsage,
+  fetchUsage,
+  decrementUsage,
+  canUseFeature,
+  isPro: isProUsage,
+} = useAIUsage()
+
 const inputMessage = ref('')
 const chatContainer = ref<HTMLElement | null>(null)
 const loadingHistory = ref(false)
 const showResumedBanner = ref(false)
+const showUpgradeModal = ref(false)
 
 onMounted(async () => {
+  // Fetch usage status
+  fetchUsage()
+
   if (isPro.value) {
     loadingHistory.value = true
     const hasHistory = await loadConversation('general')
@@ -55,10 +68,21 @@ watch(isPro, async (newVal) => {
 async function sendMessage() {
   if (!inputMessage.value.trim() || loading.value) return
 
+  // Check usage limits for non-Pro users
+  if (!isProUsage.value && !canUseFeature('general_chat')) {
+    showUpgradeModal.value = true
+    return
+  }
+
   const message = inputMessage.value.trim()
   inputMessage.value = ''
 
   await ask(message)
+
+  // Update local usage count
+  if (!isProUsage.value) {
+    decrementUsage('general_chat')
+  }
 
   await nextTick()
   if (chatContainer.value) {
@@ -207,6 +231,16 @@ function handleKeydown(e: KeyboardEvent) {
 
     <!-- Input -->
     <div class="p-4 border-t border-gray-100">
+      <!-- Usage limit banner -->
+      <AILimitBanner
+        v-if="!isProUsage && chatUsage.used > 0"
+        :used="chatUsage.used"
+        :limit="chatUsage.limit"
+        feature-name="chat"
+        compact
+        class="mb-3"
+      />
+
       <div class="flex gap-2">
         <textarea
           v-model="inputMessage"
@@ -214,19 +248,27 @@ function handleKeydown(e: KeyboardEvent) {
           placeholder="Ask about Thailand..."
           rows="1"
           class="flex-1 px-4 py-3 bg-gray-100 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm"
-          :disabled="loading"
+          :disabled="loading || (!isProUsage && chatUsage.remaining === 0)"
         />
         <button
           @click="sendMessage"
-          :disabled="!inputMessage.trim() || loading"
+          :disabled="!inputMessage.trim() || loading || (!isProUsage && chatUsage.remaining === 0)"
           class="px-4 py-3 bg-primary-500 text-white rounded-xl hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           <SendOutlined />
         </button>
       </div>
-      <p v-if="!userStore.isPro" class="text-xs text-gray-400 mt-2 text-center">
-        Pro members get unlimited AI conversations
+      <p v-if="!isProUsage" class="text-xs text-gray-400 mt-2 text-center">
+        {{ chatUsage.remaining > 0 ? 'Pro members get unlimited AI conversations' : 'Upgrade to Pro for unlimited chats' }}
       </p>
     </div>
+
+    <!-- Upgrade modal -->
+    <UpgradeModal
+      :is-open="showUpgradeModal"
+      feature-name="AI chat"
+      trigger-reason="limit_reached"
+      @close="showUpgradeModal = false"
+    />
   </div>
 </template>

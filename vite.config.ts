@@ -18,6 +18,12 @@ export default defineConfig({
   server: {
     port: 5173,
     strictPort: false,  // Allow fallback to 5174, 5175 if busy
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8888',
+        changeOrigin: true,
+      },
+    },
   },
   build: {
     rollupOptions: {

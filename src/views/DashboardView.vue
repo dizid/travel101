@@ -3,6 +3,7 @@ import { computed, onMounted } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import { useUserStore } from '@stores/userStore'
 import { useSubscription } from '@/composables/useSubscription'
+import { useAIUsage } from '@/composables/useAIUsage'
 import {
   UserOutlined,
   CrownOutlined,
@@ -11,17 +12,21 @@ import {
   CheckCircleFilled,
   RightOutlined,
   LoadingOutlined,
+  ThunderboltOutlined,
 } from '@ant-design/icons-vue'
 import WeatherWidget from '@components/features/WeatherWidget.vue'
 import CurrencyCalculator from '@components/features/CurrencyCalculator.vue'
+import UsageMeter from '@components/ui/UsageMeter.vue'
 
 const userStore = useUserStore()
 const route = useRoute()
 const { loading: subLoading, subscriptionStatus, nextBillingDate, startCheckout, openPortal, fetchStatus } = useSubscription()
+const { chatUsage, introUsage, attractionChatUsage, packingUsage, fetchUsage, isPro: isProUsage } = useAIUsage()
 
 onMounted(async () => {
   if (userStore.isAuthenticated) {
     await fetchStatus()
+    fetchUsage()
   }
   if (route.query.upgrade === 'success') {
     userStore.setPro(true)
@@ -257,6 +262,52 @@ const profileCompleteness = computed(() => {
               <LoadingOutlined v-if="subLoading" class="animate-spin" />
               Manage Subscription
             </button>
+          </div>
+
+          <!-- AI Usage (free users) -->
+          <div v-if="!isProUsage" class="card-thai">
+            <h3 class="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+              <ThunderboltOutlined class="text-primary-500" />
+              Today's AI Usage
+            </h3>
+
+            <div class="space-y-4">
+              <div>
+                <div class="flex justify-between text-sm mb-1.5">
+                  <span class="text-gray-600">AI Chats</span>
+                  <span class="font-medium text-gray-900">{{ chatUsage.used }}/{{ chatUsage.limit }}</span>
+                </div>
+                <UsageMeter :used="chatUsage.used" :limit="chatUsage.limit" />
+              </div>
+
+              <div>
+                <div class="flex justify-between text-sm mb-1.5">
+                  <span class="text-gray-600">Personalized Intros</span>
+                  <span class="font-medium text-gray-900">{{ introUsage.used }}/{{ introUsage.limit }}</span>
+                </div>
+                <UsageMeter :used="introUsage.used" :limit="introUsage.limit" />
+              </div>
+
+              <div>
+                <div class="flex justify-between text-sm mb-1.5">
+                  <span class="text-gray-600">Attraction Chats</span>
+                  <span class="font-medium text-gray-900">{{ attractionChatUsage.used }}/{{ attractionChatUsage.limit }}</span>
+                </div>
+                <UsageMeter :used="attractionChatUsage.used" :limit="attractionChatUsage.limit" />
+              </div>
+
+              <div>
+                <div class="flex justify-between text-sm mb-1.5">
+                  <span class="text-gray-600">Packing Lists</span>
+                  <span class="font-medium text-gray-900">{{ packingUsage.used }}/{{ packingUsage.limit }}</span>
+                </div>
+                <UsageMeter :used="packingUsage.used" :limit="packingUsage.limit" />
+              </div>
+            </div>
+
+            <p class="text-xs text-gray-400 mt-4 text-center">
+              Limits reset daily at midnight UTC
+            </p>
           </div>
 
           <!-- Saved country -->

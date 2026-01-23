@@ -271,8 +271,8 @@ watchDebounced(
           </div>
         </div>
 
-        <!-- Save button -->
-        <div class="flex items-center justify-between pt-4">
+        <!-- Auto-save status indicator -->
+        <div class="flex items-center justify-end pt-4">
           <Transition
             enter-active-class="transition duration-300"
             enter-from-class="opacity-0 translate-x-2"
@@ -280,23 +280,32 @@ watchDebounced(
             leave-active-class="transition duration-200"
             leave-from-class="opacity-100"
             leave-to-class="opacity-0"
+            mode="out-in"
           >
             <div
-              v-if="saved"
+              v-if="saveStatus === 'saving'"
+              key="saving"
+              class="flex items-center gap-2 text-gray-500"
+            >
+              <LoadingOutlined class="animate-spin" />
+              <span class="text-sm">Saving...</span>
+            </div>
+            <div
+              v-else-if="saveStatus === 'saved'"
+              key="saved"
               class="flex items-center gap-2 text-green-600"
             >
               <CheckCircleFilled />
-              <span class="font-medium">Profile saved!</span>
+              <span class="text-sm font-medium">All changes saved</span>
+            </div>
+            <div
+              v-else
+              key="idle"
+              class="flex items-center gap-2 text-gray-400"
+            >
+              <span class="text-sm">Changes auto-save</span>
             </div>
           </Transition>
-
-          <button
-            @click="saveProfile"
-            class="btn-thai"
-          >
-            <SaveOutlined />
-            Save Profile
-          </button>
         </div>
       </div>
     </div>
