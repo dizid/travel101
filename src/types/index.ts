@@ -284,7 +284,7 @@ export interface AffiliateLink {
   label: string
 }
 
-export type AffiliatePartner = 'klook' | 'agoda' | '12go' | 'getyourguide' | 'safetywing' | 'airalo' | 'nordvpn'
+export type AffiliatePartner = 'klook' | 'agoda' | '12go' | 'getyourguide' | 'safetywing' | 'nordvpn'
 
 export interface AffiliateClick {
   id: string

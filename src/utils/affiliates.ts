@@ -6,11 +6,10 @@
  * - Agoda: https://partners.agoda.com
  * - 12Go Asia: https://12go.asia/affiliate
  * - SafetyWing: https://safetywing.com/partners (travel insurance)
- * - Airalo: https://partners.airalo.com (eSIM)
  * - NordVPN: https://nordvpn.com/affiliate (VPN for travelers)
  */
 
-export type AffiliatePartner = 'klook' | 'agoda' | '12go' | 'getyourguide' | 'safetywing' | 'airalo' | 'nordvpn'
+export type AffiliatePartner = 'klook' | 'agoda' | '12go' | 'getyourguide' | 'safetywing' | 'nordvpn'
 
 interface AffiliateConfig {
   baseUrl: string
@@ -77,14 +76,6 @@ const affiliateConfigs: Record<AffiliatePartner, AffiliateConfig> = {
       return `https://safetywing.com/nomad-insurance${params}`
     },
   },
-  airalo: {
-    baseUrl: 'https://www.airalo.com',
-    buildUrl: (_destination, _attractionName, affiliateId) => {
-      // Airalo eSIM for Thailand - no more SIM card hassle
-      const params = affiliateId ? `?ref=${affiliateId}` : ''
-      return `https://www.airalo.com/thailand-esim${params}`
-    },
-  },
   nordvpn: {
     baseUrl: 'https://refer-nordvpn.com',
     buildUrl: () => {
@@ -125,7 +116,6 @@ export function generateAllAffiliateLinks(
     '12go': generateAffiliateUrl('12go', destination),
     getyourguide: generateAffiliateUrl('getyourguide', destination, attractionName),
     safetywing: generateAffiliateUrl('safetywing', destination),
-    airalo: generateAffiliateUrl('airalo', destination),
     nordvpn: generateAffiliateUrl('nordvpn', destination),
   }
 }
@@ -209,11 +199,11 @@ export const affiliateContexts = {
   // Dashboard recommendations
   dashboard: ['klook', 'getyourguide', 'agoda'] as AffiliatePartner[],
 
-  // Travel essentials (insurance, eSIM, VPN)
-  essentials: ['safetywing', 'airalo', 'nordvpn'] as AffiliatePartner[],
+  // Travel essentials (insurance, VPN)
+  essentials: ['safetywing', 'nordvpn'] as AffiliatePartner[],
 
   // Digital nomad specific
-  nomad: ['safetywing', 'airalo', 'nordvpn', 'klook'] as AffiliatePartner[],
+  nomad: ['safetywing', 'nordvpn', 'klook'] as AffiliatePartner[],
 
   // Visa page (insurance is important)
   visa: ['safetywing'] as AffiliatePartner[],
@@ -230,14 +220,6 @@ export const travelEssentials = [
     tagline: 'From $42/month',
     icon: '🛡️',
     color: 'bg-blue-500',
-  },
-  {
-    partner: 'airalo' as AffiliatePartner,
-    name: 'Airalo eSIM',
-    description: 'Skip the SIM card hassle',
-    tagline: 'From $4.50/GB',
-    icon: '📱',
-    color: 'bg-purple-500',
   },
   {
     partner: 'nordvpn' as AffiliatePartner,

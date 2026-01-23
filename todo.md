@@ -8,14 +8,19 @@ Once you have Impact affiliate link, update the Airalo URL format in affiliates.
 
 
 
-## Affiliate Program Links
-- 12Go Asia: https://agent.12go.asia?referer=14551206
-- Agoda: https://partners.agoda.com/profile/addsites
-- Klook: https://affiliate.klook.com
-- GetYourGuide: https://partner.getyourguide.com
-- SafetyWing: https://safetywing.com/partners
-- Airalo: https://partners.airalo.com
-- NordVPN: https://nordvpn.com/affiliate
+## Affiliate Program Status
+
+| Partner | Status | ID | Dashboard |
+|---------|--------|-----|-----------|
+| 12Go Asia | ✅ Active | 14551206 | https://agent.12go.asia |
+| Klook | ✅ Active | 108922 | https://affiliate.klook.com |
+| Agoda | ⏳ Pending Approval | Site ID: 1956706 | https://partners.agoda.com/profile/addsites |
+| GetYourGuide | ⏳ Applying | - | https://partner.getyourguide.com |
+| SafetyWing | ⏳ Applying | - | https://safetywing.com/partners |
+| NordVPN | ⏳ Applying | - | https://nordvpn.com/affiliate |
+| Airalo | ❌ Declined | - | - |
+
+**Agoda Notes:** Meta tag verification added to index.html. Trigger manual verification in dashboard.
 
 ## How to Get Affiliate IDs / API Keys
 
@@ -67,15 +72,6 @@ Once you have Impact affiliate link, update the Airalo URL format in affiliates.
 6. Add to `.env.local`: `VITE_SAFETYWING_AFFILIATE_ID=your_ref_id`
 - **Commission**: ~10% recurring monthly
 
-#### Airalo (eSIM)
-1. Go to https://partners.airalo.com
-2. Apply as affiliate partner
-3. Mention Thailand travel focus
-4. Approval 2-3 days
-5. Get **Referral Code** from dashboard
-6. Add to `.env.local`: `VITE_AIRALO_AFFILIATE_ID=your_code`
-- **Commission**: 10-15% per sale
-
 #### NordVPN
 1. Go to https://nordvpn.com/affiliate
 2. Apply through their affiliate program (or via CJ Affiliate)
@@ -88,14 +84,13 @@ Once you have Impact affiliate link, update the Airalo URL format in affiliates.
 
 ```bash
 # Booking Partners
-VITE_KLOOK_AFFILIATE_ID=
-VITE_AGODA_AFFILIATE_ID=
-VITE_12GO_AFFILIATE_ID=
+VITE_KLOOK_AFFILIATE_ID=108922
+VITE_AGODA_AFFILIATE_ID=1956706
+VITE_12GO_AFFILIATE_ID=14551206
 VITE_GETYOURGUIDE_AFFILIATE_ID=
 
 # Travel Essentials
 VITE_SAFETYWING_AFFILIATE_ID=
-VITE_AIRALO_AFFILIATE_ID=
 VITE_NORDVPN_AFFILIATE_ID=
 ```
 
@@ -104,7 +99,7 @@ VITE_NORDVPN_AFFILIATE_ID=
 2. **12Go** - Fast approval, good for transport bookings
 3. **SafetyWing** - Easy approval, recurring commissions, nomad audience
 4. **GetYourGuide** - Good for guided tours
-5. **Airalo + NordVPN** - Lower volume but high margins
+5. **NordVPN** - Lower volume but high margins
 
 ---
 
@@ -116,7 +111,7 @@ VITE_NORDVPN_AFFILIATE_ID=
 - [x] **Favorites System** - Heart icons on cards, /saved page, synced to profile
 - [x] **Social Sharing** - WhatsApp, Facebook, X, Pinterest, Copy Link (native Web Share on mobile)
 - [x] **Email Capture** - Newsletter signup in footer, database storage
-- [x] **New Affiliates** - SafetyWing (insurance), Airalo (eSIM), NordVPN added
+- [x] **New Affiliates** - SafetyWing (insurance), NordVPN added
 - [x] **OG Image** - SVG social sharing preview at `/public/og-image.svg`
 - [x] **Exit-intent Popup** - Email capture with Thailand Packing Checklist lead magnet
 - [x] **Shareable Match Cards** - Click match score to share "I'm 94% Koh Lanta!"
@@ -133,7 +128,6 @@ VITE_NORDVPN_AFFILIATE_ID=
 ### Environment Variables (New Affiliates)
 ```
 VITE_SAFETYWING_AFFILIATE_ID   # SafetyWing referral ID
-VITE_AIRALO_AFFILIATE_ID       # Airalo partner ref
 VITE_NORDVPN_AFFILIATE_ID      # NordVPN affiliate ref
 ```
 

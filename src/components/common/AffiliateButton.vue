@@ -40,12 +40,6 @@ const partnerConfig: Record<AffiliatePartner, { label: string; icon: string; col
     color: 'bg-sky-500 text-white',
     hoverColor: 'hover:bg-sky-600'
   },
-  airalo: {
-    label: 'Get eSIM',
-    icon: '📱',
-    color: 'bg-purple-500 text-white',
-    hoverColor: 'hover:bg-purple-600'
-  },
   nordvpn: {
     label: 'Get VPN',
     icon: '🔐',
