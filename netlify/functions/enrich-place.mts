@@ -392,7 +392,7 @@ export default async (req: Request, context: Context) => {
     const body: RequestBody = await req.json()
     const { action, placeId, limit = 10 } = body
 
-    const db = getDb()
+    const db = await getDb()
     const anthropic = new Anthropic({ apiKey })
 
     switch (action) {

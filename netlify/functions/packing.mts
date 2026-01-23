@@ -110,7 +110,7 @@ export default async (req: Request, context: Context) => {
     // Check usage limits for authenticated users
     const userId = req.headers.get('x-user-id')
     if (userId) {
-      const db = getDb()
+      const db = await getDb()
       const usageCheck = await checkAndIncrementUsage(db, userId, 'packing')
       if (!usageCheck.allowed) {
         return new Response(JSON.stringify({

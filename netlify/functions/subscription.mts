@@ -11,7 +11,7 @@ function getStripe() {
 }
 
 export default async (req: Request, context: Context) => {
-  const db = getDb()
+  const db = await getDb()
   const userId = req.headers.get('x-user-id')
 
   if (!userId) {

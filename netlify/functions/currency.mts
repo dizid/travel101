@@ -49,7 +49,7 @@ export default async (req: Request, context: Context) => {
   const amount = parseFloat(url.searchParams.get('amount') || '1')
 
   try {
-    const db = getDb()
+    const db = await getDb()
 
     // Check cache (rates update daily, cache for 6 hours)
     const cacheKey = 'currency:rates'

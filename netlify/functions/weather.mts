@@ -142,7 +142,7 @@ export default async (req: Request, context: Context) => {
 
   try {
     // Check cache first
-    const db = getDb()
+    const db = await getDb()
     const cacheKey = `weather:${cityName.toLowerCase()}:${days}`
     const cached = await db`
       SELECT data, created_at FROM ai_cache

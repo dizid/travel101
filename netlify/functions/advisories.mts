@@ -98,7 +98,7 @@ const ADVISORY_LEVELS = {
 }
 
 export default async (req: Request, context: Context) => {
-  const db = getDb()
+  const db = await getDb()
   const url = new URL(req.url)
 
   if (req.method !== 'GET') {

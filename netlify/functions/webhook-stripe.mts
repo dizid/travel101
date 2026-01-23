@@ -25,7 +25,7 @@ export default async (req: Request, context: Context) => {
   try {
     const body = await req.text()
     const event = stripe.webhooks.constructEvent(body, signature, webhookSecret)
-    const db = getDb()
+    const db = await getDb()
 
     switch (event.type) {
       case 'checkout.session.completed': {

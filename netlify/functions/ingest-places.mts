@@ -179,7 +179,7 @@ export default async (req: Request, context: Context) => {
     const body: RequestBody = await req.json()
     const { action, place, places, source, limit = 50 } = body
 
-    const db = getDb()
+    const db = await getDb()
 
     switch (action) {
       case 'ingest_single':

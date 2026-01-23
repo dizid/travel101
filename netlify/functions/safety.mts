@@ -52,7 +52,7 @@ const SCAM_TYPES = [
 ]
 
 export default async (req: Request, context: Context) => {
-  const db = getDb()
+  const db = await getDb()
   const url = new URL(req.url)
   const userId = req.headers.get('x-user-id')
 

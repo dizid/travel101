@@ -657,7 +657,7 @@ export default async (req: Request, context: Context) => {
 
   try {
     const body: RequestBody = await req.json()
-    const db = getDb()
+    const db = await getDb()
 
     switch (body.action) {
       case 'search_and_ingest':

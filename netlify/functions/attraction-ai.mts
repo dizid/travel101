@@ -93,7 +93,7 @@ export default async (req: Request, context: Context) => {
     }
 
     // Fetch attraction from database
-    const db = getDb()
+    const db = await getDb()
     const attractions: Attraction[] = await db`
       SELECT id, slug, name, description, about, category, location, province, categories
       FROM attractions WHERE slug = ${attractionSlug}

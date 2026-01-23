@@ -160,7 +160,7 @@ function generateMockFlights(params: FlightSearchRequest): Flight[] {
 }
 
 export default async (req: Request, context: Context) => {
-  const db = getDb()
+  const db = await getDb()
 
   if (req.method !== 'POST') {
     // GET request - return available airports

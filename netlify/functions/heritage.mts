@@ -116,7 +116,7 @@ export default async (req: Request, context: Context) => {
     return json({ error: 'Method not allowed' }, 405)
   }
 
-  const db = getDb()
+  const db = await getDb()
   const url = new URL(req.url)
   const pathParts = url.pathname.replace('/api/heritage', '').split('/').filter(Boolean)
 
