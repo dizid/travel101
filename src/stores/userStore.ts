@@ -10,6 +10,8 @@ const defaultPreferences: UserPreferences = {
   interests: [],
   nationality: '',
   tripType: 'holiday',
+  courseInterests: [],
+  dietaryRestrictions: [],
 }
 
 export const useUserStore = defineStore('user', () => {

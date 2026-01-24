@@ -3,7 +3,7 @@ import { ref } from 'vue'
 import { watchDebounced } from '@vueuse/core'
 import { useUserStore } from '@stores/userStore'
 import { useAuth } from '@composables/useAuth'
-import type { TravelStyle, Interest, GroupType, BudgetLevel, TripType, AgeGroup } from '@/types'
+import type { TravelStyle, Interest, GroupType, BudgetLevel, TripType, AgeGroup, CourseInterest, DietaryRestriction } from '@/types'
 import { countryOptions, filterCountry } from '@/data/countries'
 import {
   UserOutlined,
@@ -23,6 +23,8 @@ const formData = ref({
   budget: userStore.profile.prefs.budget,
   tripType: userStore.profile.prefs.tripType,
   ageGroup: userStore.profile.prefs.ageGroup,
+  courseInterests: [...(userStore.profile.prefs.courseInterests || [])],
+  dietaryRestrictions: [...(userStore.profile.prefs.dietaryRestrictions || [])],
 })
 
 // Auto-save status indicator
@@ -70,6 +72,22 @@ const ageGroups: { value: AgeGroup; label: string }[] = [
   { value: 'senior', label: '55+' },
 ]
 
+const courseInterests: { value: CourseInterest; label: string; icon: string }[] = [
+  { value: 'cooking', label: 'Cooking', icon: '🍳' },
+  { value: 'meditation', label: 'Meditation', icon: '🧘' },
+  { value: 'diving', label: 'Diving', icon: '🤿' },
+  { value: 'massage', label: 'Massage', icon: '💆' },
+  { value: 'muay_thai', label: 'Muay Thai', icon: '🥊' },
+  { value: 'yoga', label: 'Yoga', icon: '🧘‍♀️' },
+]
+
+const dietaryRestrictions: { value: DietaryRestriction; label: string; icon: string }[] = [
+  { value: 'vegetarian', label: 'Vegetarian', icon: '🥗' },
+  { value: 'vegan', label: 'Vegan', icon: '🌱' },
+  { value: 'halal', label: 'Halal', icon: '☪️' },
+  { value: 'gluten_free', label: 'Gluten-free', icon: '🌾' },
+]
+
 function toggleStyle(style: TravelStyle) {
   const index = formData.value.travelStyle.indexOf(style)
   if (index > -1) {
@@ -88,6 +106,24 @@ function toggleInterest(interest: Interest) {
   }
 }
 
+function toggleCourseInterest(course: CourseInterest) {
+  const index = formData.value.courseInterests.indexOf(course)
+  if (index > -1) {
+    formData.value.courseInterests.splice(index, 1)
+  } else {
+    formData.value.courseInterests.push(course)
+  }
+}
+
+function toggleDietaryRestriction(restriction: DietaryRestriction) {
+  const index = formData.value.dietaryRestrictions.indexOf(restriction)
+  if (index > -1) {
+    formData.value.dietaryRestrictions.splice(index, 1)
+  } else {
+    formData.value.dietaryRestrictions.push(restriction)
+  }
+}
+
 // Auto-save profile changes with debounce
 watchDebounced(
   formData,
@@ -103,6 +139,8 @@ watchDebounced(
       budget: formData.value.budget,
       tripType: formData.value.tripType,
       ageGroup: formData.value.ageGroup,
+      courseInterests: formData.value.courseInterests,
+      dietaryRestrictions: formData.value.dietaryRestrictions,
     })
 
     // Sync to backend if authenticated
@@ -211,6 +249,46 @@ watchDebounced(
             >
               <span>{{ interest.icon }}</span>
               {{ interest.label }}
+            </button>
+          </div>
+        </div>
+
+        <!-- Course Interests -->
+        <div class="card-thai">
+          <h2 class="text-lg font-semibold text-gray-900 mb-2">Learning Interests</h2>
+          <p class="text-sm text-gray-500 mb-4">Want to take courses or workshops?</p>
+          <div class="flex flex-wrap gap-2">
+            <button
+              v-for="course in courseInterests"
+              :key="course.value"
+              @click="toggleCourseInterest(course.value)"
+              class="inline-flex items-center gap-2 px-4 py-2 rounded-full border-2 transition-all"
+              :class="formData.courseInterests.includes(course.value)
+                ? 'border-primary-500 bg-primary-50 text-primary-700'
+                : 'border-gray-200 hover:border-gray-300 text-gray-600'"
+            >
+              <span>{{ course.icon }}</span>
+              {{ course.label }}
+            </button>
+          </div>
+        </div>
+
+        <!-- Dietary Restrictions -->
+        <div class="card-thai">
+          <h2 class="text-lg font-semibold text-gray-900 mb-2">Dietary Preferences</h2>
+          <p class="text-sm text-gray-500 mb-4">Any dietary restrictions for restaurant recommendations?</p>
+          <div class="flex flex-wrap gap-2">
+            <button
+              v-for="restriction in dietaryRestrictions"
+              :key="restriction.value"
+              @click="toggleDietaryRestriction(restriction.value)"
+              class="inline-flex items-center gap-2 px-4 py-2 rounded-full border-2 transition-all"
+              :class="formData.dietaryRestrictions.includes(restriction.value)
+                ? 'border-primary-500 bg-primary-50 text-primary-700'
+                : 'border-gray-200 hover:border-gray-300 text-gray-600'"
+            >
+              <span>{{ restriction.icon }}</span>
+              {{ restriction.label }}
             </button>
           </div>
         </div>

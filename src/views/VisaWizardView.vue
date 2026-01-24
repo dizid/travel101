@@ -120,6 +120,11 @@ const recommendedVisa = computed(() => visaResult.value.visa)
 const visaWarning = computed(() => visaResult.value.warning)
 const visaAlternatives = computed(() => visaResult.value.alternatives || [])
 
+// Persist checked items to localStorage
+const checkedItems = ref<Set<string>>(
+  new Set(JSON.parse(localStorage.getItem('visa-checklist') || '[]'))
+)
+
 // Generate checklist based on visa type
 const checklist = computed<ChecklistItem[]>(() => {
   if (!recommendedVisa.value) return []
@@ -129,35 +134,35 @@ const checklist = computed<ChecklistItem[]>(() => {
       id: 'passport',
       label: 'Valid passport (6+ months validity)',
       description: 'Your passport must be valid for at least 6 months from entry date',
-      checked: false,
+      checked: checkedItems.value.has('passport'),
       required: true,
     },
     {
       id: 'return-ticket',
       label: 'Return/onward flight ticket',
       description: 'Proof of onward travel within visa period',
-      checked: false,
+      checked: checkedItems.value.has('return-ticket'),
       required: true,
     },
     {
       id: 'accommodation',
       label: 'Hotel reservation for first night',
       description: 'Booking confirmation for your accommodation',
-      checked: false,
+      checked: checkedItems.value.has('accommodation'),
       required: true,
     },
     {
       id: 'funds',
       label: 'Proof of funds (20,000 THB or equivalent)',
       description: 'Cash or bank statement showing sufficient funds',
-      checked: false,
+      checked: checkedItems.value.has('funds'),
       required: true,
     },
     {
       id: 'tdac',
       label: 'TDAC completed',
       description: 'Thai Digital Arrival Card - submit within 72 hours of arrival',
-      checked: false,
+      checked: checkedItems.value.has('tdac'),
       required: true,
       link: '/tdac',
     },
@@ -165,7 +170,7 @@ const checklist = computed<ChecklistItem[]>(() => {
       id: 'insurance',
       label: 'Travel insurance (recommended)',
       description: 'Medical coverage for your trip',
-      checked: false,
+      checked: checkedItems.value.has('insurance'),
       required: false,
     },
   ]
@@ -254,10 +259,13 @@ function prevStep() {
 }
 
 function toggleChecklistItem(id: string) {
-  const item = checklist.value.find((i) => i.id === id)
-  if (item) {
-    item.checked = !item.checked
+  if (checkedItems.value.has(id)) {
+    checkedItems.value.delete(id)
+  } else {
+    checkedItems.value.add(id)
   }
+  // Persist to localStorage
+  localStorage.setItem('visa-checklist', JSON.stringify([...checkedItems.value]))
 }
 
 // Update user profile with wizard data

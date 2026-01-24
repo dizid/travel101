@@ -1,6 +1,8 @@
 # TODO: Smart Traveler Thailand
 
 https://partners.agoda.com/profile/personaldetails
+https://safetywing.com/
+last.fm (?) API?
 
 
 Airalo uses Impact platform for affiliates - sign up at partners.airalo.com to get proper tracking links

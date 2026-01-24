@@ -18,6 +18,8 @@ export interface UserPreferences {
   interests: Interest[]
   nationality: string
   tripType: TripType
+  courseInterests?: CourseInterest[]
+  dietaryRestrictions?: DietaryRestriction[]
 }
 
 export type TravelStyle = 'party' | 'adventure' | 'relaxation' | 'culture'
@@ -26,6 +28,8 @@ export type GroupType = 'solo' | 'couple' | 'family' | 'friends'
 export type BudgetLevel = 'budget' | 'mid' | 'luxury'
 export type Interest = 'beach' | 'nightlife' | 'temples' | 'food' | 'shopping' | 'nature' | 'wellness'
 export type TripType = 'holiday' | 'expat' | 'digital_nomad'
+export type CourseInterest = 'cooking' | 'meditation' | 'diving' | 'massage' | 'muay_thai' | 'yoga'
+export type DietaryRestriction = 'vegetarian' | 'vegan' | 'halal' | 'gluten_free'
 
 // Place types for expanded taxonomy
 export type PlaceType = 'attraction' | 'course' | 'tour' | 'activity' | 'coworking' | 'restaurant' | 'event' | 'heritage'

@@ -260,6 +260,13 @@ function mapGoogleTypeToPlaceType(googleTypes: string[], primaryType?: string): 
     gym: 'activity',
     spa: 'activity',
 
+    // Nightlife venues
+    night_club: 'activity',
+    nightclub: 'activity',
+    karaoke: 'activity',
+    disco: 'activity',
+    pub: 'restaurant',
+
     coworking_space: 'coworking',
   }
 
@@ -293,6 +300,11 @@ function mapGoogleTypeToCategory(googleTypes: string[], primaryType?: string): s
     thai_restaurant: 'food',
     seafood_restaurant: 'food',
     bar: 'nightlife',
+    night_club: 'nightlife',
+    nightclub: 'nightlife',
+    karaoke: 'nightlife',
+    disco: 'nightlife',
+    pub: 'nightlife',
     spa: 'wellness',
     diving_center: 'adventure',
     golf_course: 'adventure',

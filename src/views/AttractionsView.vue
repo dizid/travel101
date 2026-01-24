@@ -7,6 +7,8 @@ import { useMatcher } from '@/composables/useMatcher'
 import { useFestivals } from '@/composables/useFestivals'
 import AttractionCard from '@components/features/AttractionCard.vue'
 import AffiliateCard from '@components/common/AffiliateCard.vue'
+import PersonalizationBar from '@components/ui/PersonalizationBar.vue'
+import ProfileQuickEdit from '@components/features/ProfileQuickEdit.vue'
 import type { AttractionCategory, UpcomingFestival } from '@/types'
 import { SearchOutlined, StarFilled, LoadingOutlined, EnvironmentOutlined } from '@ant-design/icons-vue'
 
@@ -23,6 +25,17 @@ const showPersonalized = ref(true)
 const showSuggestions = ref(false)
 const selectedSuggestionIndex = ref(-1)
 const searchInputRef = ref<HTMLInputElement | null>(null)
+const showQuickEdit = ref(false)
+
+// Handle personalization toggle from bar
+function handlePersonalizationToggle(value: boolean) {
+  showPersonalized.value = value
+}
+
+// Handle edit click from bar
+function handleEditClick() {
+  showQuickEdit.value = true
+}
 
 // Festivals
 const { fetchUpcoming, getFestivalEmoji, formatFestivalDate } = useFestivals()
@@ -78,7 +91,7 @@ const suggestions = computed<Suggestion[]>(() => {
 
   // Match attractions by name (limit to 5)
   const matchingPlaces = countryStore.attractions
-    .filter(a => a.name.toLowerCase().includes(query))
+    .filter(a => a.name?.toLowerCase().includes(query))
     .slice(0, 5)
     .map(a => ({
       type: 'place' as const,
@@ -92,7 +105,7 @@ const suggestions = computed<Suggestion[]>(() => {
   // Match provinces (unique, limit to 3)
   const provinces = [...new Set(countryStore.attractions.map(a => a.province))]
   const matchingProvinces = provinces
-    .filter(p => p.toLowerCase().includes(query))
+    .filter(p => p?.toLowerCase().includes(query))
     .slice(0, 3)
     .map(p => ({
       type: 'province' as const,
@@ -209,9 +222,9 @@ const filteredAttractions = computed(() => {
     const query = searchQuery.value.toLowerCase()
     results = results.filter(
       (a) =>
-        a.name.toLowerCase().includes(query) ||
-        a.description.toLowerCase().includes(query) ||
-        a.province.toLowerCase().includes(query)
+        a.name?.toLowerCase().includes(query) ||
+        a.description?.toLowerCase().includes(query) ||
+        a.province?.toLowerCase().includes(query)
     )
   }
 
@@ -320,23 +333,16 @@ function setCategory(cat: typeof activeCategory.value) {
       </div>
     </div>
 
+    <!-- Personalization Bar (sticky) -->
+    <PersonalizationBar
+      :is-enabled="showPersonalized"
+      context="attractions"
+      @toggle="handlePersonalizationToggle"
+      @edit="handleEditClick"
+    />
+
     <!-- Content -->
     <div class="max-w-6xl mx-auto px-4 sm:px-6 py-8">
-      <!-- Personalization toggle -->
-      <div v-if="hasProfile" class="mb-6 flex items-center gap-3">
-        <label class="flex items-center gap-2 cursor-pointer select-none">
-          <input
-            type="checkbox"
-            v-model="showPersonalized"
-            class="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-          />
-          <span class="text-sm text-gray-700">Sort by my preferences</span>
-        </label>
-        <span v-if="showPersonalized" class="text-xs text-primary-600 bg-primary-50 px-2 py-1 rounded-full">
-          Personalized for you
-        </span>
-      </div>
-
       <!-- Category filters -->
       <div class="flex flex-wrap gap-2 mb-8 overflow-x-auto pb-2">
         <button
@@ -375,7 +381,12 @@ function setCategory(cat: typeof activeCategory.value) {
       <!-- Results count -->
       <p class="text-sm text-gray-500 mb-4">
         <LoadingOutlined v-if="countryStore.attractionsLoading" class="mr-2" />
-        {{ filteredAttractions.length }} places found
+        <template v-if="countryStore.attractionsTotal > filteredAttractions.length">
+          Showing {{ filteredAttractions.length }} of {{ countryStore.attractionsTotal }} places
+        </template>
+        <template v-else>
+          {{ filteredAttractions.length }} places found
+        </template>
       </p>
 
       <!-- Main content with sidebar -->
@@ -463,5 +474,12 @@ function setCategory(cat: typeof activeCategory.value) {
         <p class="text-gray-500">Loading attractions...</p>
       </div>
     </div>
+
+    <!-- Profile Quick Edit Modal -->
+    <ProfileQuickEdit
+      :is-open="showQuickEdit"
+      @close="showQuickEdit = false"
+      @saved="showQuickEdit = false"
+    />
   </div>
 </template>

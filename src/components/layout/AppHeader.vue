@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import { useUserStore } from '@stores/userStore'
 import {
@@ -13,6 +13,17 @@ import {
 const route = useRoute()
 const userStore = useUserStore()
 const isMobileMenuOpen = ref(false)
+
+// Profile completeness for the chip
+const profileProgress = computed(() => {
+  const prefs = userStore.profile.prefs
+  let score = 0
+  if (prefs.nationality) score += 25
+  if (prefs.travelStyle.length > 0) score += 25
+  if (prefs.interests.length > 0) score += 25
+  if (prefs.tripType) score += 25
+  return score
+})
 
 const navigation = [
   { name: 'Visa Guide', path: '/visa', icon: '🛂' },
@@ -95,6 +106,46 @@ const closeMobileMenu = () => {
             <CrownOutlined class="text-xs" />
             <span>Pro</span>
           </div>
+
+          <!-- Profile Status Chip -->
+          <RouterLink
+            to="/profile"
+            class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-all"
+            :class="[
+              userStore.hasProfile
+                ? 'bg-gradient-to-r from-rose-50 to-amber-50 border border-rose-200/50 hover:border-rose-300'
+                : 'bg-gray-100 hover:bg-gray-200'
+            ]"
+            :title="userStore.hasProfile ? 'Your preferences are active' : 'Complete your profile'"
+          >
+            <!-- Profile complete: sparkle indicator -->
+            <template v-if="userStore.hasProfile">
+              <span class="text-sm">✨</span>
+              <span class="text-xs font-medium text-rose-700">Personalized</span>
+            </template>
+
+            <!-- Profile incomplete: progress ring -->
+            <template v-else>
+              <svg class="w-5 h-5 -rotate-90" viewBox="0 0 36 36">
+                <circle
+                  cx="18" cy="18" r="14"
+                  fill="none"
+                  stroke="#e5e7eb"
+                  stroke-width="3"
+                />
+                <circle
+                  cx="18" cy="18" r="14"
+                  fill="none"
+                  stroke="#f43f5e"
+                  stroke-width="3"
+                  stroke-linecap="round"
+                  :stroke-dasharray="`${profileProgress * 0.88} 100`"
+                  class="transition-all duration-300"
+                />
+              </svg>
+              <span class="text-xs font-medium text-gray-600">{{ profileProgress }}%</span>
+            </template>
+          </RouterLink>
 
           <!-- Saved Places -->
           <RouterLink

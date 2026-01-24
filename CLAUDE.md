@@ -17,34 +17,28 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **IMPORTANT**: This app uses Netlify Functions for the API backend.
 
-| Command | Port | What it runs | API available? |
-|---------|------|--------------|----------------|
-| `npm run dev` | 3000 (or 3001, 3002 if occupied) | Vite only | ❌ No |
-| `netlify dev` | 8888 (proxy) → 3000 (Vite) | Full stack | ✅ Yes |
+| Port | What | Purpose |
+|------|------|---------|
+| **5173** | Vite dev server | App/frontend (access here) |
+| **8888** | Netlify CLI | API functions proxy |
 
 ### How it works
 
 ```
-Browser → localhost:8888 (Netlify CLI)
-              ├── /api/* → Serverless Functions
-              └── /* → localhost:3000 (Vite)
+Browser → localhost:5173 (Vite app)
+              └── /api/* → localhost:8888 → Serverless Functions
 ```
 
-- **Vite** runs the Vue frontend with HMR on port 3000
-- **Netlify CLI** proxies requests on port 8888:
-  - `/api/*` routes go to serverless functions
-  - Everything else forwards to Vite
-- **Without Netlify CLI**, API calls fail (Vite returns HTML 404)
+- **Vite** runs the Vue frontend with HMR on port 5173
+- **Netlify CLI** serves the API functions on port 8888
+- The app makes API calls from 5173 → 8888
 
-### For development with API:
+### For development:
 ```bash
-netlify dev    # Access app at localhost:8888
+netlify dev    # Starts both servers, access app at localhost:5173
 ```
 
-### For frontend-only (no API):
-```bash
-npm run dev    # Access app at localhost:3000
-```
+**Note**: Sometimes port 8888 gets stuck. Kill it with: `lsof -ti:8888 | xargs -r kill -9`
 
 ## Commands
 

@@ -401,6 +401,7 @@ export const useCountryStore = defineStore('country', () => {
   const attractions = ref<Attraction[]>(fallbackAttractions)
   const attractionsLoading = ref(false)
   const attractionsLoaded = ref(false)
+  const attractionsTotal = ref(0)
   const currentAttraction = ref<AttractionDetail | null>(null)
   const matchedAttractions = ref<AttractionMatch[]>([])
   const isLoading = ref(false)
@@ -553,6 +554,7 @@ export const useCountryStore = defineStore('country', () => {
       if (response && response.attractions) {
         // Transform API response to match frontend types
         attractions.value = response.attractions.map(transformAttraction)
+        attractionsTotal.value = response.total || response.attractions.length
         attractionsLoaded.value = true
       }
     } catch (error) {
@@ -697,6 +699,7 @@ export const useCountryStore = defineStore('country', () => {
     attractions,
     attractionsLoading,
     attractionsLoaded,
+    attractionsTotal,
     currentAttraction,
     matchedAttractions,
     isLoading,

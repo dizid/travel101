@@ -182,7 +182,7 @@ async function handleList(req: Request, db: ReturnType<typeof getDb>, url: URL) 
     if (prefs) {
       const attractionsWithScores = attractions.map(a => ({
         ...a,
-        matchScore: calculateMatchScore(prefs, a.categories),
+        matchScore: calculateMatchScore(prefs, a.categories, a.place_type),
         matchReasons: getMatchReasons(prefs, a.categories),
       }))
 
@@ -218,7 +218,7 @@ async function handleMatched(req: Request, db: ReturnType<typeof getDb>) {
   const matches = attractions
     .map(a => ({
       attraction: a,
-      score: calculateMatchScore(prefs, a.categories),
+      score: calculateMatchScore(prefs, a.categories, a.place_type),
       reasons: getMatchReasons(prefs, a.categories),
     }))
     .sort((a, b) => b.score - a.score)
@@ -302,7 +302,7 @@ async function handleDetail(
   const prefs = parseUserPrefs(req)
   if (prefs) {
     response.matchInfo = {
-      score: calculateMatchScore(prefs, attraction.categories),
+      score: calculateMatchScore(prefs, attraction.categories, attraction.place_type),
       reasons: getMatchReasons(prefs, attraction.categories),
     }
   }
