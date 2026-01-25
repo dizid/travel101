@@ -4,7 +4,8 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --port 3000",
+    "kill-ports": "lsof -ti:8888,3000 | xargs -r kill -9",
     "build": "vue-tsc -b && vite build",
     "preview": "vite preview",
     "test": "vitest",

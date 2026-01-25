@@ -15,30 +15,31 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Development Server
 
-**IMPORTANT**: This app uses Netlify Functions for the API backend.
+**IMPORTANT**: This app uses `@netlify/vite-plugin` which emulates Netlify's platform inside Vite.
 
 | Port | What | Purpose |
 |------|------|---------|
-| **5173** | Vite dev server | App/frontend (access here) |
-| **8888** | Netlify CLI | API functions proxy |
+| **3000** | Vite dev server | Main entry point (access here) |
 
 ### How it works
 
 ```
-Browser → localhost:5173 (Vite app)
-              └── /api/* → localhost:8888 → Serverless Functions
+Browser → localhost:3000 (Vite + Netlify plugin)
+              ├── /* → Vue app with HMR
+              └── /.netlify/functions/* → Serverless functions (emulated by plugin)
 ```
 
-- **Vite** runs the Vue frontend with HMR on port 5173
-- **Netlify CLI** serves the API functions on port 8888
-- The app makes API calls from 5173 → 8888
+The `@netlify/vite-plugin` intercepts requests and emulates:
+- Serverless functions
+- Redirects & rewrites (from netlify.toml)
+- Headers and environment variables
 
 ### For development:
 ```bash
-netlify dev    # Starts both servers, access app at localhost:5173
+npm run dev    # Access app at localhost:3000
 ```
 
-**Note**: Sometimes port 8888 gets stuck. Kill it with: `lsof -ti:8888 | xargs -r kill -9`
+**Note**: If port 3000 is stuck: `lsof -ti:3000 | xargs -r kill -9`
 
 ## Commands
 

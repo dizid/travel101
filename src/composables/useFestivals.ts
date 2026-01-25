@@ -7,245 +7,178 @@ import type {
   FestivalFilters
 } from '@/types'
 
+// Shared state across all composable instances
 const upcomingFestivals = ref<UpcomingFestival[]>([])
 const allFestivals = ref<Festival[]>([])
 const loading = ref(false)
 const error = ref<string | null>(null)
 
+// Cache for metadata endpoints (rarely change)
+const metadataCache = {
+  types: null as { type: string; count: number }[] | null,
+  regions: null as { region: string; count: number }[] | null,
+  typesPromise: null as Promise<{ type: string; count: number }[]> | null,
+  regionsPromise: null as Promise<{ region: string; count: number }[]> | null,
+}
+
+// Generic fetch helper that handles loading state, errors, and response parsing
+async function fetchApi<T>(
+  url: string,
+  options: {
+    setLoading?: boolean
+    errorMessage?: string
+    extractKey?: string
+    defaultValue: T
+  }
+): Promise<T> {
+  const { setLoading = true, errorMessage = 'Request failed', extractKey, defaultValue } = options
+
+  if (setLoading) {
+    loading.value = true
+    error.value = null
+  }
+
+  try {
+    const response = await fetch(url)
+    if (!response.ok) {
+      if (response.status === 404) return defaultValue
+      throw new Error(errorMessage)
+    }
+
+    const data = await response.json()
+    return extractKey ? data[extractKey] : data
+  } catch (e) {
+    error.value = e instanceof Error ? e.message : 'Unknown error'
+    if (!setLoading) console.error(errorMessage, e)
+    return defaultValue
+  } finally {
+    if (setLoading) loading.value = false
+  }
+}
+
+// Build URL with query parameters
+function buildUrl(base: string, params: Record<string, string | number | boolean | undefined>): string {
+  const searchParams = new URLSearchParams()
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined && value !== '') {
+      searchParams.set(key, String(value))
+    }
+  }
+  const queryString = searchParams.toString()
+  return queryString ? `${base}?${queryString}` : base
+}
+
 export function useFestivals() {
   // Fetch upcoming festivals (within N days)
   async function fetchUpcoming(days = 60): Promise<UpcomingFestival[]> {
-    loading.value = true
-    error.value = null
-
-    try {
-      const response = await fetch(`/api/festivals/upcoming?days=${days}`)
-      if (!response.ok) throw new Error('Failed to fetch upcoming festivals')
-
-      const data = await response.json()
-      upcomingFestivals.value = data.festivals
-      return data.festivals
-    } catch (e) {
-      error.value = e instanceof Error ? e.message : 'Unknown error'
-      return []
-    } finally {
-      loading.value = false
-    }
+    const festivals = await fetchApi<UpcomingFestival[]>(
+      buildUrl('/api/festivals/upcoming', { days }),
+      { errorMessage: 'Failed to fetch upcoming festivals', extractKey: 'festivals', defaultValue: [] }
+    )
+    upcomingFestivals.value = festivals
+    return festivals
   }
 
   // Fetch all festivals
   async function fetchAll(): Promise<Festival[]> {
-    loading.value = true
-    error.value = null
-
-    try {
-      const response = await fetch('/api/festivals')
-      if (!response.ok) throw new Error('Failed to fetch festivals')
-
-      const data = await response.json()
-      allFestivals.value = data.festivals
-      return data.festivals
-    } catch (e) {
-      error.value = e instanceof Error ? e.message : 'Unknown error'
-      return []
-    } finally {
-      loading.value = false
-    }
+    const festivals = await fetchApi<Festival[]>(
+      '/api/festivals',
+      { errorMessage: 'Failed to fetch festivals', extractKey: 'festivals', defaultValue: [] }
+    )
+    allFestivals.value = festivals
+    return festivals
   }
 
   // Fetch festivals with filters
   async function fetchFiltered(filters: FestivalFilters): Promise<{ festivals: Festival[]; total: number; hasMore: boolean }> {
-    loading.value = true
-    error.value = null
+    const url = buildUrl('/api/festivals', {
+      type: filters.type,
+      region: filters.region,
+      hidden: filters.hidden ? 'true' : undefined,
+      month: filters.month,
+      search: filters.search,
+    })
 
-    try {
-      const params = new URLSearchParams()
-      if (filters.type) params.set('type', filters.type)
-      if (filters.region) params.set('region', filters.region)
-      if (filters.hidden) params.set('hidden', 'true')
-      if (filters.month) params.set('month', filters.month.toString())
-      if (filters.search) params.set('search', filters.search)
+    const data = await fetchApi<{ festivals: Festival[]; total?: number; count?: number; hasMore?: boolean }>(
+      url,
+      { errorMessage: 'Failed to fetch festivals', defaultValue: { festivals: [] } }
+    )
 
-      const response = await fetch(`/api/festivals?${params}`)
-      if (!response.ok) throw new Error('Failed to fetch festivals')
-
-      const data = await response.json()
-      return {
-        festivals: data.festivals,
-        total: data.total || data.count,
-        hasMore: data.hasMore || false
-      }
-    } catch (e) {
-      error.value = e instanceof Error ? e.message : 'Unknown error'
-      return { festivals: [], total: 0, hasMore: false }
-    } finally {
-      loading.value = false
+    return {
+      festivals: data.festivals || [],
+      total: data.total || data.count || 0,
+      hasMore: data.hasMore || false,
     }
   }
 
-  // Fetch by month
-  async function fetchByMonth(month: number): Promise<Festival[]> {
-    loading.value = true
-    error.value = null
-
-    try {
-      const response = await fetch(`/api/festivals?month=${month}`)
-      if (!response.ok) throw new Error('Failed to fetch festivals')
-
-      const data = await response.json()
-      return data.festivals
-    } catch (e) {
-      error.value = e instanceof Error ? e.message : 'Unknown error'
-      return []
-    } finally {
-      loading.value = false
-    }
+  // Fetch by single filter parameter
+  async function fetchByFilter(filterKey: string, filterValue: string | number): Promise<Festival[]> {
+    return fetchApi<Festival[]>(
+      buildUrl('/api/festivals', { [filterKey]: filterValue }),
+      { errorMessage: 'Failed to fetch festivals', extractKey: 'festivals', defaultValue: [] }
+    )
   }
 
-  // Fetch by province
-  async function fetchByProvince(province: string): Promise<Festival[]> {
-    loading.value = true
-    error.value = null
-
-    try {
-      const response = await fetch(`/api/festivals?province=${encodeURIComponent(province)}`)
-      if (!response.ok) throw new Error('Failed to fetch festivals')
-
-      const data = await response.json()
-      return data.festivals
-    } catch (e) {
-      error.value = e instanceof Error ? e.message : 'Unknown error'
-      return []
-    } finally {
-      loading.value = false
-    }
-  }
-
-  // Fetch by type
-  async function fetchByType(type: FestivalType): Promise<Festival[]> {
-    loading.value = true
-    error.value = null
-
-    try {
-      const response = await fetch(`/api/festivals?type=${type}`)
-      if (!response.ok) throw new Error('Failed to fetch festivals')
-
-      const data = await response.json()
-      return data.festivals
-    } catch (e) {
-      error.value = e instanceof Error ? e.message : 'Unknown error'
-      return []
-    } finally {
-      loading.value = false
-    }
-  }
-
-  // Fetch by region
-  async function fetchByRegion(region: FestivalRegion): Promise<Festival[]> {
-    loading.value = true
-    error.value = null
-
-    try {
-      const response = await fetch(`/api/festivals?region=${region}`)
-      if (!response.ok) throw new Error('Failed to fetch festivals')
-
-      const data = await response.json()
-      return data.festivals
-    } catch (e) {
-      error.value = e instanceof Error ? e.message : 'Unknown error'
-      return []
-    } finally {
-      loading.value = false
-    }
-  }
-
-  // Fetch hidden gems only
-  async function fetchHiddenGems(): Promise<Festival[]> {
-    loading.value = true
-    error.value = null
-
-    try {
-      const response = await fetch('/api/festivals?hidden=true')
-      if (!response.ok) throw new Error('Failed to fetch festivals')
-
-      const data = await response.json()
-      return data.festivals
-    } catch (e) {
-      error.value = e instanceof Error ? e.message : 'Unknown error'
-      return []
-    } finally {
-      loading.value = false
-    }
-  }
+  // Convenience methods using fetchByFilter
+  const fetchByMonth = (month: number) => fetchByFilter('month', month)
+  const fetchByProvince = (province: string) => fetchByFilter('province', province)
+  const fetchByType = (type: FestivalType) => fetchByFilter('type', type)
+  const fetchByRegion = (region: FestivalRegion) => fetchByFilter('region', region)
+  const fetchHiddenGems = () => fetchByFilter('hidden', 'true')
 
   // Fetch single festival by slug
   async function fetchBySlug(slug: string): Promise<UpcomingFestival | null> {
-    loading.value = true
-    error.value = null
-
-    try {
-      const response = await fetch(`/api/festivals/${slug}`)
-      if (!response.ok) {
-        if (response.status === 404) return null
-        throw new Error('Failed to fetch festival')
-      }
-
-      return await response.json()
-    } catch (e) {
-      error.value = e instanceof Error ? e.message : 'Unknown error'
-      return null
-    } finally {
-      loading.value = false
-    }
+    return fetchApi<UpcomingFestival | null>(
+      `/api/festivals/${encodeURIComponent(slug)}`,
+      { errorMessage: 'Failed to fetch festival', defaultValue: null }
+    )
   }
 
   // Search festivals
   async function searchFestivals(query: string): Promise<Festival[]> {
     if (!query.trim()) return []
-
-    loading.value = true
-    error.value = null
-
-    try {
-      const response = await fetch(`/api/festivals?search=${encodeURIComponent(query)}`)
-      if (!response.ok) throw new Error('Failed to search festivals')
-
-      const data = await response.json()
-      return data.festivals
-    } catch (e) {
-      error.value = e instanceof Error ? e.message : 'Unknown error'
-      return []
-    } finally {
-      loading.value = false
-    }
+    return fetchApi<Festival[]>(
+      buildUrl('/api/festivals', { search: query }),
+      { errorMessage: 'Failed to search festivals', extractKey: 'festivals', defaultValue: [] }
+    )
   }
 
-  // Fetch festival types with counts
+  // Fetch festival types with counts (cached)
   async function fetchTypes(): Promise<{ type: string; count: number }[]> {
-    try {
-      const response = await fetch('/api/festivals/types')
-      if (!response.ok) throw new Error('Failed to fetch festival types')
+    if (metadataCache.types) return metadataCache.types
 
-      const data = await response.json()
-      return data.types
-    } catch (e) {
-      console.error('Error fetching festival types:', e)
-      return []
+    // Avoid duplicate requests
+    if (!metadataCache.typesPromise) {
+      metadataCache.typesPromise = fetchApi<{ type: string; count: number }[]>(
+        '/api/festivals/types',
+        { setLoading: false, errorMessage: 'Failed to fetch festival types', extractKey: 'types', defaultValue: [] }
+      ).then(types => {
+        metadataCache.types = types
+        metadataCache.typesPromise = null
+        return types
+      })
     }
+
+    return metadataCache.typesPromise
   }
 
-  // Fetch regions with counts
+  // Fetch regions with counts (cached)
   async function fetchRegions(): Promise<{ region: string; count: number }[]> {
-    try {
-      const response = await fetch('/api/festivals/regions')
-      if (!response.ok) throw new Error('Failed to fetch regions')
+    if (metadataCache.regions) return metadataCache.regions
 
-      const data = await response.json()
-      return data.regions
-    } catch (e) {
-      console.error('Error fetching regions:', e)
-      return []
+    // Avoid duplicate requests
+    if (!metadataCache.regionsPromise) {
+      metadataCache.regionsPromise = fetchApi<{ region: string; count: number }[]>(
+        '/api/festivals/regions',
+        { setLoading: false, errorMessage: 'Failed to fetch regions', extractKey: 'regions', defaultValue: [] }
+      ).then(regions => {
+        metadataCache.regions = regions
+        metadataCache.regionsPromise = null
+        return regions
+      })
     }
+
+    return metadataCache.regionsPromise
   }
 
   // Next upcoming festival
@@ -267,66 +200,80 @@ export function useFestivals() {
     return `${date.toLocaleDateString('en-US', options)} - ${endDate.toLocaleDateString('en-US', options)}`
   }
 
-  // Get festival emoji based on type
+  // Festival emoji lookup maps
+  const FESTIVAL_EMOJI_MAP: Record<string, string> = {
+    'songkran': '💦',
+    'loy-krathong': '🪷',
+    'yi-peng': '🏮',
+    'chinese-new-year': '🐉',
+    'vegetarian-festival': '🥬',
+    'trang-vegetarian': '🥬',
+    'ubon-candle-festival': '🕯️',
+    'bun-bang-fai': '🚀',
+    'phi-ta-khon': '👻',
+    'naga-fireballs': '🔥',
+    'buffalo-racing': '🐃',
+    'surin-elephant-roundup': '🐘',
+    'elephant-day': '🐘',
+    'wonderfruit': '🎪',
+    'full-moon-party': '🌕',
+    'lopburi-monkey-festival': '🐒',
+    'chiang-mai-flower-festival': '🌻',
+    'saraburi-sunflowers': '🌻',
+    'bo-sang-umbrella': '☂️',
+    'pattaya-fireworks': '🎆',
+    'bangkok-countdown': '🎉',
+    'hua-hin-jazz': '🎷',
+    'khon-kaen-silk-festival': '🧵',
+    'lamphun-longan': '🍇',
+  }
+
+  const RELIGION_EMOJI_MAP: Record<string, string> = {
+    'buddhist': '🙏',
+    'taoist': '☯️',
+    'hindu': '🕉️',
+    'animist': '🌿',
+  }
+
+  const FESTIVAL_TYPE_COLORS: Record<string, string> = {
+    'religious': 'bg-amber-100 text-amber-700 border-amber-200',
+    'cultural': 'bg-purple-100 text-purple-700 border-purple-200',
+    'royal': 'bg-blue-100 text-blue-700 border-blue-200',
+    'modern': 'bg-teal-100 text-teal-700 border-teal-200',
+    'harvest': 'bg-green-100 text-green-700 border-green-200',
+    'water': 'bg-cyan-100 text-cyan-700 border-cyan-200',
+  }
+
+  const CROWD_LEVEL_COLORS: Record<string, string> = {
+    'low': 'bg-green-500',
+    'medium': 'bg-yellow-500',
+    'high': 'bg-orange-500',
+    'extreme': 'bg-red-500',
+  }
+
+  // Get festival emoji based on slug, type, or religion
   function getFestivalEmoji(festival: Festival): string {
-    // Specific festival emojis
-    if (festival.slug === 'songkran') return '💦'
-    if (festival.slug === 'loy-krathong') return '🪷'
-    if (festival.slug === 'yi-peng') return '🏮'
-    if (festival.slug === 'chinese-new-year') return '🐉'
-    if (festival.slug === 'vegetarian-festival' || festival.slug === 'trang-vegetarian') return '🥬'
-    if (festival.slug === 'ubon-candle-festival') return '🕯️'
-    if (festival.slug === 'bun-bang-fai') return '🚀'
-    if (festival.slug === 'phi-ta-khon') return '👻'
-    if (festival.slug === 'naga-fireballs') return '🔥'
-    if (festival.slug === 'buffalo-racing') return '🐃'
-    if (festival.slug === 'surin-elephant-roundup' || festival.slug === 'elephant-day') return '🐘'
-    if (festival.slug === 'wonderfruit') return '🎪'
-    if (festival.slug === 'full-moon-party') return '🌕'
-    if (festival.slug === 'lopburi-monkey-festival') return '🐒'
-    if (festival.slug === 'chiang-mai-flower-festival' || festival.slug === 'saraburi-sunflowers') return '🌻'
-    if (festival.slug === 'bo-sang-umbrella') return '☂️'
-    if (festival.slug === 'pattaya-fireworks') return '🎆'
-    if (festival.slug === 'bangkok-countdown') return '🎉'
-    if (festival.slug === 'hua-hin-jazz') return '🎷'
-    if (festival.slug === 'khon-kaen-silk-festival') return '🧵'
-    if (festival.slug === 'lamphun-longan') return '🍇'
-
-    // Royal festivals
-    if (festival.festivalType === 'royal') return '👑'
-
-    // By religion
-    switch (festival.religion) {
-      case 'buddhist': return '🙏'
-      case 'taoist': return '☯️'
-      case 'hindu': return '🕉️'
-      case 'animist': return '🌿'
-      default: return '🎉'
+    // Check slug-specific emoji first
+    if (festival.slug && FESTIVAL_EMOJI_MAP[festival.slug]) {
+      return FESTIVAL_EMOJI_MAP[festival.slug]
     }
+    // Royal festivals get crown
+    if (festival.festivalType === 'royal') return '👑'
+    // Fall back to religion-based emoji
+    if (festival.religion && RELIGION_EMOJI_MAP[festival.religion]) {
+      return RELIGION_EMOJI_MAP[festival.religion]
+    }
+    return '🎉'
   }
 
   // Get color class based on festival type
   function getFestivalTypeColor(type?: string): string {
-    switch (type) {
-      case 'religious': return 'bg-amber-100 text-amber-700 border-amber-200'
-      case 'cultural': return 'bg-purple-100 text-purple-700 border-purple-200'
-      case 'royal': return 'bg-blue-100 text-blue-700 border-blue-200'
-      case 'modern': return 'bg-teal-100 text-teal-700 border-teal-200'
-      case 'harvest': return 'bg-green-100 text-green-700 border-green-200'
-      case 'water': return 'bg-cyan-100 text-cyan-700 border-cyan-200'
-      default: return 'bg-gray-100 text-gray-700 border-gray-200'
-    }
+    return (type && FESTIVAL_TYPE_COLORS[type]) || 'bg-gray-100 text-gray-700 border-gray-200'
   }
 
   // Get crowd level indicator
   function getCrowdLevelColor(level?: string): string {
-    switch (level) {
-      case 'low': return 'bg-green-500'
-      case 'medium': return 'bg-yellow-500'
-      case 'high': return 'bg-orange-500'
-      case 'extreme': return 'bg-red-500'
-      default: return 'bg-gray-400'
-    }
+    return (level && CROWD_LEVEL_COLORS[level]) || 'bg-gray-400'
   }
 
   // Get countdown text

@@ -4,13 +4,13 @@ import { useRoute, useRouter, RouterLink } from 'vue-router'
 import { useFestivals } from '@/composables/useFestivals'
 import type { UpcomingFestival } from '@/types'
 import LoadingSpinner from '@/components/ui/LoadingSpinner.vue'
+import ShareButton from '@/components/ui/ShareButton.vue'
 import {
   CalendarOutlined,
   EnvironmentOutlined,
   ClockCircleOutlined,
   TeamOutlined,
   LeftOutlined,
-  ShareAltOutlined,
   CheckCircleOutlined,
   InfoCircleOutlined,
 } from '@ant-design/icons-vue'
@@ -23,7 +23,6 @@ const {
   error,
   fetchBySlug,
   getFestivalEmoji,
-  getFestivalTypeColor,
   getCrowdLevelColor,
   formatFestivalDate,
   getCountdownText,
@@ -107,29 +106,6 @@ const typeDisplay = computed(() => {
   return type.charAt(0).toUpperCase() + type.slice(1)
 })
 
-// Share functionality
-async function shareEvent() {
-  if (!festival.value) return
-
-  const shareData = {
-    title: festival.value.name,
-    text: festival.value.description || `Discover the ${festival.value.name} festival in Thailand`,
-    url: window.location.href,
-  }
-
-  if (navigator.share) {
-    try {
-      await navigator.share(shareData)
-    } catch (err) {
-      // User cancelled or error
-    }
-  } else {
-    // Fallback: copy to clipboard
-    await navigator.clipboard.writeText(window.location.href)
-    alert('Link copied to clipboard!')
-  }
-}
-
 // Watch for route changes
 watch(() => route.params.slug, () => {
   loadFestival()
@@ -144,7 +120,7 @@ onMounted(() => {
   <div class="min-h-screen bg-gray-50">
     <!-- Loading State -->
     <div v-if="loading" class="flex items-center justify-center min-h-screen">
-      <LoadingSpinner size="large" />
+      <LoadingSpinner size="lg" />
     </div>
 
     <!-- Error State -->
@@ -285,13 +261,13 @@ onMounted(() => {
                 </div>
 
                 <!-- Share Button -->
-                <button
-                  @click="shareEvent"
-                  class="w-full mt-6 flex items-center justify-center gap-2 px-4 py-3 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-                >
-                  <ShareAltOutlined />
-                  Share Festival
-                </button>
+                <div class="mt-6 flex justify-center">
+                  <ShareButton
+                    :title="festival.name"
+                    :description="festival.description || `Discover the ${festival.name} festival in Thailand`"
+                    :hashtags="['Thailand', 'Festival', festival.festivalType || 'Travel']"
+                  />
+                </div>
               </div>
             </div>
           </div>

@@ -14,10 +14,162 @@ function getAnthropic() {
   return new Anthropic({ apiKey })
 }
 
+// Custom error for Pro requirement
+class ProRequiredError extends Error {
+  constructor() {
+    super('Pro subscription required')
+    this.name = 'ProRequiredError'
+  }
+}
+
+// Custom error for not found resources
+class NotFoundError extends Error {
+  constructor(resource: string) {
+    super(`${resource} not found`)
+    this.name = 'NotFoundError'
+  }
+}
+
 async function requirePro(db: ReturnType<typeof getDb>, userId: string) {
   const result = await db`SELECT is_pro FROM user_profiles WHERE user_id = ${userId}`
   if (result.length === 0 || !result[0].is_pro) {
-    throw new Error('Pro subscription required')
+    throw new ProRequiredError()
+  }
+}
+
+// Ownership verification helpers
+async function verifyItineraryOwnership(
+  db: ReturnType<typeof getDb>,
+  userId: string,
+  itineraryId: string
+): Promise<void> {
+  const result = await db`
+    SELECT id FROM itineraries WHERE id = ${itineraryId} AND user_id = ${userId}
+  `
+  if (result.length === 0) {
+    throw new NotFoundError('Itinerary')
+  }
+}
+
+async function verifyDayOwnership(
+  db: ReturnType<typeof getDb>,
+  userId: string,
+  dayId: string
+): Promise<{ itineraryId: string }> {
+  const result = await db`
+    SELECT d.id, d.itinerary_id
+    FROM itinerary_days d
+    JOIN itineraries i ON d.itinerary_id = i.id
+    WHERE d.id = ${dayId} AND i.user_id = ${userId}
+  `
+  if (result.length === 0) {
+    throw new NotFoundError('Day')
+  }
+  return { itineraryId: result[0].itinerary_id }
+}
+
+async function verifyActivityOwnership(
+  db: ReturnType<typeof getDb>,
+  userId: string,
+  activityId: string
+): Promise<{ dayId: string; itineraryId: string }> {
+  const result = await db`
+    SELECT a.id, a.day_id, d.itinerary_id
+    FROM itinerary_activities a
+    JOIN itinerary_days d ON a.day_id = d.id
+    JOIN itineraries i ON d.itinerary_id = i.id
+    WHERE a.id = ${activityId} AND i.user_id = ${userId}
+  `
+  if (result.length === 0) {
+    throw new NotFoundError('Activity')
+  }
+  return { dayId: result[0].day_id, itineraryId: result[0].itinerary_id }
+}
+
+// Batch insert helper for days and activities
+async function insertDaysWithActivities(
+  db: ReturnType<typeof getDb>,
+  itineraryId: string,
+  days: ItineraryDay[],
+  startDate?: Date
+): Promise<void> {
+  if (!days || days.length === 0) return
+
+  for (const day of days) {
+    // Calculate date if startDate provided
+    let dayDate: string | null = day.date || null
+    if (startDate && !dayDate) {
+      const date = new Date(startDate)
+      date.setDate(date.getDate() + day.dayNumber - 1)
+      dayDate = date.toISOString().split('T')[0]
+    }
+
+    const [insertedDay] = await db`
+      INSERT INTO itinerary_days (itinerary_id, day_number, date, location)
+      VALUES (${itineraryId}, ${day.dayNumber}, ${dayDate}, ${day.location})
+      RETURNING id
+    `
+
+    // Insert activities if present
+    if (day.activities && day.activities.length > 0) {
+      for (let i = 0; i < day.activities.length; i++) {
+        const activity = day.activities[i]
+        await db`
+          INSERT INTO itinerary_activities (
+            day_id, time_slot, title, description, activity_type,
+            attraction_slug, duration_minutes, estimated_cost_thb, sort_order
+          )
+          VALUES (
+            ${insertedDay.id},
+            ${activity.timeSlot || null},
+            ${activity.title},
+            ${activity.description || null},
+            ${activity.activityType || null},
+            ${activity.attractionSlug || null},
+            ${activity.durationMinutes || null},
+            ${activity.estimatedCostThb || null},
+            ${i}
+          )
+        `
+      }
+    }
+  }
+}
+
+// Load full itinerary with days and activities
+async function loadItineraryWithDetails(
+  db: ReturnType<typeof getDb>,
+  itineraryId: string
+): Promise<{
+  days: Array<{
+    id: string
+    day_number: number
+    date: string | null
+    location: string
+    activities: Array<Record<string, unknown>>
+  }>
+}> {
+  const days = await db`
+    SELECT * FROM itinerary_days
+    WHERE itinerary_id = ${itineraryId}
+    ORDER BY day_number
+  `
+
+  const dayIds = days.map((d) => d.id)
+  let activities: Record<string, unknown>[] = []
+  if (dayIds.length > 0) {
+    activities = await db`
+      SELECT * FROM itinerary_activities
+      WHERE day_id = ANY(${dayIds})
+      ORDER BY sort_order, time_slot
+    `
+  }
+
+  return {
+    days: days.map((day) => ({
+      ...day,
+      activities: activities.filter((a) => a.day_id === day.id),
+    })),
   }
 }
 
@@ -150,39 +302,9 @@ export default async (req: Request, context: Context) => {
           RETURNING *
         `
 
-        // Insert days if provided
+        // Insert days and activities using helper
         if (createReq.days && createReq.days.length > 0) {
-          for (const day of createReq.days) {
-            const [insertedDay] = await db`
-              INSERT INTO itinerary_days (itinerary_id, day_number, date, location)
-              VALUES (${itinerary.id}, ${day.dayNumber}, ${day.date || null}, ${day.location})
-              RETURNING id
-            `
-
-            // Insert activities for this day
-            if (day.activities && day.activities.length > 0) {
-              for (let i = 0; i < day.activities.length; i++) {
-                const activity = day.activities[i]
-                await db`
-                  INSERT INTO itinerary_activities (
-                    day_id, time_slot, title, description, activity_type,
-                    attraction_slug, duration_minutes, estimated_cost_thb, sort_order
-                  )
-                  VALUES (
-                    ${insertedDay.id},
-                    ${activity.timeSlot || null},
-                    ${activity.title},
-                    ${activity.description || null},
-                    ${activity.activityType || null},
-                    ${activity.attractionSlug || null},
-                    ${activity.durationMinutes || null},
-                    ${activity.estimatedCostThb || null},
-                    ${i}
-                  )
-                `
-              }
-            }
-          }
+          await insertDaysWithActivities(db, itinerary.id, createReq.days)
         }
 
         return json({ itinerary }, 201)
@@ -195,22 +317,17 @@ export default async (req: Request, context: Context) => {
 
         const body = await req.json()
 
-        // Verify ownership
-        const existing = await db`
-          SELECT id FROM itineraries WHERE id = ${itineraryId} AND user_id = ${userId}
-        `
-        if (existing.length === 0) {
-          return json({ error: 'Itinerary not found' }, 404)
-        }
+        // Verify ownership using helper
+        await verifyItineraryOwnership(db, userId, itineraryId)
 
         // Update itinerary
         const [updated] = await db`
           UPDATE itineraries SET
-            name = COALESCE(${body.name || null}, name),
-            start_date = COALESCE(${body.startDate || null}, start_date),
-            end_date = COALESCE(${body.endDate || null}, end_date),
-            status = COALESCE(${body.status || null}, status),
-            notes = COALESCE(${body.notes || null}, notes),
+            name = COALESCE(${body.name ?? null}, name),
+            start_date = COALESCE(${body.startDate ?? null}, start_date),
+            end_date = COALESCE(${body.endDate ?? null}, end_date),
+            status = COALESCE(${body.status ?? null}, status),
+            notes = COALESCE(${body.notes ?? null}, notes),
             updated_at = NOW()
           WHERE id = ${itineraryId}
           RETURNING *
@@ -242,10 +359,21 @@ export default async (req: Request, context: Context) => {
         return json({ error: 'Method not allowed' }, 405)
     }
   } catch (error) {
-    console.error('Itinerary error:', error)
+    console.error('Itinerary error:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+    })
+
+    // Handle custom errors with appropriate status codes
+    if (error instanceof ProRequiredError) {
+      return json({ error: error.message }, 403)
+    }
+    if (error instanceof NotFoundError) {
+      return json({ error: error.message }, 404)
+    }
+
     const message = error instanceof Error ? error.message : 'Internal server error'
-    const status = message.includes('Pro subscription') ? 403 : 500
-    return json({ error: message }, status)
+    return json({ error: message }, 500)
   }
 }
 
@@ -340,58 +468,11 @@ Respond ONLY with valid JSON in this exact format:
     RETURNING *
   `
 
-  // Insert days and activities
-  for (const day of itineraryData.days) {
-    const dayDate = new Date(startDate)
-    dayDate.setDate(dayDate.getDate() + day.dayNumber - 1)
+  // Insert days and activities using helper
+  await insertDaysWithActivities(db, itinerary.id, itineraryData.days, startDate)
 
-    const [insertedDay] = await db`
-      INSERT INTO itinerary_days (itinerary_id, day_number, date, location)
-      VALUES (${itinerary.id}, ${day.dayNumber}, ${dayDate.toISOString().split('T')[0]}, ${day.location})
-      RETURNING id
-    `
-
-    if (day.activities) {
-      for (let i = 0; i < day.activities.length; i++) {
-        const activity = day.activities[i]
-        await db`
-          INSERT INTO itinerary_activities (
-            day_id, time_slot, title, description, activity_type,
-            duration_minutes, estimated_cost_thb, sort_order
-          )
-          VALUES (
-            ${insertedDay.id},
-            ${activity.timeSlot || null},
-            ${activity.title},
-            ${activity.description || null},
-            ${activity.activityType || null},
-            ${activity.durationMinutes || null},
-            ${activity.estimatedCostThb || null},
-            ${i}
-          )
-        `
-      }
-    }
-  }
-
-  // Return the full itinerary
-  const days = await db`
-    SELECT * FROM itinerary_days
-    WHERE itinerary_id = ${itinerary.id}
-    ORDER BY day_number
-  `
-
-  const dayIds = days.map((d) => d.id)
-  const activities = await db`
-    SELECT * FROM itinerary_activities
-    WHERE day_id = ANY(${dayIds})
-    ORDER BY sort_order, time_slot
-  `
-
-  const daysWithActivities = days.map((day) => ({
-    ...day,
-    activities: activities.filter((a) => a.day_id === day.id),
-  }))
+  // Load the full itinerary with details
+  const { days: daysWithActivities } = await loadItineraryWithDetails(db, itinerary.id)
 
   return json({
     itinerary: {
@@ -417,13 +498,8 @@ async function handleDayOperations(
         return json({ error: 'Itinerary ID required' }, 400)
       }
 
-      // Verify ownership
-      const itinerary = await db`
-        SELECT id FROM itineraries WHERE id = ${itineraryId} AND user_id = ${userId}
-      `
-      if (itinerary.length === 0) {
-        return json({ error: 'Itinerary not found' }, 404)
-      }
+      // Verify ownership using helper
+      await verifyItineraryOwnership(db, userId, itineraryId)
 
       const body = await req.json()
 
@@ -457,15 +533,8 @@ async function handleDayOperations(
         return json({ error: 'Day ID required' }, 400)
       }
 
-      // Verify ownership via join
-      const existing = await db`
-        SELECT d.id, i.user_id FROM itinerary_days d
-        JOIN itineraries i ON d.itinerary_id = i.id
-        WHERE d.id = ${dayId} AND i.user_id = ${userId}
-      `
-      if (existing.length === 0) {
-        return json({ error: 'Day not found' }, 404)
-      }
+      // Verify ownership using helper
+      await verifyDayOwnership(db, userId, dayId)
 
       const body = await req.json()
 
@@ -492,15 +561,8 @@ async function handleDayOperations(
         return json({ error: 'Day ID required' }, 400)
       }
 
-      // Verify ownership and get itinerary_id
-      const existing = await db`
-        SELECT d.id, d.itinerary_id, i.user_id FROM itinerary_days d
-        JOIN itineraries i ON d.itinerary_id = i.id
-        WHERE d.id = ${dayId} AND i.user_id = ${userId}
-      `
-      if (existing.length === 0) {
-        return json({ error: 'Day not found' }, 404)
-      }
+      // Verify ownership and get itinerary_id using helper
+      const { itineraryId: parentItineraryId } = await verifyDayOwnership(db, userId, dayId)
 
       // Delete day (activities will cascade)
       await db`DELETE FROM itinerary_days WHERE id = ${dayId}`
@@ -509,7 +571,7 @@ async function handleDayOperations(
       await db`
         WITH numbered AS (
           SELECT id, ROW_NUMBER() OVER (ORDER BY day_number) as new_number
-          FROM itinerary_days WHERE itinerary_id = ${existing[0].itinerary_id}
+          FROM itinerary_days WHERE itinerary_id = ${parentItineraryId}
         )
         UPDATE itinerary_days d
         SET day_number = n.new_number
@@ -518,7 +580,7 @@ async function handleDayOperations(
       `
 
       // Update itinerary updated_at
-      await db`UPDATE itineraries SET updated_at = NOW() WHERE id = ${existing[0].itinerary_id}`
+      await db`UPDATE itineraries SET updated_at = NOW() WHERE id = ${parentItineraryId}`
 
       return json({ success: true })
     }
@@ -543,15 +605,8 @@ async function handleActivityOperations(
         return json({ error: 'Day ID required' }, 400)
       }
 
-      // Verify ownership via join
-      const day = await db`
-        SELECT d.id, d.itinerary_id FROM itinerary_days d
-        JOIN itineraries i ON d.itinerary_id = i.id
-        WHERE d.id = ${dayId} AND i.user_id = ${userId}
-      `
-      if (day.length === 0) {
-        return json({ error: 'Day not found' }, 404)
-      }
+      // Verify ownership using helper
+      const { itineraryId: parentItineraryId } = await verifyDayOwnership(db, userId, dayId)
 
       const body = await req.json()
 
@@ -586,10 +641,7 @@ async function handleActivityOperations(
       `
 
       // Update itinerary updated_at
-      await db`
-        UPDATE itineraries SET updated_at = NOW()
-        WHERE id = ${day[0].itinerary_id}
-      `
+      await db`UPDATE itineraries SET updated_at = NOW() WHERE id = ${parentItineraryId}`
 
       return json({ activity }, 201)
     }
@@ -599,16 +651,8 @@ async function handleActivityOperations(
         return json({ error: 'Activity ID required' }, 400)
       }
 
-      // Verify ownership via joins
-      const existing = await db`
-        SELECT a.id, d.itinerary_id FROM itinerary_activities a
-        JOIN itinerary_days d ON a.day_id = d.id
-        JOIN itineraries i ON d.itinerary_id = i.id
-        WHERE a.id = ${activityId} AND i.user_id = ${userId}
-      `
-      if (existing.length === 0) {
-        return json({ error: 'Activity not found' }, 404)
-      }
+      // Verify ownership using helper
+      const { itineraryId: parentItineraryId } = await verifyActivityOwnership(db, userId, activityId)
 
       const body = await req.json()
 
@@ -642,10 +686,7 @@ async function handleActivityOperations(
       `
 
       // Update itinerary updated_at
-      await db`
-        UPDATE itineraries SET updated_at = NOW()
-        WHERE id = ${existing[0].itinerary_id}
-      `
+      await db`UPDATE itineraries SET updated_at = NOW() WHERE id = ${parentItineraryId}`
 
       return json({ activity: updated })
     }
@@ -655,16 +696,8 @@ async function handleActivityOperations(
         return json({ error: 'Activity ID required' }, 400)
       }
 
-      // Verify ownership via joins
-      const existing = await db`
-        SELECT a.id, a.day_id, d.itinerary_id FROM itinerary_activities a
-        JOIN itinerary_days d ON a.day_id = d.id
-        JOIN itineraries i ON d.itinerary_id = i.id
-        WHERE a.id = ${activityId} AND i.user_id = ${userId}
-      `
-      if (existing.length === 0) {
-        return json({ error: 'Activity not found' }, 404)
-      }
+      // Verify ownership using helper
+      const { dayId: parentDayId, itineraryId: parentItineraryId } = await verifyActivityOwnership(db, userId, activityId)
 
       await db`DELETE FROM itinerary_activities WHERE id = ${activityId}`
 
@@ -672,7 +705,7 @@ async function handleActivityOperations(
       await db`
         WITH numbered AS (
           SELECT id, ROW_NUMBER() OVER (ORDER BY sort_order) - 1 as new_order
-          FROM itinerary_activities WHERE day_id = ${existing[0].day_id}
+          FROM itinerary_activities WHERE day_id = ${parentDayId}
         )
         UPDATE itinerary_activities a
         SET sort_order = n.new_order
@@ -681,10 +714,7 @@ async function handleActivityOperations(
       `
 
       // Update itinerary updated_at
-      await db`
-        UPDATE itineraries SET updated_at = NOW()
-        WHERE id = ${existing[0].itinerary_id}
-      `
+      await db`UPDATE itineraries SET updated_at = NOW() WHERE id = ${parentItineraryId}`
 
       return json({ success: true })
     }
