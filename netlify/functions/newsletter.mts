@@ -1,19 +1,17 @@
 import type { Context } from '@netlify/functions'
 import { neon } from '@neondatabase/serverless'
+import { methodNotAllowed, badRequest, serverError, rawJsonResponse } from './lib/responses.mts'
 
 export default async function handler(req: Request, _context: Context) {
   if (req.method !== 'POST') {
-    return new Response('Method not allowed', { status: 405 })
+    return methodNotAllowed()
   }
 
   try {
     const { email, source = 'footer', leadMagnet } = await req.json()
 
     if (!email || !email.includes('@')) {
-      return new Response(
-        JSON.stringify({ error: 'Invalid email' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
-      )
+      return badRequest('Invalid email')
     }
 
     const sql = neon(process.env.DATABASE_URL!)
@@ -42,15 +40,9 @@ export default async function handler(req: Request, _context: Context) {
     // For now, just store in database
     console.log(`Newsletter signup: ${email} (source: ${source}, leadMagnet: ${leadMagnet || 'none'})`)
 
-    return new Response(
-      JSON.stringify({ success: true }),
-      { status: 200, headers: { 'Content-Type': 'application/json' } }
-    )
+    return rawJsonResponse({ success: true })
   } catch (error) {
     console.error('Newsletter signup error:', error)
-    return new Response(
-      JSON.stringify({ error: 'Failed to subscribe' }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
-    )
+    return serverError('Failed to subscribe')
   }
 }

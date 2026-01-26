@@ -15,7 +15,6 @@ import {
 const {
   loading,
   error,
-  fetchAll,
   fetchUpcoming,
   fetchFiltered,
   fetchTypes,
@@ -348,7 +347,7 @@ const hiddenGemCount = computed(() =>
 
       <!-- Loading State -->
       <div v-if="loading" class="flex justify-center py-16">
-        <LoadingSpinner size="large" />
+        <LoadingSpinner size="lg" />
       </div>
 
       <!-- Error State -->

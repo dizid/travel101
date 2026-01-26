@@ -1,10 +1,11 @@
 import type { Context, Config } from '@netlify/functions'
 import Stripe from 'stripe'
 import { getDb } from './lib/db.mts'
+import { methodNotAllowed, serverError, badRequest, rawJsonResponse } from './lib/responses.mts'
 
 export default async (req: Request, context: Context) => {
   if (req.method !== 'POST') {
-    return new Response('Method not allowed', { status: 405 })
+    return methodNotAllowed()
   }
 
   const secretKey = Netlify.env.get('STRIPE_SECRET_KEY')
@@ -12,14 +13,14 @@ export default async (req: Request, context: Context) => {
 
   if (!secretKey || !webhookSecret) {
     console.error('Stripe not configured')
-    return new Response('Webhook not configured', { status: 500 })
+    return serverError('Webhook not configured')
   }
 
   const stripe = new Stripe(secretKey, { apiVersion: '2024-12-18.acacia' })
   const signature = req.headers.get('stripe-signature')
 
   if (!signature) {
-    return new Response('Missing signature', { status: 400 })
+    return badRequest('Missing signature')
   }
 
   try {
@@ -83,12 +84,10 @@ export default async (req: Request, context: Context) => {
         console.log(`Unhandled event type: ${event.type}`)
     }
 
-    return new Response(JSON.stringify({ received: true }), {
-      headers: { 'Content-Type': 'application/json' },
-    })
+    return rawJsonResponse({ received: true })
   } catch (error) {
     console.error('Webhook error:', error)
-    return new Response('Webhook error', { status: 400 })
+    return badRequest('Webhook error')
   }
 }
 

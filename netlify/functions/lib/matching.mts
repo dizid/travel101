@@ -1,64 +1,22 @@
 // Matching algorithm for personalizing attractions based on user profile
+// Imports shared constants from frontend to ensure consistency
 
-export interface UserPrefs {
-  travelStyle?: string[]
-  interests?: string[]
-  budget?: string
-  groupType?: string
-  tripType?: string
-  ageGroup?: string
-  courseInterests?: string[]
-  dietaryRestrictions?: string[]
-}
+import {
+  WEIGHTS,
+  SCORING_CONFIG,
+  TRIP_TYPE_CATEGORIES,
+  COURSE_CATEGORY_MAP,
+  GROUP_CATEGORY_MAP,
+  EXTENDED_REASON_MAP,
+  mapInterestToCategory,
+  mapCategoryToInterest,
+  getCategoryScore,
+  type UserPrefs,
+  type AttractionCategories,
+} from '../../../src/shared/matching-constants.js'
 
-export interface AttractionCategories {
-  [key: string]: number
-}
-
-// Weight multipliers for different profile aspects
-const WEIGHTS = {
-  interests: 3.0,
-  travelStyle: 2.5,
-  courseInterests: 2.2,
-  budget: 2.0,
-  groupType: 1.5,
-  tripType: 1.5,
-  placeType: 1.0,
-}
-
-// Trip type to category boosts
-const TRIP_TYPE_CATEGORIES: Record<string, string[]> = {
-  holiday: ['relaxation', 'beach', 'party', 'nightlife', 'romantic', 'island'],
-  expat: ['culture', 'authentic', 'food', 'nomad', 'history'],
-  digital_nomad: ['nomad'],
-}
-
-// Course interest to category mapping
-const COURSE_CATEGORY_MAP: Record<string, string[]> = {
-  cooking: ['food', 'culture', 'skill_building'],
-  meditation: ['wellness', 'relaxation', 'authentic'],
-  diving: ['adventure', 'nature', 'certification'],
-  massage: ['wellness', 'skill_building'],
-  muay_thai: ['adventure', 'physical', 'authentic'],
-  yoga: ['wellness', 'relaxation'],
-}
-
-// Map user interests to attraction category keys
-function mapInterestToCategory(interest: string): string {
-  const map: Record<string, string> = {
-    temples: 'culture',
-    shopping: 'budget',
-  }
-  return map[interest] || interest
-}
-
-// Map attraction categories back to user-friendly interests
-function mapCategoryToInterest(category: string): string {
-  const map: Record<string, string> = {
-    culture: 'temples',
-  }
-  return map[category] || category
-}
+// Re-export types for consumers
+export type { UserPrefs, AttractionCategories }
 
 export function calculateMatchScore(
   prefs: UserPrefs,
@@ -66,7 +24,7 @@ export function calculateMatchScore(
   placeType?: string
 ): number {
   if (!prefs || Object.keys(prefs).length === 0) {
-    return 50 // Default score for users without profile
+    return SCORING_CONFIG.DEFAULT_SCORE
   }
 
   let totalScore = 0
@@ -76,8 +34,9 @@ export function calculateMatchScore(
   const interests = prefs.interests || []
   for (const interest of interests) {
     const categoryKey = mapInterestToCategory(interest)
-    if (categories[categoryKey]) {
-      totalScore += categories[categoryKey] * WEIGHTS.interests
+    const score = getCategoryScore(categories, categoryKey)
+    if (score > 0) {
+      totalScore += score * WEIGHTS.interests
       totalWeight += WEIGHTS.interests
     }
   }
@@ -85,37 +44,38 @@ export function calculateMatchScore(
   // 2. Travel style matching - only count weight when matched
   const travelStyles = prefs.travelStyle || []
   for (const style of travelStyles) {
-    if (categories[style]) {
-      totalScore += categories[style] * WEIGHTS.travelStyle
+    const score = getCategoryScore(categories, style)
+    if (score > 0) {
+      totalScore += score * WEIGHTS.travelStyle
       totalWeight += WEIGHTS.travelStyle
     }
   }
 
-  // 3. Budget matching - always count (single value preference)
+  // 3. Budget matching with penalties
   if (prefs.budget) {
-    if (categories[prefs.budget]) {
-      totalScore += categories[prefs.budget] * WEIGHTS.budget
+    const budgetScore = getCategoryScore(categories, prefs.budget)
+    if (budgetScore > 0) {
+      totalScore += budgetScore * WEIGHTS.budget
       totalWeight += WEIGHTS.budget
     }
     // Penalize mismatches
-    if (prefs.budget === 'budget' && (categories.luxury || 0) > 0.7) {
-      totalScore -= 0.3 * WEIGHTS.budget
+    if (prefs.budget === 'budget' && getCategoryScore(categories, 'luxury') > SCORING_CONFIG.BUDGET_CONFLICT_THRESHOLD) {
+      totalScore -= SCORING_CONFIG.BUDGET_LUXURY_PENALTY * WEIGHTS.budget
     }
-    if (prefs.budget === 'luxury' && (categories.budget || 0) > 0.7) {
-      totalScore -= 0.2 * WEIGHTS.budget
+    if (prefs.budget === 'luxury' && getCategoryScore(categories, 'budget') > SCORING_CONFIG.BUDGET_CONFLICT_THRESHOLD) {
+      totalScore -= SCORING_CONFIG.LUXURY_BUDGET_PENALTY * WEIGHTS.budget
     }
   }
 
   // 4. Group type matching - only count weight when matched
   if (prefs.groupType) {
-    const groupCategoryMap: Record<string, string> = {
-      couple: 'romantic',
-      family: 'family',
-    }
-    const groupCategory = groupCategoryMap[prefs.groupType]
-    if (groupCategory && categories[groupCategory]) {
-      totalScore += categories[groupCategory] * WEIGHTS.groupType
-      totalWeight += WEIGHTS.groupType
+    const groupCategory = GROUP_CATEGORY_MAP[prefs.groupType]
+    if (groupCategory) {
+      const score = getCategoryScore(categories, groupCategory)
+      if (score > 0) {
+        totalScore += score * WEIGHTS.groupType
+        totalWeight += WEIGHTS.groupType
+      }
     }
   }
 
@@ -125,8 +85,9 @@ export function calculateMatchScore(
     let tripScore = 0
     let tripCount = 0
     for (const cat of tripCategories) {
-      if (categories[cat]) {
-        tripScore += categories[cat]
+      const score = getCategoryScore(categories, cat)
+      if (score > 0) {
+        tripScore += score
         tripCount++
       }
     }
@@ -143,8 +104,9 @@ export function calculateMatchScore(
     let courseScore = 0
     let courseCount = 0
     for (const cat of courseCategories) {
-      if (categories[cat]) {
-        courseScore += categories[cat]
+      const score = getCategoryScore(categories, cat)
+      if (score > 0) {
+        courseScore += score
         courseCount++
       }
     }
@@ -158,19 +120,19 @@ export function calculateMatchScore(
   if (placeType) {
     // Coworking spaces get big boost for digital nomads
     if (placeType === 'coworking' && prefs.tripType === 'digital_nomad') {
-      const nomadScore = categories.nomad || 0.8
-      totalScore += nomadScore * 2 * WEIGHTS.placeType
+      const nomadScore = getCategoryScore(categories, 'nomad') || SCORING_CONFIG.COWORKING_DEFAULT_NOMAD_SCORE
+      totalScore += nomadScore * SCORING_CONFIG.COWORKING_NOMAD_MULTIPLIER * WEIGHTS.placeType
       totalWeight += WEIGHTS.placeType
     }
     // Courses get boost if user has matching course interests
     if (placeType === 'course' && courseInterests.length > 0) {
-      totalScore += 0.5 * WEIGHTS.placeType
+      totalScore += SCORING_CONFIG.COURSE_INTEREST_BONUS * WEIGHTS.placeType
       totalWeight += WEIGHTS.placeType
     }
   }
 
   // Normalize to 0-100
-  if (totalWeight === 0) return 50
+  if (totalWeight === 0) return SCORING_CONFIG.DEFAULT_SCORE
   return Math.round((totalScore / totalWeight) * 100)
 }
 
@@ -184,27 +146,9 @@ export function getMatchReasons(
     return reasons
   }
 
-  const reasonMap: Record<string, string> = {
-    beach: 'Perfect for beach lovers',
-    nightlife: 'Great nightlife scene',
-    culture: 'Rich cultural experiences',
-    food: 'Amazing food scene',
-    nature: 'Beautiful natural setting',
-    wellness: 'Ideal for wellness seekers',
-    adventure: 'Exciting adventures await',
-    party: 'Vibrant party atmosphere',
-    relaxation: 'Perfect for unwinding',
-    romantic: 'Romantic getaway spot',
-    family: 'Family-friendly destination',
-    budget: 'Easy on the wallet',
-    luxury: 'Premium experience',
-    nomad: 'Great for remote work',
-    authentic: 'Authentic local experience',
-  }
-
-  // Find top matching categories (>= 0.7 score)
+  // Find top matching categories (>= threshold score)
   const topCategories = Object.entries(categories)
-    .filter(([_, score]) => score >= 0.7)
+    .filter(([_, score]) => score >= SCORING_CONFIG.STRONG_MATCH_THRESHOLD)
     .sort((a, b) => b[1] - a[1])
     .slice(0, 3)
 
@@ -214,12 +158,12 @@ export function getMatchReasons(
   for (const [category] of topCategories) {
     const mappedInterest = mapCategoryToInterest(category)
     if (interests.includes(mappedInterest) || interests.includes(category)) {
-      if (reasonMap[category]) {
-        reasons.push(reasonMap[category])
+      if (EXTENDED_REASON_MAP[category]) {
+        reasons.push(EXTENDED_REASON_MAP[category])
       }
     } else if (travelStyles.includes(category)) {
-      if (reasonMap[category]) {
-        reasons.push(reasonMap[category])
+      if (EXTENDED_REASON_MAP[category]) {
+        reasons.push(EXTENDED_REASON_MAP[category])
       }
     }
   }
@@ -227,8 +171,8 @@ export function getMatchReasons(
   // If no specific matches, use highest category
   if (reasons.length === 0 && topCategories.length > 0) {
     const [category] = topCategories[0]
-    if (reasonMap[category]) {
-      reasons.push(reasonMap[category])
+    if (EXTENDED_REASON_MAP[category]) {
+      reasons.push(EXTENDED_REASON_MAP[category])
     }
   }
 

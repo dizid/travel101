@@ -31,6 +31,12 @@
   to = "/robots.txt"
   status = 200
 
+# Agoda partner verification
+[[redirects]]
+  from = "/AgodaPartnerVerification.html"
+  to = "/AgodaPartnerVerification.html"
+  status = 200
+
 # SPA redirect - all other routes go to index.html
 [[redirects]]
   from = "/*"

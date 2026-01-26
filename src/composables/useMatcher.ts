@@ -3,144 +3,27 @@ import { useUserStore } from '@/stores/userStore'
 import { useCountryStore } from '@/stores/countryStore'
 import type { Attraction } from '@/types'
 
-// Weight multipliers for different profile aspects
-const WEIGHTS = {
-  interests: 3.0,
-  travelStyle: 2.5,
-  courseInterests: 2.2,
-  budget: 2.0,
-  groupType: 1.5,
-  tripType: 1.5,
-  placeType: 1.0,
-} as const
+// Import shared constants - single source of truth
+import {
+  WEIGHTS,
+  SCORING_CONFIG,
+  TRIP_TYPE_CATEGORIES,
+  COURSE_CATEGORY_MAP,
+  GROUP_CATEGORY_MAP,
+  LABEL_MAP,
+  TRIP_TYPE_LABELS,
+  COURSE_LABELS,
+  REASON_MAP,
+  mapInterestToCategory,
+  getCategoryScore,
+  type UserPrefs,
+  type MatchFactor,
+  type MatchBreakdown,
+  type ScoringResult,
+} from '@/shared/matching-constants'
 
-// Scoring configuration
-const SCORING_CONFIG = {
-  MIN_FACTOR_THRESHOLD: 0.3,
-  BUDGET_CONFLICT_THRESHOLD: 0.7,
-  BUDGET_LUXURY_PENALTY: 0.3,
-  LUXURY_BUDGET_PENALTY: 0.2,
-  COWORKING_NOMAD_MULTIPLIER: 2,
-  COWORKING_DEFAULT_NOMAD_SCORE: 0.8,
-  COURSE_INTEREST_BONUS: 0.5,
-  STRONG_MATCH_THRESHOLD: 0.7,
-} as const
-
-// Trip type to category boosts
-const TRIP_TYPE_CATEGORIES: Record<string, string[]> = {
-  holiday: ['relaxation', 'beach', 'party', 'nightlife', 'romantic', 'island'],
-  expat: ['culture', 'authentic', 'food', 'nomad', 'history'],
-  digital_nomad: ['nomad'],
-}
-
-// Course interest to category mapping
-const COURSE_CATEGORY_MAP: Record<string, string[]> = {
-  cooking: ['food', 'culture', 'skill_building'],
-  meditation: ['wellness', 'relaxation', 'authentic'],
-  diving: ['adventure', 'nature', 'certification'],
-  massage: ['wellness', 'skill_building'],
-  muay_thai: ['adventure', 'physical', 'authentic'],
-  yoga: ['wellness', 'relaxation'],
-}
-
-// Group type to category mapping
-const GROUP_CATEGORY_MAP: Record<string, string> = {
-  couple: 'romantic',
-  family: 'family',
-}
-
-// Unified label map for all categories
-const LABEL_MAP: Record<string, string> = {
-  beach: 'Beach lover',
-  nightlife: 'Nightlife',
-  culture: 'Culture & temples',
-  food: 'Food scene',
-  nature: 'Nature',
-  wellness: 'Wellness',
-  adventure: 'Adventure',
-  party: 'Party scene',
-  relaxation: 'Relaxation',
-  romantic: 'Romantic vibes',
-  family: 'Family-friendly',
-  budget: 'Budget-friendly',
-  luxury: 'Luxury',
-  nomad: 'Digital nomad',
-  authentic: 'Authentic',
-}
-
-const TRIP_TYPE_LABELS: Record<string, string> = {
-  holiday: 'Holiday-perfect',
-  expat: 'Expat-friendly',
-  digital_nomad: 'Digital nomad friendly',
-}
-
-const COURSE_LABELS: Record<string, string> = {
-  cooking: 'Cooking classes',
-  meditation: 'Meditation retreats',
-  diving: 'Diving spots',
-  massage: 'Massage courses',
-  muay_thai: 'Muay Thai training',
-  yoga: 'Yoga retreats',
-}
-
-const REASON_MAP: Record<string, string> = {
-  beach: 'Great for beach lovers',
-  nightlife: 'Perfect for nightlife',
-  culture: 'Rich in culture',
-  food: 'Amazing food scene',
-  nature: 'Beautiful nature',
-  wellness: 'Ideal for wellness',
-  adventure: 'Adventure awaits',
-  party: 'Great party scene',
-  relaxation: 'Perfect for relaxing',
-  romantic: 'Romantic destination',
-  family: 'Family-friendly',
-  budget: 'Budget-friendly',
-  luxury: 'Premium experience',
-  nomad: 'Nomad-friendly',
-  authentic: 'Authentic experience',
-}
-
-// Map user interests to attraction category keys
-function mapInterestToCategory(interest: string): string {
-  const map: Record<string, string> = {
-    temples: 'culture',
-    shopping: 'budget',
-  }
-  return map[interest] || interest
-}
-
-// Safe category score getter
-function getCategoryScore(categories: Record<string, number>, key: string): number {
-  return categories[key] ?? 0
-}
-
-export interface MatchFactor {
-  category: string
-  label: string
-  contribution: number
-  strength: number
-}
-
-export interface MatchBreakdown {
-  factors: MatchFactor[]
-  totalScore: number
-}
-
-interface UserPrefs {
-  interests?: string[]
-  travelStyle?: string[]
-  budget?: string
-  groupType?: string
-  tripType?: string
-  courseInterests?: string[]
-}
-
-interface ScoringResult {
-  totalScore: number
-  totalWeight: number
-  factors: MatchFactor[]
-}
+// Re-export types for consumers
+export type { MatchFactor, MatchBreakdown }
 
 // Core scoring engine - single source of truth for all scoring logic
 function calculateScore(
@@ -340,15 +223,15 @@ export function useMatcher() {
   function calculateLocalScore(attraction: Attraction): number {
     const prefs = userStore.profile.prefs
     if (!prefs || Object.keys(prefs).length === 0) {
-      return 50
+      return SCORING_CONFIG.DEFAULT_SCORE
     }
 
     if (!attraction?.categories || typeof attraction.categories !== 'object') {
-      return 50
+      return SCORING_CONFIG.DEFAULT_SCORE
     }
 
     const { totalScore, totalWeight } = calculateScore(prefs, attraction, false)
-    if (totalWeight === 0) return 50
+    if (totalWeight === 0) return SCORING_CONFIG.DEFAULT_SCORE
     return Math.round((totalScore / totalWeight) * 100)
   }
 
@@ -366,11 +249,11 @@ export function useMatcher() {
   function getMatchBreakdown(attraction: Attraction): MatchBreakdown {
     const prefs = userStore.profile.prefs
     if (!prefs || Object.keys(prefs).length === 0) {
-      return { factors: [], totalScore: 50 }
+      return { factors: [], totalScore: SCORING_CONFIG.DEFAULT_SCORE }
     }
 
     if (!attraction?.categories || typeof attraction.categories !== 'object') {
-      return { factors: [], totalScore: 50 }
+      return { factors: [], totalScore: SCORING_CONFIG.DEFAULT_SCORE }
     }
 
     const { totalScore, totalWeight, factors } = calculateScore(prefs, attraction, true)
@@ -385,7 +268,7 @@ export function useMatcher() {
     // Sort by contribution (highest first)
     factors.sort((a, b) => b.contribution - a.contribution)
 
-    const finalScore = totalWeight === 0 ? 50 : Math.round((totalScore / totalWeight) * 100)
+    const finalScore = totalWeight === 0 ? SCORING_CONFIG.DEFAULT_SCORE : Math.round((totalScore / totalWeight) * 100)
     return { factors, totalScore: finalScore }
   }
 
