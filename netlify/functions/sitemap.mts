@@ -4,7 +4,11 @@ import { neon } from '@neondatabase/serverless'
 const BASE_URL = 'https://happyroam.travel'
 
 export default async function handler(_req: Request, _context: Context) {
-  const sql = neon(process.env.DATABASE_URL!)
+  const databaseUrl = Netlify.env.get('DATABASE_URL')
+  if (!databaseUrl) {
+    return new Response('Database not configured', { status: 500 })
+  }
+  const sql = neon(databaseUrl)
 
   // Get all attractions
   const attractions = await sql`

@@ -1,15 +1,16 @@
 import type { Context, Config } from '@netlify/functions'
 import { getDb, type DbUserProfile } from './lib/db.mts'
+import { requireAuth } from './lib/auth.mts'
 
 export default async (req: Request, context: Context) => {
   const db = await getDb()
-  const userId = req.headers.get('x-user-id')
 
-  if (!userId) {
-    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-      status: 401,
-      headers: { 'Content-Type': 'application/json' },
-    })
+  // Validate authentication and get user ID
+  let userId: string
+  try {
+    userId = await requireAuth(req)
+  } catch (response) {
+    return response as Response
   }
 
   try {

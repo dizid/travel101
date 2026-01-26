@@ -1,6 +1,7 @@
 import type { Context, Config } from '@netlify/functions'
 import Anthropic from '@anthropic-ai/sdk'
 import { getDb } from './lib/db.mts'
+import { validateAdminKey } from './lib/security.mts'
 
 // All category dimensions for scoring
 const ALL_CATEGORIES = [
@@ -376,10 +377,8 @@ export default async (req: Request, context: Context) => {
     return json({ error: 'Method not allowed' }, 405)
   }
 
-  // Simple auth check - require admin header for enrichment
-  const adminKey = req.headers.get('x-admin-key')
-  const expectedKey = Netlify.env.get('ADMIN_API_KEY')
-  if (expectedKey && adminKey !== expectedKey) {
+  // Admin-only authentication with timing-safe comparison
+  if (!validateAdminKey(req)) {
     return json({ error: 'Unauthorized' }, 401)
   }
 

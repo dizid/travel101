@@ -14,7 +14,11 @@ export default async function handler(req: Request, _context: Context) {
       return badRequest('Invalid email')
     }
 
-    const sql = neon(process.env.DATABASE_URL!)
+    const databaseUrl = Netlify.env.get('DATABASE_URL')
+    if (!databaseUrl) {
+      return serverError('Database not configured')
+    }
+    const sql = neon(databaseUrl)
 
     // Store email in database (create table if needed)
     await sql`

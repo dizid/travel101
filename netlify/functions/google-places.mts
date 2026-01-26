@@ -1,5 +1,6 @@
 import type { Context, Config } from '@netlify/functions'
 import { getDb } from './lib/db.mts'
+import { validateAdminKey } from './lib/security.mts'
 
 // ==========================================
 // TYPES
@@ -654,10 +655,8 @@ export default async (req: Request, context: Context) => {
     return json({ error: 'Method not allowed' }, 405)
   }
 
-  // Admin-only authentication
-  const adminKey = req.headers.get('x-admin-key')
-  const expectedKey = Netlify.env.get('ADMIN_API_KEY')
-  if (expectedKey && adminKey !== expectedKey) {
+  // Admin-only authentication with timing-safe comparison
+  if (!validateAdminKey(req)) {
     return json({ error: 'Unauthorized' }, 401)
   }
 
