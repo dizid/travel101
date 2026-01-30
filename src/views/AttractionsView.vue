@@ -231,12 +231,17 @@ const filteredAttractions = computed(() => {
   return results
 })
 
-function setCategory(cat: typeof activeCategory.value) {
+async function setCategory(cat: typeof activeCategory.value) {
   activeCategory.value = cat
   if (cat === 'hidden') {
     showHiddenOnly.value = true
+    await countryStore.fetchAttractions({ hiddenGemsOnly: true, personalized: hasProfile.value })
+  } else if (cat === 'all') {
+    showHiddenOnly.value = false
+    await countryStore.fetchAttractions({ personalized: hasProfile.value })
   } else {
     showHiddenOnly.value = false
+    await countryStore.fetchAttractions({ category: cat, personalized: hasProfile.value })
   }
 }
 </script>

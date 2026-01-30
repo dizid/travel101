@@ -51,6 +51,10 @@ export interface GenerateOptions {
   travelStyle?: string[]
   budget?: string
   groupType?: string
+  // Enhanced generation options
+  budgetMode?: 'budget' | 'comfort' | 'luxury'
+  travelPace?: 'relaxed' | 'moderate' | 'packed'
+  tripFocus?: string[]
 }
 
 export function useItinerary() {

@@ -47,6 +47,15 @@ const proFeatures = [
   { icon: '💬', label: 'Expert Q&A', description: 'Ask anything about Thailand', path: '/attractions' },
 ]
 
+// Extended pro features for full feature discovery
+const allProFeatures = [
+  ...proFeatures,
+  { icon: '📅', label: '90-Day Reporting', description: 'Track TM47 deadlines & immigration', path: '/90-day', new: true },
+  { icon: '🏥', label: 'Medical Tourism', description: 'Hospitals, dentists & specialists', path: '/medical', new: true },
+  { icon: '💰', label: 'Cost Calculator', description: 'Compare living costs by city', path: '/cost-calculator', new: true },
+  { icon: '📱', label: 'Setup Guide', description: 'SIM cards, banking & essentials', path: '/setup-guide', new: true },
+]
+
 const profileCompleteness = computed(() => {
   const prefs = userStore.profile.prefs
   let score = 0
@@ -231,13 +240,14 @@ const profileCompleteness = computed(() => {
             <!-- Pro Feature Quick Access -->
             <div class="space-y-2 mb-4">
               <RouterLink
-                v-for="feature in proFeatures"
+                v-for="feature in allProFeatures"
                 :key="feature.label"
                 :to="feature.path"
                 class="flex items-center gap-3 p-2 rounded-lg hover:bg-white transition-colors group"
               >
                 <span class="text-lg">{{ feature.icon }}</span>
                 <span class="text-sm font-medium text-gray-700 group-hover:text-primary-600">{{ feature.label }}</span>
+                <span v-if="'new' in feature && feature.new" class="text-xs bg-accent-100 text-accent-700 px-1.5 py-0.5 rounded font-medium">NEW</span>
                 <RightOutlined class="text-xs text-gray-400 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
               </RouterLink>
             </div>

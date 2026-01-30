@@ -19,14 +19,55 @@ const props = defineProps<Props>()
 
 const emit = defineEmits<{
   close: []
-  generate: [params: { duration: number; destinations: string[] }]
+  generate: [params: {
+    duration: number
+    destinations: string[]
+    budgetMode: 'budget' | 'comfort' | 'luxury'
+    travelPace: 'relaxed' | 'moderate' | 'packed'
+    tripFocus: string[]
+  }]
 }>()
 
 const generateForm = ref({
   duration: 7,
   destinations: ['Bangkok', 'Chiang Mai'],
   customDestination: '',
+  budgetMode: 'comfort' as 'budget' | 'comfort' | 'luxury',
+  travelPace: 'moderate' as 'relaxed' | 'moderate' | 'packed',
+  tripFocus: [] as string[],
 })
+
+const budgetModes = [
+  { id: 'budget', label: 'Budget', icon: '💰', description: '฿500-1,000/day', dailyBudget: '500-1000 THB' },
+  { id: 'comfort', label: 'Comfort', icon: '✨', description: '฿1,500-3,000/day', dailyBudget: '1500-3000 THB' },
+  { id: 'luxury', label: 'Luxury', icon: '👑', description: '฿5,000+/day', dailyBudget: '5000+ THB' },
+]
+
+const travelPaces = [
+  { id: 'relaxed', label: 'Relaxed', icon: '🧘', description: '2-3 activities/day' },
+  { id: 'moderate', label: 'Moderate', icon: '🚶', description: '4-5 activities/day' },
+  { id: 'packed', label: 'Packed', icon: '🏃', description: '6+ activities/day' },
+]
+
+const tripFocusOptions = [
+  { id: 'beaches', label: 'Beaches', icon: '🏖️' },
+  { id: 'culture', label: 'Culture', icon: '🏛️' },
+  { id: 'adventure', label: 'Adventure', icon: '🧗' },
+  { id: 'food', label: 'Food', icon: '🍜' },
+  { id: 'nightlife', label: 'Nightlife', icon: '🌙' },
+  { id: 'nature', label: 'Nature', icon: '🌿' },
+  { id: 'wellness', label: 'Wellness', icon: '🧘' },
+  { id: 'shopping', label: 'Shopping', icon: '🛍️' },
+]
+
+function toggleTripFocus(focus: string) {
+  const idx = generateForm.value.tripFocus.indexOf(focus)
+  if (idx >= 0) {
+    generateForm.value.tripFocus.splice(idx, 1)
+  } else if (generateForm.value.tripFocus.length < 3) {
+    generateForm.value.tripFocus.push(focus)
+  }
+}
 
 const destinationOptions = [
   'Bangkok',
@@ -60,6 +101,9 @@ function handleGenerate() {
   emit('generate', {
     duration: generateForm.value.duration,
     destinations,
+    budgetMode: generateForm.value.budgetMode,
+    travelPace: generateForm.value.travelPace,
+    tripFocus: generateForm.value.tripFocus,
   })
 }
 
@@ -137,12 +181,79 @@ const canGenerate = computed(() => {
             />
           </div>
 
+          <!-- Budget Mode -->
+          <div class="mb-6">
+            <label class="block text-sm font-medium text-gray-700 mb-2">Budget Level</label>
+            <div class="grid grid-cols-3 gap-2">
+              <button
+                v-for="mode in budgetModes"
+                :key="mode.id"
+                @click="generateForm.budgetMode = mode.id as typeof generateForm.budgetMode"
+                :class="[
+                  'p-3 rounded-xl text-center transition-all border-2',
+                  generateForm.budgetMode === mode.id
+                    ? 'bg-primary-50 border-primary-500 text-primary-700'
+                    : 'bg-gray-50 border-transparent text-gray-600 hover:bg-gray-100'
+                ]"
+              >
+                <span class="text-xl block mb-1">{{ mode.icon }}</span>
+                <span class="text-sm font-medium block">{{ mode.label }}</span>
+                <span class="text-xs text-gray-500 block">{{ mode.description }}</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Travel Pace -->
+          <div class="mb-6">
+            <label class="block text-sm font-medium text-gray-700 mb-2">Travel Pace</label>
+            <div class="grid grid-cols-3 gap-2">
+              <button
+                v-for="pace in travelPaces"
+                :key="pace.id"
+                @click="generateForm.travelPace = pace.id as typeof generateForm.travelPace"
+                :class="[
+                  'p-3 rounded-xl text-center transition-all border-2',
+                  generateForm.travelPace === pace.id
+                    ? 'bg-primary-50 border-primary-500 text-primary-700'
+                    : 'bg-gray-50 border-transparent text-gray-600 hover:bg-gray-100'
+                ]"
+              >
+                <span class="text-xl block mb-1">{{ pace.icon }}</span>
+                <span class="text-sm font-medium block">{{ pace.label }}</span>
+                <span class="text-xs text-gray-500 block">{{ pace.description }}</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Trip Focus -->
+          <div class="mb-6">
+            <label class="block text-sm font-medium text-gray-700 mb-2">Trip Focus <span class="text-gray-400 font-normal">(optional, max 3)</span></label>
+            <div class="flex flex-wrap gap-2">
+              <button
+                v-for="focus in tripFocusOptions"
+                :key="focus.id"
+                @click="toggleTripFocus(focus.id)"
+                :class="[
+                  'px-3 py-2 rounded-lg text-sm transition-all flex items-center gap-1.5',
+                  generateForm.tripFocus.includes(focus.id)
+                    ? 'bg-primary-100 text-primary-700 ring-2 ring-primary-500'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200',
+                  generateForm.tripFocus.length >= 3 && !generateForm.tripFocus.includes(focus.id)
+                    ? 'opacity-50 cursor-not-allowed'
+                    : ''
+                ]"
+              >
+                <span>{{ focus.icon }}</span>
+                {{ focus.label }}
+              </button>
+            </div>
+          </div>
+
           <!-- Profile note -->
           <div class="p-4 rounded-xl bg-blue-50 border border-blue-200 mb-6">
             <p class="text-sm text-blue-700">
-              Your trip will be tailored to your profile preferences:
-              <span class="font-medium">{{ userPrefs.travelStyle?.join(', ') || 'relaxation' }}</span>,
-              <span class="font-medium">{{ userPrefs.budget || 'mid' }} budget</span>,
+              Your trip will also incorporate your profile preferences:
+              <span class="font-medium">{{ userPrefs.travelStyle?.join(', ') || 'relaxation' }}</span> style,
               interested in <span class="font-medium">{{ userPrefs.interests?.join(', ') || 'culture, food' }}</span>
             </p>
           </div>

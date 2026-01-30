@@ -81,6 +81,30 @@ const routes: RouteRecordRaw[] = [
     meta: { title: 'Thailand Safety Guide', requiresPro: true },
   },
   {
+    path: '/90-day',
+    name: '90-day',
+    component: () => import('@views/NinetyDayView.vue'),
+    meta: { title: '90-Day Reporting', requiresPro: true },
+  },
+  {
+    path: '/medical',
+    name: 'medical',
+    component: () => import('@views/MedicalView.vue'),
+    meta: { title: 'Medical Tourism', requiresPro: true },
+  },
+  {
+    path: '/cost-calculator',
+    name: 'cost-calculator',
+    component: () => import('@views/CostCalculatorView.vue'),
+    meta: { title: 'Cost of Living', requiresPro: true },
+  },
+  {
+    path: '/setup-guide',
+    name: 'setup-guide',
+    component: () => import('@views/SetupGuideView.vue'),
+    meta: { title: 'Thailand Setup Guide', requiresPro: true },
+  },
+  {
     path: '/saved',
     name: 'saved',
     component: () => import('@views/SavedPlacesView.vue'),
@@ -103,6 +127,12 @@ const routes: RouteRecordRaw[] = [
     name: 'contact',
     component: () => import('@views/ContactView.vue'),
     meta: { title: 'Contact Us' },
+  },
+  {
+    path: '/people',
+    name: 'people',
+    component: () => import('@views/PeopleView.vue'),
+    meta: { title: 'People of Chiang Mai' },
   },
   {
     path: '/heritage',

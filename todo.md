@@ -1,5 +1,41 @@
 # TODO: Smart Traveler Thailand
 
+---
+
+## Pro Features Development 🚀
+
+### Test Mode
+```
+http://localhost:3000/dashboard?test=test123
+```
+- Persists in sessionStorage until browser closes
+- Bypasses backend auth & rate limits
+- To disable: `sessionStorage.removeItem('testMode')`
+
+### Completed ✅
+- [x] Test backdoor with sessionStorage persistence
+- [x] Frontend sends `x-test-mode: test123` header
+- [x] Backend auth/rate limit bypass for test mode
+- [x] Routes: `/90-day`, `/medical`, `/cost-calculator`, `/setup-guide`
+- [x] Dashboard shows 8 pro features (4 new with NEW badges)
+- [x] Placeholder views for Thailand-specific pro features
+
+### Sprint 2: AI & Offline (Next)
+- [x] Enhanced multi-day itinerary generator (budget mode, travel pace, trip focus)
+- [ ] Offline mode (Service Worker + IndexedDB)
+
+### Sprint 3: Thailand Tools
+- [ ] 90-Day Reporting (database, API, functional UI)
+- [ ] Visa Extension Tracker enhancements
+- [ ] Push notification system
+
+### Sprint 4: Guides & Directories
+- [ ] Medical Tourism Hub with seed data
+- [ ] More cities in Cost Calculator
+- [ ] More providers in Setup Guide
+
+---
+
 https://partners.agoda.com/profile/personaldetails
 https://safetywing.com/
 last.fm (?) API?

@@ -25,13 +25,18 @@ export const useUserStore = defineStore('user', () => {
   const isLoading = ref(false)
   const activities = ref<UserActivity[]>([])
 
+  // Test mode for pro features (activated via ?test=test123 URL param)
+  // Persists in sessionStorage so it survives navigation but clears on browser close
+  const testMode = ref(sessionStorage.getItem('testMode') === 'true')
+
   // Getters
   const hasProfile = computed(() => {
     const prefs = profile.value.prefs
     return prefs.nationality !== '' && prefs.travelStyle.length > 0
   })
 
-  const isPro = computed(() => profile.value.isPro)
+  // isPro returns true if user has subscription OR test mode is active
+  const isPro = computed(() => testMode.value || profile.value.isPro)
 
   const displayName = computed(() => {
     if (profile.value.name) {
@@ -61,6 +66,16 @@ export const useUserStore = defineStore('user', () => {
   function setPro(value: boolean) {
     profile.value.isPro = value
     saveToLocalStorage()
+  }
+
+  function setTestMode(value: boolean) {
+    testMode.value = value
+    if (value) {
+      sessionStorage.setItem('testMode', 'true')
+      console.log('🔓 Test mode enabled - Pro features unlocked (persists until browser close)')
+    } else {
+      sessionStorage.removeItem('testMode')
+    }
   }
 
   function addActivity(activity: Omit<UserActivity, 'id' | 'createdAt'>) {
@@ -155,6 +170,7 @@ export const useUserStore = defineStore('user', () => {
     isLoading,
     activities,
     savedPlaces,
+    testMode,
     // Getters
     hasProfile,
     isPro,
@@ -164,6 +180,7 @@ export const useUserStore = defineStore('user', () => {
     setProfile,
     setAuthenticated,
     setPro,
+    setTestMode,
     addActivity,
     clearProfile,
     setAuthUser,

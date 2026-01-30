@@ -1,7 +1,7 @@
 import type { Context, Config } from '@netlify/functions'
 import Anthropic from '@anthropic-ai/sdk'
 import { getDb } from './lib/db.mts'
-import { checkAndIncrementUsage } from './lib/usage.mts'
+import { checkAndIncrementUsage, isTestMode } from './lib/usage.mts'
 
 function requirePro(
   db: ReturnType<typeof getDb> extends Promise<infer U> ? U : never,
@@ -63,22 +63,30 @@ Always provide accurate information and suggest proper long-term visas instead o
 
 export default async (req: Request, context: Context) => {
   const userId = req.headers.get('x-user-id')
+  const testMode = isTestMode(req)
   const url = new URL(req.url)
   const conversationType = url.searchParams.get('type') || 'general'
   const contextSlug = url.searchParams.get('context') || null
 
   // GET: Load conversation history
   if (req.method === 'GET') {
-    if (!userId) {
+    if (!userId && !testMode) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         status: 401,
         headers: { 'Content-Type': 'application/json' },
       })
     }
 
+    // In test mode without login, return empty conversation
+    if (!userId && testMode) {
+      return new Response(JSON.stringify({ conversation: null }), {
+        headers: { 'Content-Type': 'application/json' },
+      })
+    }
+
     try {
       const db = await getDb()
-      const isPro = await requirePro(db, userId)
+      const isPro = testMode || await requirePro(db, userId)
 
       if (!isPro) {
         return new Response(JSON.stringify({ error: 'Pro subscription required' }), {
@@ -115,16 +123,23 @@ export default async (req: Request, context: Context) => {
 
   // DELETE: Archive (clear) conversation
   if (req.method === 'DELETE') {
-    if (!userId) {
+    if (!userId && !testMode) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         status: 401,
         headers: { 'Content-Type': 'application/json' },
       })
     }
 
+    // In test mode without login, just return success (nothing to archive)
+    if (!userId && testMode) {
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { 'Content-Type': 'application/json' },
+      })
+    }
+
     try {
       const db = await getDb()
-      const isPro = await requirePro(db, userId)
+      const isPro = testMode || await requirePro(db, userId)
 
       if (!isPro) {
         return new Response(JSON.stringify({ error: 'Pro subscription required' }), {
@@ -181,11 +196,11 @@ export default async (req: Request, context: Context) => {
       })
     }
 
-    // Check usage limits for authenticated users
+    // Check usage limits for authenticated users (test mode bypasses limits)
     if (userId) {
       try {
         const db = await getDb()
-        const usageCheck = await checkAndIncrementUsage(db, userId, 'general_chat')
+        const usageCheck = await checkAndIncrementUsage(db, userId, 'general_chat', isTestMode(req))
         if (!usageCheck.allowed) {
           return new Response(JSON.stringify({
             error: 'Daily AI chat limit reached',

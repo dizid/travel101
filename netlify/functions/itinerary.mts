@@ -202,6 +202,10 @@ interface GenerateItineraryRequest {
   travelStyle?: string[]
   budget?: string
   groupType?: string
+  // Enhanced generation options
+  budgetMode?: 'budget' | 'comfort' | 'luxury'
+  travelPace?: 'relaxed' | 'moderate' | 'packed'
+  tripFocus?: string[]
 }
 
 export default async (req: Request, context: Context) => {
@@ -395,6 +399,31 @@ async function generateItinerary(
   const groupType = request.groupType || userPrefs.groupType || 'solo'
   const destinations = request.destinations || ['Bangkok', 'Chiang Mai']
 
+  // Enhanced generation options with defaults
+  const budgetMode = request.budgetMode || 'comfort'
+  const travelPace = request.travelPace || 'moderate'
+  const tripFocus = request.tripFocus || []
+
+  // Budget guidance based on mode
+  const budgetGuide = {
+    budget: { daily: '500-1,000 THB', description: 'hostels, street food, public transport, free attractions' },
+    comfort: { daily: '1,500-3,000 THB', description: 'mid-range hotels, mix of street food and restaurants, occasional taxis, paid attractions' },
+    luxury: { daily: '5,000+ THB', description: 'luxury hotels, fine dining, private transport, VIP experiences' },
+  }[budgetMode]
+
+  // Pace guidance
+  const paceGuide = {
+    relaxed: { activitiesPerDay: '2-3', description: 'plenty of downtime, leisurely meals, optional afternoon naps or pool time' },
+    moderate: { activitiesPerDay: '4-5', description: 'balanced schedule with activities and rest, time for spontaneous exploration' },
+    packed: { activitiesPerDay: '6+', description: 'maximize experiences, early starts, efficient transitions between activities' },
+  }[travelPace]
+
+  // Build focus section if specified
+  const focusSection = tripFocus.length > 0
+    ? `\nTRIP FOCUS PRIORITIES (emphasize these in the itinerary):
+${tripFocus.map((f, i) => `${i + 1}. ${f}`).join('\n')}`
+    : ''
+
   const prompt = `Create a detailed ${request.duration}-day Thailand itinerary.
 
 TRAVELER PROFILE:
@@ -404,11 +433,28 @@ TRAVELER PROFILE:
 - Group type: ${groupType}
 - Destinations: ${destinations.join(', ')}
 
+BUDGET MODE: ${budgetMode.toUpperCase()}
+- Target daily spend: ${budgetGuide.daily}
+- Accommodation & dining style: ${budgetGuide.description}
+- Keep estimated costs realistic for this budget tier
+
+TRAVEL PACE: ${travelPace.toUpperCase()}
+- Activities per day: ${paceGuide.activitiesPerDay}
+- Style: ${paceGuide.description}${focusSection}
+
+IMPORTANT INSTRUCTIONS:
+1. Distribute destinations logically across days (don't rush between cities)
+2. Include transport activities when changing cities (bus, flight, train with realistic costs)
+3. Balance activity types based on pace and interests
+4. Include meal recommendations appropriate for the budget
+5. Add time slots that make sense (don't schedule temples at night, beaches midday, etc.)
+6. For ${travelPace} pace, ${travelPace === 'relaxed' ? 'leave gaps for rest and spontaneity' : travelPace === 'packed' ? 'maximize sightseeing with efficient routing' : 'balance activities with downtime'}
+
 Generate a day-by-day itinerary with specific times, activities, and practical details.
 
 Respond ONLY with valid JSON in this exact format:
 {
-  "name": "Descriptive trip name",
+  "name": "Descriptive trip name reflecting the style (e.g., 'Budget Beach Hopper' or 'Luxury Cultural Journey')",
   "days": [
     {
       "dayNumber": 1,
@@ -425,7 +471,7 @@ Respond ONLY with valid JSON in this exact format:
       ]
     }
   ],
-  "tips": ["Pro tip 1", "Pro tip 2"]
+  "tips": ["Budget-specific tip 1", "Pace-specific tip 2", "Destination tip 3"]
 }`
 
   const response = await anthropic.messages.create({

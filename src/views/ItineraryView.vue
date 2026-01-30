@@ -106,7 +106,13 @@ watch(() => route.query.id, async (newId) => {
   }
 })
 
-async function handleGenerate(params: { duration: number; destinations: string[] }) {
+async function handleGenerate(params: {
+  duration: number
+  destinations: string[]
+  budgetMode: 'budget' | 'comfort' | 'luxury'
+  travelPace: 'relaxed' | 'moderate' | 'packed'
+  tripFocus: string[]
+}) {
   const result = await generateItinerary({
     duration: params.duration,
     destinations: params.destinations,
@@ -114,6 +120,9 @@ async function handleGenerate(params: { duration: number; destinations: string[]
     travelStyle: userStore.profile.prefs.travelStyle,
     budget: userStore.profile.prefs.budget,
     groupType: userStore.profile.prefs.groupType,
+    budgetMode: params.budgetMode,
+    travelPace: params.travelPace,
+    tripFocus: params.tripFocus,
   })
 
   if (result) {

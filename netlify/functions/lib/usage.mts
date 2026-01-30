@@ -26,19 +26,28 @@ export interface UsageData {
 }
 
 /**
+ * Check if test mode header is present (for testing pro features)
+ */
+export function isTestMode(req: Request): boolean {
+  return req.headers.get('x-test-mode') === 'test123'
+}
+
+/**
  * Check if user can use a feature and increment usage counter
  * Pro users always get unlimited access
+ * Test mode (x-test-mode: test123 header) also grants unlimited access
  */
 export async function checkAndIncrementUsage(
   db: NeonQueryFunction<false, false>,
   userId: string,
-  featureType: FeatureType
+  featureType: FeatureType,
+  testMode = false
 ): Promise<UsageCheckResult> {
-  // Check if user is Pro
+  // Check if user is Pro (or in test mode)
   const userResult = await db`
     SELECT is_pro FROM user_profiles WHERE user_id = ${userId}
   `
-  const isPro = userResult.length > 0 && userResult[0].is_pro
+  const isPro = testMode || (userResult.length > 0 && userResult[0].is_pro)
 
   // Pro users have unlimited access - still track for analytics
   if (isPro) {
@@ -105,13 +114,14 @@ export async function checkAndIncrementUsage(
  */
 export async function getUsageStatus(
   db: NeonQueryFunction<false, false>,
-  userId: string
+  userId: string,
+  testMode = false
 ): Promise<{ usage: Record<FeatureType, UsageData>; isPro: boolean }> {
-  // Check if user is Pro
+  // Check if user is Pro (or in test mode)
   const userResult = await db`
     SELECT is_pro FROM user_profiles WHERE user_id = ${userId}
   `
-  const isPro = userResult.length > 0 && userResult[0].is_pro
+  const isPro = testMode || (userResult.length > 0 && userResult[0].is_pro)
 
   // Pro users get unlimited
   if (isPro) {
