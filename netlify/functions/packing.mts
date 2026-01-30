@@ -272,6 +272,3 @@ function getDefaultPackingList(includeTemples: boolean, isMonsoon: boolean): Pac
   }
 }
 
-export const config: Config = {
-  path: '/api/packing',
-}

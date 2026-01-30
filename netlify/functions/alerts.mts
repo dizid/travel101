@@ -334,6 +334,3 @@ async function setupVisaAlerts(
   }, 201)
 }
 
-export const config: Config = {
-  path: '/api/alerts',
-}

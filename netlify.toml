@@ -6,7 +6,78 @@
 [build.environment]
   NODE_VERSION = "20"
 
-# API routes to functions (force ensures these ALWAYS go to functions)
+# API routes to functions - explicit mappings for multi-path functions
+# Heritage (has sub-paths)
+[[redirects]]
+  from = "/api/heritage/regions"
+  to = "/.netlify/functions/heritage"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/heritage/eras"
+  to = "/.netlify/functions/heritage"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/heritage/*"
+  to = "/.netlify/functions/heritage"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/heritage"
+  to = "/.netlify/functions/heritage"
+  status = 200
+  force = true
+
+# Festivals (has sub-paths)
+[[redirects]]
+  from = "/api/festivals/upcoming"
+  to = "/.netlify/functions/festivals"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/festivals/*"
+  to = "/.netlify/functions/festivals"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/festivals"
+  to = "/.netlify/functions/festivals"
+  status = 200
+  force = true
+
+# User (has sub-paths for CRUD)
+[[redirects]]
+  from = "/api/user/*"
+  to = "/.netlify/functions/user"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/user"
+  to = "/.netlify/functions/user"
+  status = 200
+  force = true
+
+# Attractions (has query params but single path)
+[[redirects]]
+  from = "/api/attractions/*"
+  to = "/.netlify/functions/attractions"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/attractions"
+  to = "/.netlify/functions/attractions"
+  status = 200
+  force = true
+
+# Catch-all for other API routes (simple single-path functions)
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/:splat"

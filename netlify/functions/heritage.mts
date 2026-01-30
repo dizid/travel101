@@ -458,6 +458,4 @@ async function handleRegions(db: ReturnType<typeof getDb>) {
   })
 }
 
-export const config: Config = {
-  path: ['/api/heritage', '/api/heritage/*'],
-}
+// Routing handled by netlify.toml redirects

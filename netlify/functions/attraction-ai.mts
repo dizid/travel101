@@ -304,6 +304,3 @@ Answer questions with specific, actionable advice for this destination. Be conci
   })
 }
 
-export const config: Config = {
-  path: '/api/attraction-ai',
-}

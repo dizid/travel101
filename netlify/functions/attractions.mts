@@ -482,6 +482,3 @@ async function handleDetail(
   return json(response)
 }
 
-export const config: Config = {
-  path: ['/api/attractions', '/api/attractions/*'],
-}

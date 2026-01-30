@@ -348,6 +348,3 @@ export default async function handler(req: Request, context: Context) {
   }
 }
 
-export const config: Config = {
-  path: ['/api/festivals', '/api/festivals/*'],
-}

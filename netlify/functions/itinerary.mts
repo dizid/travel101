@@ -770,6 +770,3 @@ async function handleActivityOperations(
   }
 }
 
-export const config: Config = {
-  path: '/api/itinerary',
-}
