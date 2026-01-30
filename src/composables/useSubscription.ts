@@ -1,6 +1,7 @@
 import { ref, computed } from 'vue'
 import { useApi } from './useApi'
 import { useUserStore } from '@/stores/userStore'
+import { useAuth } from './useAuth'
 
 interface SubscriptionStatus {
   isPro: boolean
@@ -14,6 +15,7 @@ interface SubscriptionStatus {
 export function useSubscription() {
   const { get, post, loading, error } = useApi()
   const userStore = useUserStore()
+  const { signIn } = useAuth()
   const subscriptionStatus = ref<SubscriptionStatus | null>(null)
 
   async function fetchStatus() {
@@ -26,6 +28,12 @@ export function useSubscription() {
   }
 
   async function startCheckout() {
+    // Require authentication for subscription checkout
+    if (!userStore.isAuthenticated) {
+      signIn('/dashboard?upgrade=true')
+      return null
+    }
+
     const result = await post<{ url: string }>('/subscription', {
       action: 'create-checkout',
     })
@@ -36,6 +44,12 @@ export function useSubscription() {
   }
 
   async function openPortal() {
+    // Require authentication for billing portal
+    if (!userStore.isAuthenticated) {
+      signIn('/dashboard')
+      return null
+    }
+
     const result = await post<{ url: string }>('/subscription', {
       action: 'create-portal',
     })
