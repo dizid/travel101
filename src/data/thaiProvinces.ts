@@ -99,6 +99,10 @@ export const THAI_PROVINCE_COORDS: Record<string, ProvinceCoordinates> = {
   'Surat Thani': { lat: 9.1382, lng: 99.3217, region: 'South' },
   'Trang': { lat: 7.5563, lng: 99.6114, region: 'South' },
   'Yala': { lat: 6.5414, lng: 101.2803, region: 'South' },
+
+  // City aliases (used in festival data instead of province names)
+  'Hat Yai': { lat: 7.0042, lng: 100.4747, region: 'South' },
+  'Pattaya': { lat: 12.9236, lng: 100.8825, region: 'East' },
 }
 
 // Haversine distance calculation between two points (returns km)
