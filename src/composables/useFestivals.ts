@@ -6,6 +6,7 @@ import type {
   FestivalRegion,
   FestivalFilters
 } from '@/types'
+import { getFestivalDistance, formatDistance as _formatDistance } from '@/data/thaiProvinces'
 
 // Shared state across all composable instances
 const upcomingFestivals = ref<UpcomingFestival[]>([])
@@ -294,6 +295,32 @@ export function useFestivals() {
     return months[month - 1] || ''
   }
 
+  // Annotate festivals with distance from user location
+  function withDistances<T extends Festival>(
+    festivals: T[],
+    userLat: number,
+    userLng: number
+  ): (T & { distanceKm: number | null })[] {
+    return festivals.map(f => ({
+      ...f,
+      distanceKm: getFestivalDistance(userLat, userLng, f.provinces, f.isNationwide)
+    }))
+  }
+
+  // Sort festivals by proximity (nationwide first, then closest)
+  function sortByProximity<T extends { distanceKm: number | null }>(festivals: T[]): T[] {
+    return [...festivals].sort((a, b) => {
+      if (a.distanceKm === null && b.distanceKm === null) return 0
+      if (a.distanceKm === null) return 1
+      if (b.distanceKm === null) return -1
+      return a.distanceKm - b.distanceKm
+    })
+  }
+
+  function formatDistanceText(km: number | null): string | null {
+    return _formatDistance(km)
+  }
+
   return {
     // State
     upcomingFestivals,
@@ -315,6 +342,11 @@ export function useFestivals() {
     searchFestivals,
     fetchTypes,
     fetchRegions,
+
+    // Distance helpers
+    withDistances,
+    sortByProximity,
+    formatDistanceText,
 
     // Helpers
     formatFestivalDate,

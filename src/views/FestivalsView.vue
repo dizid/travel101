@@ -1,9 +1,13 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { useFestivals } from '@/composables/useFestivals'
+import { useGeolocation } from '@/composables/useGeolocation'
+import { useUserStore } from '@/stores/userStore'
 import type { Festival, UpcomingFestival, FestivalType, FestivalRegion } from '@/types'
 import FestivalCard from '@/components/features/FestivalCard.vue'
 import LoadingSpinner from '@/components/ui/LoadingSpinner.vue'
+import ProBadge from '@/components/ui/ProBadge.vue'
+import UpgradeModal from '@/components/ui/UpgradeModal.vue'
 import {
   SearchOutlined,
   CalendarOutlined,
@@ -16,11 +20,18 @@ const {
   loading,
   error,
   fetchUpcoming,
+  fetchAll,
   fetchFiltered,
   fetchTypes,
   fetchRegions,
   getMonthName,
+  withDistances,
+  sortByProximity,
 } = useFestivals()
+
+const userStore = useUserStore()
+const { hasLocation, userLatitude, userLongitude, locationLoading, locationError, requestLocation } = useGeolocation()
+const showUpgradeModal = ref(false)
 
 // State
 const festivals = ref<Festival[]>([])
@@ -39,12 +50,16 @@ const typeOptions = ref<{ type: string; count: number }[]>([])
 const regionOptions = ref<{ region: string; count: number }[]>([])
 
 // Tab state
-type FilterTab = 'all' | 'upcoming' | 'hidden' | 'month'
+type FilterTab = 'all' | 'upcoming' | 'nearby' | 'hidden' | 'month'
 const activeTab = ref<FilterTab>('all')
 
-const filterTabs: { key: FilterTab; label: string; icon: string }[] = [
+// Distance data for nearby tab
+const nearbyFestivals = ref<(Festival & { distanceKm: number | null })[]>([])
+
+const filterTabs: { key: FilterTab; label: string; icon: string; pro?: boolean }[] = [
   { key: 'all', label: 'All Festivals', icon: '🎉' },
   { key: 'upcoming', label: 'Upcoming', icon: '📅' },
+  { key: 'nearby', label: 'Near You', icon: '📍', pro: true },
   { key: 'hidden', label: 'Hidden Gems', icon: '💎' },
   { key: 'month', label: 'By Month', icon: '🗓️' },
 ]
@@ -85,13 +100,18 @@ const queryParams = computed(() => {
 async function fetchFestivals() {
   try {
     if (activeTab.value === 'upcoming') {
-      // Fetch upcoming festivals (next 180 days)
       const upcoming = await fetchUpcoming(180)
       upcomingFestivals.value = upcoming
       festivals.value = upcoming
       total.value = upcoming.length
+    } else if (activeTab.value === 'nearby' && hasLocation.value && userLatitude.value && userLongitude.value) {
+      // Fetch all and sort by distance
+      const all = await fetchAll()
+      const withDist = withDistances(all, userLatitude.value, userLongitude.value)
+      nearbyFestivals.value = sortByProximity(withDist)
+      festivals.value = nearbyFestivals.value
+      total.value = nearbyFestivals.value.length
     } else {
-      // Fetch with filters
       const result = await fetchFiltered({
         type: selectedType.value || undefined,
         region: selectedRegion.value || undefined,
@@ -121,6 +141,23 @@ async function fetchFilterOptions() {
 }
 
 function setTab(tab: FilterTab) {
+  if (tab === 'nearby') {
+    if (!userStore.isPro) {
+      showUpgradeModal.value = true
+      return
+    }
+    // Request location if not yet granted
+    if (!hasLocation.value) {
+      requestLocation().then(granted => {
+        if (granted) {
+          activeTab.value = 'nearby'
+          fetchFestivals()
+        }
+      })
+      return
+    }
+  }
+
   activeTab.value = tab
   // Reset filters when switching tabs
   if (tab === 'hidden') {
@@ -234,6 +271,7 @@ const hiddenGemCount = computed(() =>
           >
             <span>{{ tab.icon }}</span>
             {{ tab.label }}
+            <ProBadge v-if="tab.pro && !userStore.isPro" size="sm" />
           </button>
 
           <div class="flex-1" />
@@ -326,10 +364,27 @@ const hiddenGemCount = computed(() =>
         </div>
       </div>
 
+      <!-- Location loading state for nearby tab -->
+      <div v-if="activeTab === 'nearby' && locationLoading" class="text-center py-12">
+        <LoadingSpinner size="lg" />
+        <p class="text-gray-500 mt-4">Getting your location...</p>
+      </div>
+
+      <!-- Location error for nearby tab -->
+      <div v-else-if="activeTab === 'nearby' && locationError" class="text-center py-12">
+        <div class="text-5xl mb-4">📍</div>
+        <p class="text-gray-600 mb-2">{{ locationError }}</p>
+        <p class="text-sm text-gray-400">Enable location access in your browser settings to use this feature.</p>
+      </div>
+
+      <template v-else>
       <!-- Results Header -->
       <div class="flex items-center justify-between mb-6">
         <h2 class="text-lg font-semibold text-gray-900">
-          <template v-if="activeTab === 'hidden'">
+          <template v-if="activeTab === 'nearby'">
+            📍 Festivals Near You
+          </template>
+          <template v-else-if="activeTab === 'hidden'">
             💎 Hidden Gem Festivals
           </template>
           <template v-else-if="activeTab === 'upcoming'">
@@ -382,9 +437,19 @@ const hiddenGemCount = computed(() =>
           :key="festival.slug"
           :festival="festival"
           :show-countdown="activeTab === 'upcoming'"
+          :distance-km="activeTab === 'nearby' ? (festival as any).distanceKm : undefined"
         />
       </div>
+      </template>
     </div>
+
+    <!-- Upgrade Modal -->
+    <UpgradeModal
+      :is-open="showUpgradeModal"
+      feature-name="Near You"
+      trigger-reason="pro_feature"
+      @close="showUpgradeModal = false"
+    />
 
     <!-- Legend/Footer -->
     <div class="bg-white border-t mt-12">

@@ -213,6 +213,30 @@ onMounted(() => {
                   {{ primaryLocation }}
                 </span>
               </div>
+
+              <!-- Province Pills -->
+              <div v-if="!festival.isNationwide && festival.provinces?.length" class="mt-4 flex flex-wrap gap-2">
+                <span
+                  v-for="province in festival.provinces.slice(0, 4)"
+                  :key="province"
+                  class="inline-flex items-center gap-1 px-2.5 py-1 bg-white/20 backdrop-blur rounded-full text-sm text-white"
+                >
+                  <EnvironmentOutlined class="text-xs" />
+                  {{ province }}
+                </span>
+                <span
+                  v-if="festival.provinces.length > 4"
+                  class="inline-flex items-center px-2.5 py-1 bg-white/10 backdrop-blur rounded-full text-sm text-white/80"
+                >
+                  +{{ festival.provinces.length - 4 }} more
+                </span>
+              </div>
+              <div v-else-if="festival.isNationwide" class="mt-4">
+                <span class="inline-flex items-center gap-2 px-3 py-1.5 bg-white/20 backdrop-blur rounded-full text-sm text-white">
+                  <TeamOutlined class="text-xs" />
+                  Celebrated Nationwide
+                </span>
+              </div>
             </div>
 
             <!-- Countdown Card -->
@@ -252,6 +276,16 @@ onMounted(() => {
                   <div v-if="festival.dressCode" class="flex items-center justify-between">
                     <span class="text-gray-500">Dress Code</span>
                     <span class="font-medium text-sm text-right">{{ festival.dressCode }}</span>
+                  </div>
+
+                  <div v-if="festival.provinces?.length && !festival.isNationwide" class="flex items-start justify-between">
+                    <span class="text-gray-500">Where</span>
+                    <span class="font-medium text-sm text-right max-w-[60%]">
+                      {{ festival.provinces.slice(0, 2).join(', ') }}
+                      <span v-if="festival.provinces.length > 2" class="text-gray-400">
+                        +{{ festival.provinces.length - 2 }}
+                      </span>
+                    </span>
                   </div>
 
                   <div v-if="festival.region" class="flex items-center justify-between">
@@ -326,6 +360,27 @@ onMounted(() => {
                   <p v-if="festival.durationDays > 1">
                     <strong>Duration:</strong> {{ festival.durationDays }} days
                   </p>
+                </div>
+              </div>
+
+              <!-- Best Locations Callout -->
+              <div v-if="festival.bestLocations?.length" class="mt-8 p-6 bg-green-50 rounded-xl border border-green-100">
+                <h3 class="flex items-center gap-2 text-lg font-semibold text-green-900 mb-4">
+                  <EnvironmentOutlined />
+                  Best Places to Experience
+                </h3>
+                <div class="space-y-2">
+                  <div
+                    v-for="(location, index) in festival.bestLocations.slice(0, 3)"
+                    :key="index"
+                    class="flex items-center gap-2 text-green-800"
+                  >
+                    <span class="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold text-green-700">
+                      {{ index + 1 }}
+                    </span>
+                    <span>{{ location }}</span>
+                    <span v-if="index === 0" class="text-xs text-green-600 font-medium ml-1">Top Pick</span>
+                  </div>
                 </div>
               </div>
             </div>

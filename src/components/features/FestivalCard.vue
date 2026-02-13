@@ -9,6 +9,7 @@ const props = defineProps<{
   festival: Festival | UpcomingFestival
   showCountdown?: boolean
   compact?: boolean
+  distanceKm?: number | null
 }>()
 
 const {
@@ -63,11 +64,15 @@ const displayDate = computed(() => {
   return 'Various dates'
 })
 
-// Primary location display
-const primaryLocation = computed(() => {
+// Enhanced location display with province count
+const locationDisplay = computed(() => {
   if (props.festival.isNationwide) return 'Nationwide'
+  const provinces = props.festival.provinces
+  if (provinces?.length && provinces.length > 1) {
+    return `${provinces[0]} +${provinces.length - 1} more`
+  }
   if (props.festival.bestLocations?.length) return props.festival.bestLocations[0]
-  if (props.festival.provinces?.length) return props.festival.provinces[0]
+  if (provinces?.length) return provinces[0]
   return props.festival.region || null
 })
 
@@ -162,16 +167,24 @@ const typeDisplay = computed(() => {
         {{ festival.nameThai }}
       </p>
 
-      <!-- Date & Location -->
-      <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-gray-500 mb-2">
-        <span class="flex items-center gap-1">
-          <CalendarOutlined class="text-xs" />
-          {{ displayDate }}
+      <!-- Location Badge -->
+      <div v-if="locationDisplay" class="flex flex-wrap items-center gap-1.5 mb-2">
+        <span class="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-blue-700 rounded-md text-xs font-medium">
+          <EnvironmentOutlined class="text-[10px]" />
+          {{ locationDisplay }}
         </span>
-        <span v-if="primaryLocation" class="flex items-center gap-1">
-          <EnvironmentOutlined class="text-xs" />
-          {{ primaryLocation }}
+        <span v-if="distanceKm !== undefined && distanceKm !== null" class="inline-flex items-center gap-1 px-2 py-0.5 bg-green-50 text-green-700 rounded-md text-xs font-medium">
+          {{ distanceKm === 0 ? '🌍 Nationwide' : distanceKm < 50 ? '📍 Very close' : `📍 ~${distanceKm} km` }}
         </span>
+        <span v-if="festival.region && !festival.isNationwide" class="text-xs text-gray-400">
+          {{ festival.region }}
+        </span>
+      </div>
+
+      <!-- Date -->
+      <div class="flex items-center gap-1 text-sm text-gray-500 mb-2">
+        <CalendarOutlined class="text-xs" />
+        {{ displayDate }}
       </div>
 
       <!-- Description -->
@@ -181,13 +194,6 @@ const typeDisplay = computed(() => {
 
       <!-- Tags row -->
       <div v-if="!compact" class="mt-3 flex flex-wrap gap-1.5">
-        <!-- Region tag -->
-        <span
-          v-if="festival.region"
-          class="px-2 py-0.5 bg-gray-100 rounded text-xs text-gray-600"
-        >
-          {{ festival.region }}
-        </span>
         <!-- Religion tag -->
         <span
           v-if="festival.religion"
