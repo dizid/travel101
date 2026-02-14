@@ -150,9 +150,10 @@ export default async function handler(req: Request, context: Context) {
       let enriched: any = { ...festival }
       if (dateStr) {
         const nextDate = new Date(dateStr)
-        if (nextDate >= today) {
+        const endDate = new Date(nextDate.getTime() + ((festival.durationDays || 1) - 1) * 24 * 60 * 60 * 1000)
+        if (endDate >= today) {
           enriched.nextDate = dateStr
-          enriched.daysUntil = Math.ceil((nextDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+          enriched.daysUntil = Math.max(0, Math.ceil((nextDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)))
         }
       }
 
@@ -179,8 +180,8 @@ export default async function handler(req: Request, context: Context) {
           END as next_date
         FROM thai_festivals
         WHERE (
-          (${year} = 2025 AND date_2025 >= ${todayStr}::date AND date_2025 <= ${futureDateStr}::date)
-          OR (${year} = 2026 AND date_2026 >= ${todayStr}::date AND date_2026 <= ${futureDateStr}::date)
+          (${year} = 2025 AND (date_2025 + COALESCE(duration_days, 1) - 1) >= ${todayStr}::date AND date_2025 <= ${futureDateStr}::date)
+          OR (${year} = 2026 AND (date_2026 + COALESCE(duration_days, 1) - 1) >= ${todayStr}::date AND date_2026 <= ${futureDateStr}::date)
         )
       `
 
@@ -191,8 +192,8 @@ export default async function handler(req: Request, context: Context) {
             CASE WHEN ${year} = 2025 THEN date_2025 ELSE date_2026 END as next_date
           FROM thai_festivals
           WHERE (
-            (${year} = 2025 AND date_2025 >= ${todayStr}::date AND date_2025 <= ${futureDateStr}::date)
-            OR (${year} = 2026 AND date_2026 >= ${todayStr}::date AND date_2026 <= ${futureDateStr}::date)
+            (${year} = 2025 AND (date_2025 + COALESCE(duration_days, 1) - 1) >= ${todayStr}::date AND date_2025 <= ${futureDateStr}::date)
+            OR (${year} = 2026 AND (date_2026 + COALESCE(duration_days, 1) - 1) >= ${todayStr}::date AND date_2026 <= ${futureDateStr}::date)
           )
           AND festival_type = ${type}
           ORDER BY CASE WHEN ${year} = 2025 THEN date_2025 ELSE date_2026 END ASC
@@ -204,8 +205,8 @@ export default async function handler(req: Request, context: Context) {
             CASE WHEN ${year} = 2025 THEN date_2025 ELSE date_2026 END as next_date
           FROM thai_festivals
           WHERE (
-            (${year} = 2025 AND date_2025 >= ${todayStr}::date AND date_2025 <= ${futureDateStr}::date)
-            OR (${year} = 2026 AND date_2026 >= ${todayStr}::date AND date_2026 <= ${futureDateStr}::date)
+            (${year} = 2025 AND (date_2025 + COALESCE(duration_days, 1) - 1) >= ${todayStr}::date AND date_2025 <= ${futureDateStr}::date)
+            OR (${year} = 2026 AND (date_2026 + COALESCE(duration_days, 1) - 1) >= ${todayStr}::date AND date_2026 <= ${futureDateStr}::date)
           )
           AND region = ${region}
           ORDER BY CASE WHEN ${year} = 2025 THEN date_2025 ELSE date_2026 END ASC
@@ -217,8 +218,8 @@ export default async function handler(req: Request, context: Context) {
             CASE WHEN ${year} = 2025 THEN date_2025 ELSE date_2026 END as next_date
           FROM thai_festivals
           WHERE (
-            (${year} = 2025 AND date_2025 >= ${todayStr}::date AND date_2025 <= ${futureDateStr}::date)
-            OR (${year} = 2026 AND date_2026 >= ${todayStr}::date AND date_2026 <= ${futureDateStr}::date)
+            (${year} = 2025 AND (date_2025 + COALESCE(duration_days, 1) - 1) >= ${todayStr}::date AND date_2025 <= ${futureDateStr}::date)
+            OR (${year} = 2026 AND (date_2026 + COALESCE(duration_days, 1) - 1) >= ${todayStr}::date AND date_2026 <= ${futureDateStr}::date)
           )
           AND is_hidden_gem = true
           ORDER BY CASE WHEN ${year} = 2025 THEN date_2025 ELSE date_2026 END ASC
@@ -230,8 +231,8 @@ export default async function handler(req: Request, context: Context) {
             CASE WHEN ${year} = 2025 THEN date_2025 ELSE date_2026 END as next_date
           FROM thai_festivals
           WHERE (
-            (${year} = 2025 AND date_2025 >= ${todayStr}::date AND date_2025 <= ${futureDateStr}::date)
-            OR (${year} = 2026 AND date_2026 >= ${todayStr}::date AND date_2026 <= ${futureDateStr}::date)
+            (${year} = 2025 AND (date_2025 + COALESCE(duration_days, 1) - 1) >= ${todayStr}::date AND date_2025 <= ${futureDateStr}::date)
+            OR (${year} = 2026 AND (date_2026 + COALESCE(duration_days, 1) - 1) >= ${todayStr}::date AND date_2026 <= ${futureDateStr}::date)
           )
           ORDER BY CASE WHEN ${year} = 2025 THEN date_2025 ELSE date_2026 END ASC
           LIMIT ${limit} OFFSET ${offset}
@@ -243,7 +244,7 @@ export default async function handler(req: Request, context: Context) {
       const festivals = result.map((row: any) => ({
         ...transformFestival(row),
         nextDate: row.next_date,
-        daysUntil: Math.ceil((new Date(row.next_date).getTime() - today.getTime()) / (1000 * 60 * 60 * 24)),
+        daysUntil: Math.max(0, Math.ceil((new Date(row.next_date).getTime() - today.getTime()) / (1000 * 60 * 60 * 24))),
       }))
 
       return new Response(JSON.stringify({ festivals, count: festivals.length }), {

@@ -227,6 +227,16 @@ export function useFestivals() {
     'hua-hin-jazz': '🎷',
     'khon-kaen-silk-festival': '🧵',
     'lamphun-longan': '🍇',
+    'tomorrowland-thailand': '🎶',
+    '808-festival': '🎵',
+    's2o-songkran': '💦',
+    'pattaya-music-festival': '🎸',
+    'lai-ruea-fai': '🛶',
+    'chak-phra': '⛵',
+    'phra-that-phanom': '🙏',
+    'chiang-rai-flower-festival': '🌸',
+    'samui-regatta': '⛵',
+    'edc-thailand': '🎆',
   }
 
   const RELIGION_EMOJI_MAP: Record<string, string> = {
