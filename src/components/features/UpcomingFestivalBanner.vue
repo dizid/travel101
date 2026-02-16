@@ -9,7 +9,7 @@ const props = defineProps<{
   limit?: number
 }>()
 
-const { fetchUpcoming, fetchByProvince, formatFestivalDate, getFestivalEmoji, loading } = useFestivals()
+const { fetchUpcoming, fetchByProvince, formatFestivalDate, getFestivalEmoji, getCountdownText, loading } = useFestivals()
 
 const festivals = ref<UpcomingFestival[]>([])
 const expanded = ref(false)
@@ -19,22 +19,28 @@ onMounted(async () => {
   if (props.province) {
     // Fetch festivals for specific province
     const provinceFestivals = await fetchByProvince(props.province)
-    // Add countdown info
-    const today = new Date()
+    // Use Thailand time for date comparisons (all festivals are in Thailand)
+    const now = new Date()
+    const thai = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Bangkok' }))
+    const year = thai.getFullYear()
     result = provinceFestivals
       .filter((f) => {
-        const year = today.getFullYear()
         const dateStr = year === 2025 ? f.date2025 : f.date2026
-        return dateStr && new Date(dateStr) >= today
+        if (!dateStr) return false
+        const startDate = new Date(dateStr)
+        const endDate = new Date(startDate.getTime() + ((f.durationDays || 1) - 1) * 86400000)
+        return endDate >= thai
       })
       .map((f) => {
-        const year = today.getFullYear()
-        const dateStr = year === 2025 ? f.date2025 : f.date2026
-        const nextDate = new Date(dateStr!)
+        const dateStr = (year === 2025 ? f.date2025 : f.date2026)!
+        const startDate = new Date(dateStr)
+        const endDate = new Date(startDate.getTime() + ((f.durationDays || 1) - 1) * 86400000)
+        const daysUntilStart = Math.ceil((startDate.getTime() - thai.getTime()) / 86400000)
         return {
           ...f,
-          nextDate: dateStr!,
-          daysUntil: Math.ceil((nextDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)),
+          nextDate: dateStr,
+          daysUntil: Math.max(0, daysUntilStart),
+          isOngoing: daysUntilStart < 0 && endDate >= thai,
         }
       })
       .sort((a, b) => a.daysUntil - b.daysUntil)
@@ -44,17 +50,10 @@ onMounted(async () => {
   festivals.value = result.slice(0, props.limit || 3)
 })
 
-function getCountdownText(days: number): string {
-  if (days === 0) return 'Today!'
-  if (days === 1) return 'Tomorrow!'
-  if (days <= 7) return `In ${days} days`
-  if (days <= 30) return `In ${Math.ceil(days / 7)} weeks`
-  return `In ${Math.ceil(days / 30)} months`
-}
-
-function getUrgencyClass(days: number): string {
-  if (days <= 7) return 'bg-red-50 border-red-200 text-red-700'
-  if (days <= 30) return 'bg-amber-50 border-amber-200 text-amber-700'
+function getUrgencyClass(festival: UpcomingFestival): string {
+  if (festival.isOngoing) return 'bg-green-50 border-green-200 text-green-700'
+  if (festival.daysUntil <= 7) return 'bg-red-50 border-red-200 text-red-700'
+  if (festival.daysUntil <= 30) return 'bg-amber-50 border-amber-200 text-amber-700'
   return 'bg-blue-50 border-blue-200 text-blue-700'
 }
 </script>
@@ -64,7 +63,7 @@ function getUrgencyClass(days: number): string {
     <!-- Compact banner for first festival -->
     <div
       class="rounded-xl border p-4 cursor-pointer transition-all hover:shadow-md"
-      :class="getUrgencyClass(festivals[0].daysUntil)"
+      :class="getUrgencyClass(festivals[0])"
       @click="expanded = !expanded"
     >
       <div class="flex items-center justify-between">
@@ -74,7 +73,7 @@ function getUrgencyClass(days: number): string {
             <div class="flex items-center gap-2">
               <span class="font-semibold">{{ festivals[0].name }}</span>
               <span class="text-xs px-2 py-0.5 rounded-full bg-white/50">
-                {{ getCountdownText(festivals[0].daysUntil) }}
+                {{ getCountdownText(festivals[0].daysUntil, festivals[0].isOngoing) }}
               </span>
             </div>
             <div class="text-sm opacity-75 flex items-center gap-3 mt-0.5">
@@ -141,7 +140,7 @@ function getUrgencyClass(days: number): string {
       >
         <span>{{ getFestivalEmoji(festival) }}</span>
         <span class="font-medium">{{ festival.name }}</span>
-        <span class="text-xs text-gray-500">{{ getCountdownText(festival.daysUntil) }}</span>
+        <span class="text-xs text-gray-500">{{ getCountdownText(festival.daysUntil, festival.isOngoing) }}</span>
       </div>
     </div>
   </div>

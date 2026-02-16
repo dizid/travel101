@@ -288,7 +288,8 @@ export function useFestivals() {
   }
 
   // Get countdown text
-  function getCountdownText(days: number): string {
+  function getCountdownText(days: number, isOngoing?: boolean): string {
+    if (isOngoing) return 'Happening Now'
     if (days === 0) return 'Today!'
     if (days === 1) return 'Tomorrow!'
     if (days <= 7) return `In ${days} days`

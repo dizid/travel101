@@ -560,6 +560,7 @@ export interface Festival {
 export interface UpcomingFestival extends Festival {
   nextDate: string
   daysUntil: number
+  isOngoing?: boolean
 }
 
 export interface FestivalListResponse {

@@ -38,6 +38,7 @@ const quickLinks = [
   { icon: '📝', label: 'TDAC Form', path: '/tdac', description: 'Arrival card guide' },
   { icon: '💡', label: 'Good to Know', path: '/warnings', description: 'Thai customs' },
   { icon: '🗺️', label: 'Places', path: '/attractions', description: 'Explore Thailand' },
+  { icon: '✈️', label: 'Onward Ticket', path: '/onward-ticket', description: 'Flight reservation' },
 ]
 
 const proFeatures = [

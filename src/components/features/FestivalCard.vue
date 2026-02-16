@@ -33,6 +33,7 @@ const upcomingFestival = computed(() =>
 // Countdown urgency class
 const urgencyClass = computed(() => {
   if (!upcomingFestival.value) return ''
+  if (upcomingFestival.value.isOngoing) return 'bg-green-600'
   const days = upcomingFestival.value.daysUntil
   if (days <= 7) return 'bg-red-500'
   if (days <= 30) return 'bg-amber-500'
@@ -127,7 +128,7 @@ const typeDisplay = computed(() => {
         class="absolute top-3 right-3 px-2.5 py-1 text-white rounded-full text-xs font-bold shadow-lg"
         :class="urgencyClass"
       >
-        {{ getCountdownText(upcomingFestival.daysUntil) }}
+        {{ getCountdownText(upcomingFestival.daysUntil, upcomingFestival.isOngoing) }}
       </div>
 
       <!-- Bottom info overlay -->

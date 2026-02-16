@@ -214,6 +214,11 @@ export const pageMeta: Record<string, PageMeta> = {
     description: 'Plan your Thailand itinerary with AI-powered suggestions based on your travel style and interests.',
     url: '/itinerary',
   },
+  onwardTicket: {
+    title: 'Onward Ticket — Flight Reservation for Thailand',
+    description: 'Get a verified flight reservation for Thai immigration in minutes. Real airline PNR code, instant delivery, valid 48+ hours.',
+    url: '/onward-ticket',
+  },
 }
 
 /**

@@ -58,6 +58,16 @@ function transformFestival(row: any): Festival {
   }
 }
 
+// Get current date in Thailand timezone (UTC+7) since all festivals are in Thailand
+function getThailandToday(): { today: Date; todayStr: string; year: number } {
+  const now = new Date()
+  const thai = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Bangkok' }))
+  const year = thai.getFullYear()
+  const month = String(thai.getMonth() + 1).padStart(2, '0')
+  const day = String(thai.getDate()).padStart(2, '0')
+  return { today: thai, todayStr: `${year}-${month}-${day}`, year }
+}
+
 // CORS headers helper
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -143,17 +153,18 @@ export default async function handler(req: Request, context: Context) {
 
       // Add next date and days until for the single festival
       const festival = transformFestival(result[0])
-      const today = new Date()
-      const year = today.getFullYear()
-      const dateStr = year === 2025 ? festival.date2025 : festival.date2026
+      const thai = getThailandToday()
+      const dateStr = thai.year === 2025 ? festival.date2025 : festival.date2026
 
       let enriched: any = { ...festival }
       if (dateStr) {
         const nextDate = new Date(dateStr)
-        const endDate = new Date(nextDate.getTime() + ((festival.durationDays || 1) - 1) * 24 * 60 * 60 * 1000)
-        if (endDate >= today) {
+        const endDate = new Date(nextDate.getTime() + ((festival.durationDays || 1) - 1) * 86400000)
+        if (endDate >= thai.today) {
+          const daysUntilStart = Math.ceil((nextDate.getTime() - thai.today.getTime()) / 86400000)
           enriched.nextDate = dateStr
-          enriched.daysUntil = Math.max(0, Math.ceil((nextDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)))
+          enriched.daysUntil = Math.max(0, daysUntilStart)
+          enriched.isOngoing = daysUntilStart < 0
         }
       }
 
@@ -165,11 +176,10 @@ export default async function handler(req: Request, context: Context) {
 
     // Upcoming festivals
     if (upcoming === 'true' || lastPart === 'upcoming') {
-      const today = new Date()
-      const year = today.getFullYear()
-      const futureDate = new Date(today.getTime() + days * 24 * 60 * 60 * 1000)
-      const todayStr = today.toISOString().split('T')[0]
-      const futureDateStr = futureDate.toISOString().split('T')[0]
+      const thai = getThailandToday()
+      const { today, todayStr, year } = thai
+      const futureDate = new Date(today.getTime() + days * 86400000)
+      const futureDateStr = `${futureDate.getFullYear()}-${String(futureDate.getMonth() + 1).padStart(2, '0')}-${String(futureDate.getDate()).padStart(2, '0')}`
 
       // Build dynamic query with optional filters
       let query = sql`
@@ -241,11 +251,17 @@ export default async function handler(req: Request, context: Context) {
 
       const result = await query
 
-      const festivals = result.map((row: any) => ({
-        ...transformFestival(row),
-        nextDate: row.next_date,
-        daysUntil: Math.max(0, Math.ceil((new Date(row.next_date).getTime() - today.getTime()) / (1000 * 60 * 60 * 24))),
-      }))
+      const festivals = result.map((row: any) => {
+        const startDate = new Date(row.next_date)
+        const endDate = new Date(startDate.getTime() + ((row.duration_days || 1) - 1) * 86400000)
+        const daysUntilStart = Math.ceil((startDate.getTime() - today.getTime()) / 86400000)
+        return {
+          ...transformFestival(row),
+          nextDate: row.next_date,
+          daysUntil: Math.max(0, daysUntilStart),
+          isOngoing: daysUntilStart < 0 && endDate >= today,
+        }
+      })
 
       return new Response(JSON.stringify({ festivals, count: festivals.length }), {
         status: 200,

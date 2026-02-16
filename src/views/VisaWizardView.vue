@@ -143,6 +143,7 @@ const checklist = computed<ChecklistItem[]>(() => {
       description: 'Proof of onward travel within visa period',
       checked: checkedItems.value.has('return-ticket'),
       required: true,
+      link: '/onward-ticket',
     },
     {
       id: 'accommodation',

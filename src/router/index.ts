@@ -21,6 +21,12 @@ const routes: RouteRecordRaw[] = [
     meta: { title: 'Thailand Arrival Card Guide', seoKey: 'tdac' },
   },
   {
+    path: '/onward-ticket',
+    name: 'onward-ticket',
+    component: () => import('@views/OnwardTicketView.vue'),
+    meta: { title: 'Onward Ticket — Flight Reservation', seoKey: 'onwardTicket' },
+  },
+  {
     path: '/warnings',
     name: 'warnings',
     component: () => import('@views/WarningsView.vue'),

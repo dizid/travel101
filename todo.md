@@ -52,13 +52,39 @@ Once you have Impact affiliate link, update the Airalo URL format in affiliates.
 |---------|--------|-----|-----------|
 | 12Go Asia | ✅ Active | 14551206 | https://agent.12go.asia |
 | Klook | ✅ Active | 108922 | https://affiliate.klook.com |
-| Agoda | ⏳ Pending Approval | Site ID: 1956706 | https://partners.agoda.com/profile/addsites |
-| GetYourGuide | ⏳ Applying | - | https://partner.getyourguide.com |
+| Viator | ✅ Active | P00284724 | https://partners.viator.com |
+| Booking.com | ⏳ Apply now | - | https://www.booking.com/affiliate-program/v2/index.html |
+| GetYourGuide | ⏳ Apply now | - | https://partner.getyourguide.com |
 | SafetyWing | ⏳ Applying | - | https://safetywing.com/partners |
 | NordVPN | ⏳ Applying | - | https://nordvpn.com/affiliate |
+| Skyscanner | 🔜 Later (need 5K/mo traffic) | - | https://www.partners.skyscanner.net |
+| Agoda | ❌ Rejected | Site ID: 1956706 | Re-apply when site is more developed |
 | Airalo | ❌ Declined | - | - |
 
-**Agoda Notes:** Meta tag verification added to index.html. Trigger manual verification in dashboard.
+### Affiliate Game Plan
+
+**Next steps — apply to these (copy-paste text in plans/nifty-moseying-puddle.md):**
+
+1. [ ] **Booking.com** — Sign up via Awin/CJ, use NL/EUR, ~3 days approval
+2. [ ] **GetYourGuide** — Apply as affiliate partner, ~2-5 days approval
+3. [ ] **SafetyWing** — Follow up on application if no response
+4. [ ] **NordVPN** — Follow up on application if no response
+
+**Once IDs are obtained:**
+
+5. [ ] Add Viator (P00284724) affiliate links to attraction detail pages
+6. [ ] Add Booking.com affiliate links to hotel recommendations
+7. [ ] Add GetYourGuide affiliate links to tour/activity recommendations
+8. [ ] Update `src/utils/affiliates.ts` with new partner IDs
+9. [ ] Update `.env.local` with new affiliate IDs
+10. [ ] Add affiliate disclosure to footer (FTC compliance)
+
+**Later:**
+
+11. [ ] Apply to Skyscanner when monthly traffic reaches 5K+
+12. [ ] Re-apply to Agoda when site is more established
+13. [ ] A/B test affiliate button placements
+14. [ ] Build commission tracking dashboard
 
 ## How to Get Affiliate IDs / API Keys
 
