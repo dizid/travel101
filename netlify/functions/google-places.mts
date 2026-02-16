@@ -203,6 +203,74 @@ const THAI_PROVINCES: Record<string, {
   }
 }
 
+// District → Province mapping for addresses that use amphoe/district names
+// instead of province names (e.g., "Amphoe Bang Lamung" → Chonburi)
+const DISTRICT_TO_PROVINCE: Record<string, string> = {
+  // Chonburi
+  'Bang Lamung': 'Chonburi',
+  'Sattahip': 'Chonburi',
+  'Si Racha': 'Chonburi',
+  'Mueang Chon Buri': 'Chonburi',
+  'Nong Prue': 'Chonburi',
+  'Nong Pla Lai': 'Chonburi',
+  'Huai Kapi': 'Chonburi',
+  'Na Chom Thian': 'Chonburi',
+  // Phuket
+  'Kathu': 'Phuket',
+  'Thalang': 'Phuket',
+  'Mueang Phuket': 'Phuket',
+  'Chalong': 'Phuket',
+  'Pa Tong': 'Phuket',
+  'Patong': 'Phuket',
+  // Krabi
+  'Ko Lanta': 'Krabi',
+  'Mueang Krabi': 'Krabi',
+  'Ao Nang': 'Krabi',
+  // Surat Thani (islands)
+  'Ko Pha-ngan': 'Surat Thani',
+  'Ko Samui': 'Surat Thani',
+  'Ko Tao': 'Surat Thani',
+  // Phang Nga
+  'Takua Pa': 'Phang Nga',
+  'Takua Thung': 'Phang Nga',
+  'Mueang Phang-nga': 'Phang Nga',
+  'Khao Lak': 'Phang Nga',
+  // Chiang Mai
+  'Mae Taeng': 'Chiang Mai',
+  'Doi Saket': 'Chiang Mai',
+  'San Kamphaeng': 'Chiang Mai',
+  'Mueang Chiang Mai': 'Chiang Mai',
+  'Mae Wang': 'Chiang Mai',
+  'Su Thep': 'Chiang Mai',
+  'Hang Dong': 'Chiang Mai',
+  'San Sai': 'Chiang Mai',
+  'Choeng Doi': 'Chiang Mai',
+  // Mae Hong Son
+  'Pai': 'Mae Hong Son',
+  // Kanchanaburi
+  'Mueang Kanchanaburi': 'Kanchanaburi',
+  'Sai Yok': 'Kanchanaburi',
+  // Prachinburi
+  'Mueang Prachin Buri': 'Prachinburi',
+  // Samut Prakan
+  'Mueang Samut Prakan': 'Samut Prakan',
+  // Phitsanulok
+  'Mueang Phitsanulok': 'Phitsanulok',
+  // Phetchabun
+  'Bueng Sam Phan': 'Phetchabun',
+  // Saraburi
+  'Kaeng Khoi': 'Saraburi',
+  // Prachuap Khiri Khan
+  'Hua Hin': 'Prachuap Khiri Khan',
+  // Bangkok adjacent
+  'Khlong Toei': 'Bangkok',
+  'Suan Luang': 'Bangkok',
+  'Phra Nakhon': 'Bangkok',
+  'Talat Yot': 'Bangkok',
+  // Nakhon Ratchasima
+  'Pak Chong': 'Nakhon Ratchasima',
+}
+
 // ==========================================
 // HELPER FUNCTIONS
 // ==========================================
@@ -223,95 +291,185 @@ function generateSlug(name: string, placeType: string): string {
 }
 
 // Map Google place types to app place types
+const PLACE_TYPE_MAP: Record<string, PlaceType> = {
+  tourist_attraction: 'attraction',
+  museum: 'attraction',
+  park: 'attraction',
+  zoo: 'attraction',
+  aquarium: 'attraction',
+  amusement_park: 'attraction',
+  art_gallery: 'attraction',
+  hindu_temple: 'attraction',
+  buddhist_temple: 'attraction',
+  temple: 'attraction',
+  historical_landmark: 'attraction',
+  national_park: 'attraction',
+  beach: 'attraction',
+  waterfall: 'attraction',
+  church: 'attraction',
+  mosque: 'attraction',
+  landmark: 'attraction',
+  viewpoint: 'attraction',
+  garden: 'attraction',
+
+  restaurant: 'restaurant',
+  cafe: 'restaurant',
+  bar: 'restaurant',
+  bakery: 'restaurant',
+  coffee_shop: 'restaurant',
+  food_court: 'restaurant',
+  seafood_restaurant: 'restaurant',
+  thai_restaurant: 'restaurant',
+  indian_restaurant: 'restaurant',
+  italian_restaurant: 'restaurant',
+  japanese_restaurant: 'restaurant',
+  chinese_restaurant: 'restaurant',
+  korean_restaurant: 'restaurant',
+  vietnamese_restaurant: 'restaurant',
+  mexican_restaurant: 'restaurant',
+  french_restaurant: 'restaurant',
+  american_restaurant: 'restaurant',
+  middle_eastern_restaurant: 'restaurant',
+  mediterranean_restaurant: 'restaurant',
+  vegetarian_restaurant: 'restaurant',
+  vegan_restaurant: 'restaurant',
+  ice_cream_shop: 'restaurant',
+  meal_delivery: 'restaurant',
+  meal_takeaway: 'restaurant',
+  steak_house: 'restaurant',
+  brunch_restaurant: 'restaurant',
+  hamburger_restaurant: 'restaurant',
+  pizza_restaurant: 'restaurant',
+  sushi_restaurant: 'restaurant',
+  ramen_restaurant: 'restaurant',
+  pub: 'restaurant',
+
+  travel_agency: 'tour',
+
+  diving_center: 'activity',
+  scuba_diving: 'activity',
+  golf_course: 'activity',
+  gym: 'activity',
+  spa: 'activity',
+  water_sports: 'activity',
+  adventure_sports: 'activity',
+
+  yoga_studio: 'course',
+  martial_arts_school: 'course',
+  fitness_center: 'course',
+
+  // Nightlife venues
+  night_club: 'activity',
+  nightclub: 'activity',
+  karaoke: 'activity',
+  disco: 'activity',
+
+  coworking_space: 'coworking',
+}
+
 function mapGoogleTypeToPlaceType(googleTypes: string[], primaryType?: string): PlaceType {
-  const typeString = primaryType || googleTypes[0] || ''
-
-  const typeMap: Record<string, PlaceType> = {
-    tourist_attraction: 'attraction',
-    museum: 'attraction',
-    park: 'attraction',
-    zoo: 'attraction',
-    aquarium: 'attraction',
-    amusement_park: 'attraction',
-    art_gallery: 'attraction',
-    hindu_temple: 'attraction',
-    buddhist_temple: 'attraction',
-    temple: 'attraction',
-    historical_landmark: 'attraction',
-    national_park: 'attraction',
-    beach: 'attraction',
-    waterfall: 'attraction',
-    church: 'attraction',
-    mosque: 'attraction',
-    landmark: 'attraction',
-
-    restaurant: 'restaurant',
-    cafe: 'restaurant',
-    bar: 'restaurant',
-    bakery: 'restaurant',
-    coffee_shop: 'restaurant',
-    food_court: 'restaurant',
-    seafood_restaurant: 'restaurant',
-    thai_restaurant: 'restaurant',
-
-    travel_agency: 'tour',
-
-    diving_center: 'activity',
-    golf_course: 'activity',
-    gym: 'activity',
-    spa: 'activity',
-
-    // Nightlife venues
-    night_club: 'activity',
-    nightclub: 'activity',
-    karaoke: 'activity',
-    disco: 'activity',
-    pub: 'restaurant',
-
-    coworking_space: 'coworking',
+  // Try primaryType first
+  if (primaryType && PLACE_TYPE_MAP[primaryType]) {
+    return PLACE_TYPE_MAP[primaryType]
   }
 
-  return typeMap[typeString] || 'attraction'
+  // Then iterate all types for first match
+  for (const type of googleTypes) {
+    if (PLACE_TYPE_MAP[type]) {
+      return PLACE_TYPE_MAP[type]
+    }
+  }
+
+  return 'attraction'
 }
 
 // Map Google place types to category
-function mapGoogleTypeToCategory(googleTypes: string[], primaryType?: string): string {
-  const typeString = primaryType || googleTypes[0] || ''
+const CATEGORY_MAP: Record<string, string> = {
+  tourist_attraction: 'culture',
+  museum: 'culture',
+  hindu_temple: 'culture',
+  buddhist_temple: 'culture',
+  temple: 'culture',
+  church: 'culture',
+  mosque: 'culture',
+  historical_landmark: 'history',
+  landmark: 'culture',
+  art_gallery: 'culture',
+  viewpoint: 'nature',
+  garden: 'nature',
+  park: 'nature',
+  national_park: 'nature',
+  beach: 'beach',
+  waterfall: 'nature',
+  zoo: 'nature',
+  aquarium: 'nature',
+  amusement_park: 'adventure',
 
-  const categoryMap: Record<string, string> = {
-    tourist_attraction: 'culture',
-    museum: 'culture',
-    hindu_temple: 'culture',
-    buddhist_temple: 'culture',
-    temple: 'culture',
-    church: 'culture',
-    mosque: 'culture',
-    historical_landmark: 'history',
-    landmark: 'culture',
-    park: 'nature',
-    national_park: 'nature',
-    beach: 'beach',
-    waterfall: 'nature',
-    zoo: 'nature',
-    aquarium: 'nature',
-    amusement_park: 'adventure',
-    art_gallery: 'culture',
-    restaurant: 'food',
-    cafe: 'food',
-    thai_restaurant: 'food',
-    seafood_restaurant: 'food',
-    bar: 'nightlife',
-    night_club: 'nightlife',
-    nightclub: 'nightlife',
-    karaoke: 'nightlife',
-    disco: 'nightlife',
-    pub: 'nightlife',
-    spa: 'wellness',
-    diving_center: 'adventure',
-    golf_course: 'adventure',
+  // All restaurant types → food
+  restaurant: 'food',
+  cafe: 'food',
+  coffee_shop: 'food',
+  bakery: 'food',
+  food_court: 'food',
+  thai_restaurant: 'food',
+  seafood_restaurant: 'food',
+  indian_restaurant: 'food',
+  italian_restaurant: 'food',
+  japanese_restaurant: 'food',
+  chinese_restaurant: 'food',
+  korean_restaurant: 'food',
+  vietnamese_restaurant: 'food',
+  mexican_restaurant: 'food',
+  french_restaurant: 'food',
+  american_restaurant: 'food',
+  middle_eastern_restaurant: 'food',
+  mediterranean_restaurant: 'food',
+  vegetarian_restaurant: 'food',
+  vegan_restaurant: 'food',
+  ice_cream_shop: 'food',
+  meal_delivery: 'food',
+  meal_takeaway: 'food',
+  steak_house: 'food',
+  brunch_restaurant: 'food',
+  hamburger_restaurant: 'food',
+  pizza_restaurant: 'food',
+  sushi_restaurant: 'food',
+  ramen_restaurant: 'food',
+
+  // Nightlife
+  bar: 'nightlife',
+  night_club: 'nightlife',
+  nightclub: 'nightlife',
+  karaoke: 'nightlife',
+  disco: 'nightlife',
+  pub: 'nightlife',
+
+  // Wellness & activities
+  spa: 'wellness',
+  yoga_studio: 'wellness',
+  martial_arts_school: 'adventure',
+  fitness_center: 'wellness',
+  diving_center: 'adventure',
+  scuba_diving: 'adventure',
+  water_sports: 'adventure',
+  adventure_sports: 'adventure',
+  golf_course: 'adventure',
+}
+
+function mapGoogleTypeToCategory(googleTypes: string[], primaryType?: string): string {
+  // Try primaryType first
+  if (primaryType && CATEGORY_MAP[primaryType]) {
+    return CATEGORY_MAP[primaryType]
   }
 
-  return categoryMap[typeString] || 'culture'
+  // Then iterate all types for first match
+  for (const type of googleTypes) {
+    if (CATEGORY_MAP[type]) {
+      return CATEGORY_MAP[type]
+    }
+  }
+
+  return 'culture'
 }
 
 // Map Google price level
@@ -328,6 +486,7 @@ function mapPriceLevel(priceLevel?: string): { priceRange?: string } {
 
 // Extract province from formatted address
 function extractProvince(formattedAddress: string): string | null {
+  // First try: match province names and aliases directly
   for (const province of Object.values(THAI_PROVINCES)) {
     if (formattedAddress.includes(province.name)) {
       return province.name
@@ -338,15 +497,87 @@ function extractProvince(formattedAddress: string): string | null {
       }
     }
   }
+
+  // Second try: match district/amphoe names → province lookup
+  for (const [district, province] of Object.entries(DISTRICT_TO_PROVINCE)) {
+    if (formattedAddress.includes(district)) {
+      return province
+    }
+  }
+
+  // Third try: match "Amphoe [name]" or "Tambon [name]" patterns
+  const amphoeMatch = formattedAddress.match(/Amphoe\s+([^,]+)/i)
+  if (amphoeMatch) {
+    const amphoeName = amphoeMatch[1].trim()
+    if (DISTRICT_TO_PROVINCE[amphoeName]) {
+      return DISTRICT_TO_PROVINCE[amphoeName]
+    }
+  }
+
+  return null
+}
+
+// Name-based fallback classification when Google type mapping defaults
+function inferFromName(name: string): { placeType?: PlaceType; category?: string } | null {
+  const lower = name.toLowerCase()
+
+  // Restaurants and food
+  if (/\b(restaurant|kitchen|bistro|café|cafe|grill|pizzeria|bakery|food court|eatery)\b/.test(lower)) {
+    return { placeType: 'restaurant', category: 'food' }
+  }
+  // Beaches
+  if (/\bbeach\b/.test(lower)) {
+    return { placeType: 'attraction', category: 'beach' }
+  }
+  // Waterfalls
+  if (/\bwaterfall\b/.test(lower)) {
+    return { placeType: 'attraction', category: 'nature' }
+  }
+  // Diving / snorkeling
+  if (/\b(diving|divers?|scuba|snorkel)\b/.test(lower)) {
+    return { placeType: 'course', category: 'adventure' }
+  }
+  // Muay Thai / martial arts / boxing
+  if (/\b(muay thai|boxing|martial arts?|kickboxing)\b/.test(lower)) {
+    return { placeType: 'course', category: 'adventure' }
+  }
+  // Yoga / meditation / wellness
+  if (/\b(yoga|meditation|retreat|wellness)\b/.test(lower)) {
+    return { placeType: 'course', category: 'wellness' }
+  }
+  // Cooking school
+  if (/\b(cook(ery|ing)\s+school|cooking\s+class)\b/.test(lower)) {
+    return { placeType: 'course', category: 'culture' }
+  }
+  // Nightlife
+  if (/\b(nightclub|club|disco|bar\s*&?\s*grill)\b/.test(lower)) {
+    return { placeType: 'activity', category: 'nightlife' }
+  }
+  // Viewpoints
+  if (/\b(viewpoint|view\s+point)\b/.test(lower)) {
+    return { placeType: 'attraction', category: 'nature' }
+  }
+
   return null
 }
 
 // Map Google Place to PlaceInput
 function mapGooglePlaceToPlaceInput(place: GooglePlaceResult): PlaceInput {
-  const placeType = mapGoogleTypeToPlaceType(place.types || [], place.primaryType)
-  const category = mapGoogleTypeToCategory(place.types || [], place.primaryType)
+  let placeType = mapGoogleTypeToPlaceType(place.types || [], place.primaryType)
+  let category = mapGoogleTypeToCategory(place.types || [], place.primaryType)
   const pricing = mapPriceLevel(place.priceLevel)
   const province = extractProvince(place.formattedAddress || '')
+
+  // If both fell back to defaults, try name-based inference
+  const isDefaultType = placeType === 'attraction'
+  const isDefaultCategory = category === 'culture'
+  if (isDefaultType && isDefaultCategory) {
+    const inferred = inferFromName(place.displayName.text)
+    if (inferred) {
+      if (inferred.placeType) placeType = inferred.placeType
+      if (inferred.category) category = inferred.category
+    }
+  }
 
   const description = place.editorialSummary?.text
     || `${place.displayName.text} is a ${place.primaryTypeDisplayName?.text || category} located in ${province || 'Thailand'}.`

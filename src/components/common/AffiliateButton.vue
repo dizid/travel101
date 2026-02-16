@@ -34,6 +34,12 @@ const partnerConfig: Record<AffiliatePartner, { label: string; icon: string; col
     color: 'bg-emerald-500 text-white',
     hoverColor: 'hover:bg-emerald-600'
   },
+  viator: {
+    label: 'Book on Viator',
+    icon: '🎭',
+    color: 'bg-teal-600 text-white',
+    hoverColor: 'hover:bg-teal-700'
+  },
   safetywing: {
     label: 'Get Insurance',
     icon: '🛡️',

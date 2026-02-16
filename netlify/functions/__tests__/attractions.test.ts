@@ -190,7 +190,7 @@ describe('attractions function', () => {
 
   describe('GET /api/attractions/matched', () => {
     it('should return top matched attractions', async () => {
-      setMockQueryResult('SELECT * FROM attractions ORDER BY name', [
+      setMockQueryResult('SELECT * FROM attractions ORDER BY', [
         mockAttraction,
         { ...mockAttraction, id: 'attr-2', slug: 'wat-pho', categories: { beach: 0.9 } },
       ])
@@ -225,7 +225,7 @@ describe('attractions function', () => {
         id: `attr-${i}`,
         slug: `attraction-${i}`,
       }))
-      setMockQueryResult('SELECT * FROM attractions ORDER BY name', manyAttractions)
+      setMockQueryResult('SELECT * FROM attractions ORDER BY', manyAttractions)
 
       const prefs = JSON.stringify({ interests: ['temples'] })
       const req = createMockRequest('GET', '/api/attractions/matched', {

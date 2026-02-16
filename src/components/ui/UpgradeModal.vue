@@ -22,6 +22,7 @@ const proFeatures = [
   { icon: '♾️', label: 'Unlimited AI Chats', description: 'No daily limits' },
   { icon: '🎯', label: 'AI Itineraries', description: 'Personalized trip plans' },
   { icon: '💎', label: 'Hidden Gems', description: 'Pro-only secrets' },
+  { icon: '🎒', label: 'AI Packing Lists', description: 'Smart packing suggestions' },
   { icon: '💬', label: 'Persistent Chats', description: 'Resume conversations' },
   { icon: '🔔', label: 'Smart Alerts', description: 'Visa reminders' },
 ]

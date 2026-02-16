@@ -9,7 +9,7 @@
  * - NordVPN: https://nordvpn.com/affiliate (VPN for travelers)
  */
 
-export type AffiliatePartner = 'klook' | 'agoda' | '12go' | 'getyourguide' | 'safetywing' | 'nordvpn'
+export type AffiliatePartner = 'klook' | 'agoda' | '12go' | 'getyourguide' | 'viator' | 'safetywing' | 'nordvpn'
 
 interface AffiliateConfig {
   baseUrl: string
@@ -68,6 +68,24 @@ const affiliateConfigs: Record<AffiliatePartner, AffiliateConfig> = {
       return `https://www.getyourguide.com/s/?${params.toString()}`
     },
   },
+  viator: {
+    baseUrl: 'https://www.viator.com',
+    buildUrl: (destination, attractionName, affiliateId) => {
+      const query = attractionName
+        ? `${attractionName} ${destination} Thailand`
+        : `${destination} Thailand`
+      const params = new URLSearchParams({
+        q: query,
+        ...(affiliateId && {
+          pid: affiliateId,
+          mcid: '42383',
+          medium: 'link',
+          campaign: 'happytravel',
+        }),
+      })
+      return `https://www.viator.com/searchResults/all?${params.toString()}`
+    },
+  },
   safetywing: {
     baseUrl: 'https://safetywing.com',
     buildUrl: (_destination, _attractionName, affiliateId) => {
@@ -115,6 +133,7 @@ export function generateAllAffiliateLinks(
     agoda: generateAffiliateUrl('agoda', destination),
     '12go': generateAffiliateUrl('12go', destination),
     getyourguide: generateAffiliateUrl('getyourguide', destination, attractionName),
+    viator: generateAffiliateUrl('viator', destination, attractionName),
     safetywing: generateAffiliateUrl('safetywing', destination),
     nordvpn: generateAffiliateUrl('nordvpn', destination),
   }
@@ -179,25 +198,25 @@ export function generateTransportUrl(
  */
 export const affiliateContexts = {
   // Attraction detail pages - show both activity booking options
-  attractionDetail: ['klook', 'getyourguide', 'agoda'] as AffiliatePartner[],
+  attractionDetail: ['klook', 'getyourguide', 'viator', 'agoda'] as AffiliatePartner[],
 
   // Heritage hotels - prioritize Agoda
   heritageHotel: ['agoda'] as AffiliatePartner[],
 
   // Activities/tours pages
-  activities: ['klook', 'getyourguide'] as AffiliatePartner[],
+  activities: ['klook', 'getyourguide', 'viator'] as AffiliatePartner[],
 
   // Transport between cities
   transport: ['12go'] as AffiliatePartner[],
 
   // Destination overview
-  destination: ['klook', 'getyourguide', 'agoda', '12go'] as AffiliatePartner[],
+  destination: ['klook', 'getyourguide', 'viator', 'agoda', '12go'] as AffiliatePartner[],
 
   // Itinerary pages
-  itinerary: ['klook', 'getyourguide', 'agoda', '12go'] as AffiliatePartner[],
+  itinerary: ['klook', 'getyourguide', 'viator', 'agoda', '12go'] as AffiliatePartner[],
 
   // Dashboard recommendations
-  dashboard: ['klook', 'getyourguide', 'agoda'] as AffiliatePartner[],
+  dashboard: ['klook', 'getyourguide', 'viator', 'agoda'] as AffiliatePartner[],
 
   // Travel essentials (insurance, VPN)
   essentials: ['safetywing', 'nordvpn'] as AffiliatePartner[],

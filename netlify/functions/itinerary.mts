@@ -1,6 +1,7 @@
 import type { Context, Config } from '@netlify/functions'
 import Anthropic from '@anthropic-ai/sdk'
 import { getDb } from './lib/db.mts'
+import { isTestMode } from './lib/usage.mts'
 
 const json = (data: unknown, status = 200) =>
   new Response(JSON.stringify(data), {
@@ -30,7 +31,8 @@ class NotFoundError extends Error {
   }
 }
 
-async function requirePro(db: ReturnType<typeof getDb>, userId: string) {
+async function requirePro(db: ReturnType<typeof getDb>, userId: string, testMode = false) {
+  if (testMode) return // Test mode bypasses Pro check
   const result = await db`SELECT is_pro FROM user_profiles WHERE user_id = ${userId}`
   if (result.length === 0 || !result[0].is_pro) {
     throw new ProRequiredError()
@@ -218,7 +220,7 @@ export default async (req: Request, context: Context) => {
 
   try {
     // Verify Pro subscription for all itinerary operations
-    await requirePro(db, userId)
+    await requirePro(db, userId, isTestMode(req))
 
     const url = new URL(req.url)
     const itineraryId = url.searchParams.get('id')

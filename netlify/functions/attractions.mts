@@ -1,6 +1,7 @@
 import type { Context, Config } from '@netlify/functions'
 import { getDb } from './lib/db.mts'
 import { calculateMatchScore, getMatchReasons, type UserPrefs } from './lib/matching.mts'
+import { isTestMode } from './lib/usage.mts'
 
 interface Attraction {
   id: string
@@ -173,7 +174,7 @@ async function handleList(req: Request, db: ReturnType<typeof getDb>, url: URL) 
     attractions = await db`
       SELECT * FROM attractions
       WHERE category = ${category} AND is_hidden_gem = true AND province = ${province} AND place_type = ${placeType}
-      ORDER BY name LIMIT ${limit} OFFSET ${offset}
+      ORDER BY (CASE WHEN province IS NULL THEN 1 ELSE 0 END), name LIMIT ${limit} OFFSET ${offset}
     `
     const countResult = await db`
       SELECT COUNT(*) as total FROM attractions
@@ -184,7 +185,7 @@ async function handleList(req: Request, db: ReturnType<typeof getDb>, url: URL) 
     attractions = await db`
       SELECT * FROM attractions
       WHERE category = ${category} AND is_hidden_gem = true AND province = ${province}
-      ORDER BY name LIMIT ${limit} OFFSET ${offset}
+      ORDER BY (CASE WHEN province IS NULL THEN 1 ELSE 0 END), name LIMIT ${limit} OFFSET ${offset}
     `
     const countResult = await db`
       SELECT COUNT(*) as total FROM attractions
@@ -195,7 +196,7 @@ async function handleList(req: Request, db: ReturnType<typeof getDb>, url: URL) 
     attractions = await db`
       SELECT * FROM attractions
       WHERE category = ${category} AND is_hidden_gem = true AND place_type = ${placeType}
-      ORDER BY name LIMIT ${limit} OFFSET ${offset}
+      ORDER BY (CASE WHEN province IS NULL THEN 1 ELSE 0 END), name LIMIT ${limit} OFFSET ${offset}
     `
     const countResult = await db`
       SELECT COUNT(*) as total FROM attractions
@@ -206,7 +207,7 @@ async function handleList(req: Request, db: ReturnType<typeof getDb>, url: URL) 
     attractions = await db`
       SELECT * FROM attractions
       WHERE category = ${category} AND province = ${province} AND place_type = ${placeType}
-      ORDER BY name LIMIT ${limit} OFFSET ${offset}
+      ORDER BY (CASE WHEN province IS NULL THEN 1 ELSE 0 END), name LIMIT ${limit} OFFSET ${offset}
     `
     const countResult = await db`
       SELECT COUNT(*) as total FROM attractions
@@ -217,7 +218,7 @@ async function handleList(req: Request, db: ReturnType<typeof getDb>, url: URL) 
     attractions = await db`
       SELECT * FROM attractions
       WHERE is_hidden_gem = true AND province = ${province} AND place_type = ${placeType}
-      ORDER BY name LIMIT ${limit} OFFSET ${offset}
+      ORDER BY (CASE WHEN province IS NULL THEN 1 ELSE 0 END), name LIMIT ${limit} OFFSET ${offset}
     `
     const countResult = await db`
       SELECT COUNT(*) as total FROM attractions
@@ -228,7 +229,7 @@ async function handleList(req: Request, db: ReturnType<typeof getDb>, url: URL) 
     attractions = await db`
       SELECT * FROM attractions
       WHERE category = ${category} AND is_hidden_gem = true
-      ORDER BY name LIMIT ${limit} OFFSET ${offset}
+      ORDER BY (CASE WHEN province IS NULL THEN 1 ELSE 0 END), name LIMIT ${limit} OFFSET ${offset}
     `
     const countResult = await db`
       SELECT COUNT(*) as total FROM attractions
@@ -239,7 +240,7 @@ async function handleList(req: Request, db: ReturnType<typeof getDb>, url: URL) 
     attractions = await db`
       SELECT * FROM attractions
       WHERE category = ${category} AND province = ${province}
-      ORDER BY name LIMIT ${limit} OFFSET ${offset}
+      ORDER BY (CASE WHEN province IS NULL THEN 1 ELSE 0 END), name LIMIT ${limit} OFFSET ${offset}
     `
     const countResult = await db`
       SELECT COUNT(*) as total FROM attractions
@@ -250,7 +251,7 @@ async function handleList(req: Request, db: ReturnType<typeof getDb>, url: URL) 
     attractions = await db`
       SELECT * FROM attractions
       WHERE category = ${category} AND place_type = ${placeType}
-      ORDER BY name LIMIT ${limit} OFFSET ${offset}
+      ORDER BY (CASE WHEN province IS NULL THEN 1 ELSE 0 END), name LIMIT ${limit} OFFSET ${offset}
     `
     const countResult = await db`
       SELECT COUNT(*) as total FROM attractions
@@ -261,7 +262,7 @@ async function handleList(req: Request, db: ReturnType<typeof getDb>, url: URL) 
     attractions = await db`
       SELECT * FROM attractions
       WHERE is_hidden_gem = true AND province = ${province}
-      ORDER BY name LIMIT ${limit} OFFSET ${offset}
+      ORDER BY (CASE WHEN province IS NULL THEN 1 ELSE 0 END), name LIMIT ${limit} OFFSET ${offset}
     `
     const countResult = await db`
       SELECT COUNT(*) as total FROM attractions
@@ -272,7 +273,7 @@ async function handleList(req: Request, db: ReturnType<typeof getDb>, url: URL) 
     attractions = await db`
       SELECT * FROM attractions
       WHERE is_hidden_gem = true AND place_type = ${placeType}
-      ORDER BY name LIMIT ${limit} OFFSET ${offset}
+      ORDER BY (CASE WHEN province IS NULL THEN 1 ELSE 0 END), name LIMIT ${limit} OFFSET ${offset}
     `
     const countResult = await db`
       SELECT COUNT(*) as total FROM attractions
@@ -283,7 +284,7 @@ async function handleList(req: Request, db: ReturnType<typeof getDb>, url: URL) 
     attractions = await db`
       SELECT * FROM attractions
       WHERE province = ${province} AND place_type = ${placeType}
-      ORDER BY name LIMIT ${limit} OFFSET ${offset}
+      ORDER BY (CASE WHEN province IS NULL THEN 1 ELSE 0 END), name LIMIT ${limit} OFFSET ${offset}
     `
     const countResult = await db`
       SELECT COUNT(*) as total FROM attractions
@@ -294,7 +295,7 @@ async function handleList(req: Request, db: ReturnType<typeof getDb>, url: URL) 
     attractions = await db`
       SELECT * FROM attractions
       WHERE category = ${category}
-      ORDER BY name LIMIT ${limit} OFFSET ${offset}
+      ORDER BY (CASE WHEN province IS NULL THEN 1 ELSE 0 END), name LIMIT ${limit} OFFSET ${offset}
     `
     const countResult = await db`
       SELECT COUNT(*) as total FROM attractions WHERE category = ${category}
@@ -304,7 +305,7 @@ async function handleList(req: Request, db: ReturnType<typeof getDb>, url: URL) 
     attractions = await db`
       SELECT * FROM attractions
       WHERE is_hidden_gem = true
-      ORDER BY name LIMIT ${limit} OFFSET ${offset}
+      ORDER BY (CASE WHEN province IS NULL THEN 1 ELSE 0 END), name LIMIT ${limit} OFFSET ${offset}
     `
     const countResult = await db`
       SELECT COUNT(*) as total FROM attractions WHERE is_hidden_gem = true
@@ -314,7 +315,7 @@ async function handleList(req: Request, db: ReturnType<typeof getDb>, url: URL) 
     attractions = await db`
       SELECT * FROM attractions
       WHERE province = ${province}
-      ORDER BY name LIMIT ${limit} OFFSET ${offset}
+      ORDER BY (CASE WHEN province IS NULL THEN 1 ELSE 0 END), name LIMIT ${limit} OFFSET ${offset}
     `
     const countResult = await db`
       SELECT COUNT(*) as total FROM attractions WHERE province = ${province}
@@ -324,7 +325,7 @@ async function handleList(req: Request, db: ReturnType<typeof getDb>, url: URL) 
     attractions = await db`
       SELECT * FROM attractions
       WHERE place_type = ${placeType}
-      ORDER BY name LIMIT ${limit} OFFSET ${offset}
+      ORDER BY (CASE WHEN province IS NULL THEN 1 ELSE 0 END), name LIMIT ${limit} OFFSET ${offset}
     `
     const countResult = await db`
       SELECT COUNT(*) as total FROM attractions WHERE place_type = ${placeType}
@@ -333,7 +334,7 @@ async function handleList(req: Request, db: ReturnType<typeof getDb>, url: URL) 
   } else {
     attractions = await db`
       SELECT * FROM attractions
-      ORDER BY name LIMIT ${limit} OFFSET ${offset}
+      ORDER BY (CASE WHEN province IS NULL THEN 1 ELSE 0 END), name LIMIT ${limit} OFFSET ${offset}
     `
     const countResult = await db`SELECT COUNT(*) as total FROM attractions`
     total = parseInt(countResult[0].total)
@@ -375,7 +376,7 @@ async function handleMatched(req: Request, db: ReturnType<typeof getDb>) {
   }
 
   const attractions: Attraction[] = await db`
-    SELECT * FROM attractions ORDER BY name
+    SELECT * FROM attractions ORDER BY (CASE WHEN province IS NULL THEN 1 ELSE 0 END), name
   `
 
   const matches = attractions
@@ -457,7 +458,17 @@ async function handleDetail(
       WHERE attraction_id = ${attraction.id}
       ORDER BY sort_order, created_at
     `
-    response.attraction.secrets = secrets
+
+    // Redact Pro-only secret content for non-Pro users
+    const userId = req.headers.get('x-user-id')
+    let userIsPro = isTestMode(req)
+    if (!userIsPro && userId) {
+      const proCheck = await db`SELECT is_pro FROM user_profiles WHERE user_id = ${userId}`
+      userIsPro = proCheck.length > 0 && proCheck[0].is_pro
+    }
+    response.attraction.secrets = userIsPro
+      ? secrets
+      : secrets.map(s => s.is_pro_only ? { ...s, content: null, location_hint: null } : s)
   }
 
   if (includeRecommendations) {

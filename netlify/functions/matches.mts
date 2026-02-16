@@ -1,5 +1,6 @@
 import type { Context, Config } from '@netlify/functions'
 import { getDb } from './lib/db.mts'
+import { isTestMode } from './lib/usage.mts'
 
 const json = (data: unknown, status = 200) =>
   new Response(JSON.stringify(data), {
@@ -7,7 +8,8 @@ const json = (data: unknown, status = 200) =>
     headers: { 'Content-Type': 'application/json' },
   })
 
-async function requirePro(db: ReturnType<typeof getDb>, userId: string) {
+async function requirePro(db: ReturnType<typeof getDb>, userId: string, testMode = false) {
+  if (testMode) return // Test mode bypasses Pro check
   const result = await db`SELECT is_pro FROM user_profiles WHERE user_id = ${userId}`
   if (result.length === 0 || !result[0].is_pro) {
     throw new Error('Pro subscription required')
@@ -23,7 +25,7 @@ export default async (req: Request, context: Context) => {
   }
 
   try {
-    await requirePro(db, userId)
+    await requirePro(db, userId, isTestMode(req))
 
     const url = new URL(req.url)
     const attractionSlug = url.searchParams.get('slug')
