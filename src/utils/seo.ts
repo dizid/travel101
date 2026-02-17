@@ -215,8 +215,8 @@ export const pageMeta: Record<string, PageMeta> = {
     url: '/itinerary',
   },
   onwardTicket: {
-    title: 'Onward Ticket — Flight Reservation for Thailand',
-    description: 'Get a verified flight reservation for Thai immigration in minutes. Real airline PNR code, instant delivery, valid 48+ hours.',
+    title: 'Onward Ticket — Proof of Onward Travel for Thailand',
+    description: 'Book a verified onward flight reservation for Thai immigration. Pro members get 2 free bookings/month, or pay just $12 per ticket. Real airline PNR, instant delivery.',
     url: '/onward-ticket',
   },
 }

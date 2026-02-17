@@ -34,8 +34,20 @@ export interface BookingConfirmation {
   passengerName: string
 }
 
+export interface OnwardTicketStatus {
+  isPro: boolean
+  bookingsThisMonth: number
+  monthlyLimit: number
+  serviceFee: number
+}
+
 interface SearchResponse {
   data: { offers: FlightOffer[] }
+  success: boolean
+}
+
+interface StatusResponse {
+  data: OnwardTicketStatus
   success: boolean
 }
 
@@ -66,6 +78,20 @@ export function useOnwardTicket() {
   const booking = ref<BookingConfirmation | null>(null)
   const searching = ref(false)
   const paying = ref(false)
+  const proStatus = ref<OnwardTicketStatus | null>(null)
+
+  // Fetch Pro status and booking count for this month
+  async function fetchStatus() {
+    const result = await post<StatusResponse>('/onward-ticket', {
+      action: 'status',
+    })
+
+    if (result?.data) {
+      proStatus.value = result.data
+    }
+
+    return result
+  }
 
   async function searchFlights(origin: string, destination: string, date: string) {
     searching.value = true
@@ -92,6 +118,7 @@ export function useOnwardTicket() {
     step.value = 2
   }
 
+  // Create Stripe PaymentIntent for non-Pro users ($12 service fee)
   async function createPayment(): Promise<string | null> {
     if (!selectedOffer.value) return null
 
@@ -107,7 +134,8 @@ export function useOnwardTicket() {
     return null
   }
 
-  async function confirmBooking(paymentIntentId: string): Promise<BookingConfirmation | null> {
+  // Book the flight. paymentIntentId is required for non-Pro, omitted for Pro.
+  async function confirmBooking(paymentIntentId?: string): Promise<BookingConfirmation | null> {
     if (!selectedOffer.value) return null
 
     paying.value = true
@@ -116,13 +144,17 @@ export function useOnwardTicket() {
       action: 'book',
       offerId: selectedOffer.value.id,
       passenger: passengerDetails.value,
-      paymentIntentId,
+      ...(paymentIntentId ? { paymentIntentId } : {}),
     })
 
     paying.value = false
 
     if (result?.data) {
       booking.value = result.data
+      // Update proStatus to reflect new booking count
+      if (proStatus.value?.isPro) {
+        proStatus.value.bookingsThisMonth++
+      }
       return result.data
     }
 
@@ -157,11 +189,13 @@ export function useOnwardTicket() {
     paying,
     loading,
     error,
+    proStatus,
     // Methods
     searchFlights,
     selectOffer,
     createPayment,
     confirmBooking,
+    fetchStatus,
     reset,
   }
 }

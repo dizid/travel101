@@ -1,15 +1,17 @@
 <script setup lang="ts">
-import { ref, computed, watch, nextTick } from 'vue'
+import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { useOnwardTicket } from '@/composables/useOnwardTicket'
 import { generateBookingPdf } from '@/utils/booking-pdf'
 import { THAI_AIRPORTS, POPULAR_DESTINATIONS, SERVICE_FEE_CENTS } from '@/data/exit-routes'
 import { loadStripe } from '@stripe/stripe-js'
 import type { Stripe, StripeElements } from '@stripe/stripe-js'
+import UpgradeModal from '@/components/ui/UpgradeModal.vue'
 import {
   SearchOutlined,
   CheckCircleFilled,
   LoadingOutlined,
   DownloadOutlined,
+  CrownFilled,
 } from '@ant-design/icons-vue'
 
 const {
@@ -21,10 +23,12 @@ const {
   searching,
   paying,
   error,
+  proStatus,
   searchFlights,
   selectOffer,
   createPayment,
   confirmBooking,
+  fetchStatus,
   reset,
 } = useOnwardTicket()
 
@@ -34,11 +38,22 @@ const destination = ref('KUL')
 const customDestination = ref('')
 const departureDate = ref('')
 
-// Stripe state
+// Stripe state (for non-Pro payment)
 let stripe: Stripe | null = null
 let elements: StripeElements | null = null
 const stripeReady = ref(false)
 const stripeError = ref('')
+
+// Upgrade modal state
+const showUpgradeModal = ref(false)
+
+// Computed helpers
+const isPro = computed(() => proStatus.value?.isPro === true)
+const proBookingsRemaining = computed(() => {
+  if (!proStatus.value?.isPro) return 0
+  return Math.max(0, proStatus.value.monthlyLimit - proStatus.value.bookingsThisMonth)
+})
+const proLimitReached = computed(() => isPro.value && proBookingsRemaining.value === 0)
 
 const minDate = computed(() => {
   const d = new Date()
@@ -60,6 +75,11 @@ const canSearch = computed(() =>
   origin.value && effectiveDestination.value.length === 3 && departureDate.value
 )
 
+// Fetch status on mount to know Pro status + booking count
+onMounted(() => {
+  fetchStatus()
+})
+
 function formatTime(iso: string): string {
   return new Date(iso).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
 }
@@ -76,10 +96,16 @@ async function handleSearch() {
   await searchFlights(origin.value, effectiveDestination.value, departureDate.value)
 }
 
-// Initialize Stripe when entering step 3
+// Step 3: Initialize Stripe for non-Pro users, or book directly for Pro
 watch(step, async (newStep) => {
   if (newStep === 3 && !booking.value) {
-    await initStripe()
+    if (isPro.value && !proLimitReached.value) {
+      // Pro user with remaining bookings: book immediately
+      await confirmBooking()
+    } else {
+      // Non-Pro or limit reached: show Stripe payment
+      await initStripe()
+    }
   }
 })
 
@@ -87,7 +113,6 @@ async function initStripe() {
   stripeError.value = ''
   stripeReady.value = false
 
-  // Load Stripe
   if (!stripe) {
     stripe = await loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY)
   }
@@ -97,14 +122,12 @@ async function initStripe() {
     return
   }
 
-  // Get client secret from our backend
   const clientSecret = await createPayment()
   if (!clientSecret) {
     stripeError.value = error.value || 'Failed to initialize payment. Please try again.'
     return
   }
 
-  // Mount Payment Element
   elements = stripe.elements({
     clientSecret,
     appearance: {
@@ -126,7 +149,15 @@ async function initStripe() {
   })
 }
 
-async function goToPayment() {
+onUnmounted(() => {
+  if (elements) {
+    elements.getElement('payment')?.destroy()
+    elements = null
+  }
+  stripe = null
+})
+
+function goToStep3() {
   step.value = 3
 }
 
@@ -136,7 +167,6 @@ async function handlePayAndBook() {
   paying.value = true
   stripeError.value = ''
 
-  // Confirm payment with Stripe
   const { error: stripeErr, paymentIntent } = await stripe.confirmPayment({
     elements,
     confirmParams: {
@@ -152,7 +182,6 @@ async function handlePayAndBook() {
   }
 
   if (paymentIntent && paymentIntent.status === 'succeeded') {
-    // Payment succeeded, now book the flight
     await confirmBooking(paymentIntent.id)
   } else {
     stripeError.value = 'Payment was not completed. Please try again.'
@@ -195,6 +224,76 @@ function downloadPdf() {
       </div>
     </div>
 
+    <!-- Landing section for non-Pro users (before they start searching) -->
+    <div v-if="!isPro && step === 1 && searchResults.length === 0" class="bg-gradient-to-br from-primary-50 to-amber-50 border-b border-primary-100">
+      <div class="max-w-3xl mx-auto px-4 sm:px-6 py-8">
+        <!-- Benefits grid -->
+        <div class="grid grid-cols-2 gap-4 mb-6">
+          <div class="flex items-start gap-3 p-3 bg-white/70 rounded-xl">
+            <CheckCircleFilled class="text-green-500 mt-0.5 flex-shrink-0" />
+            <div>
+              <p class="font-medium text-gray-900 text-sm">Real PNR Code</p>
+              <p class="text-xs text-gray-500">Verifiable on airline websites</p>
+            </div>
+          </div>
+          <div class="flex items-start gap-3 p-3 bg-white/70 rounded-xl">
+            <CheckCircleFilled class="text-green-500 mt-0.5 flex-shrink-0" />
+            <div>
+              <p class="font-medium text-gray-900 text-sm">Instant PDF</p>
+              <p class="text-xs text-gray-500">Download immediately</p>
+            </div>
+          </div>
+          <div class="flex items-start gap-3 p-3 bg-white/70 rounded-xl">
+            <CheckCircleFilled class="text-green-500 mt-0.5 flex-shrink-0" />
+            <div>
+              <p class="font-medium text-gray-900 text-sm">Valid 48+ Hours</p>
+              <p class="text-xs text-gray-500">Time to clear immigration</p>
+            </div>
+          </div>
+          <div class="flex items-start gap-3 p-3 bg-white/70 rounded-xl">
+            <CheckCircleFilled class="text-green-500 mt-0.5 flex-shrink-0" />
+            <div>
+              <p class="font-medium text-gray-900 text-sm">Accepted Worldwide</p>
+              <p class="text-xs text-gray-500">Airlines & immigration</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Pricing comparison -->
+        <div class="flex flex-col sm:flex-row gap-3">
+          <div class="flex-1 bg-white rounded-xl p-4 border-2 border-primary-300 relative">
+            <div class="absolute -top-2.5 left-4 px-2 py-0.5 bg-primary-500 text-white text-xs font-bold rounded-full">
+              Best Value
+            </div>
+            <div class="flex items-center gap-2 mb-1">
+              <CrownFilled class="text-primary-500" />
+              <span class="font-bold text-gray-900">Pro Members</span>
+            </div>
+            <p class="text-2xl font-bold text-primary-600">Free</p>
+            <p class="text-xs text-gray-500">2 bookings/month included with $10/mo Pro</p>
+          </div>
+          <div class="flex-1 bg-white rounded-xl p-4 border border-gray-200">
+            <span class="font-bold text-gray-900">One-Time</span>
+            <p class="text-2xl font-bold text-gray-700">$12<span class="text-sm font-normal text-gray-500">/ticket</span></p>
+            <p class="text-xs text-gray-500">Pay per booking, no subscription</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pro status banner -->
+    <div v-if="isPro && step === 1" class="bg-gradient-to-r from-primary-50 to-amber-50 border-b border-primary-100">
+      <div class="max-w-3xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <CrownFilled class="text-primary-500" />
+          <span class="text-sm font-medium text-primary-700">
+            {{ proBookingsRemaining }} free booking{{ proBookingsRemaining !== 1 ? 's' : '' }} remaining this month
+          </span>
+        </div>
+        <span class="text-xs text-primary-500 bg-primary-100 px-2 py-0.5 rounded-full font-medium">Pro</span>
+      </div>
+    </div>
+
     <!-- Stepper -->
     <div class="bg-white border-b border-gray-100 sticky top-16 md:top-20 z-10">
       <div class="max-w-3xl mx-auto px-4 sm:px-6 py-4">
@@ -218,7 +317,7 @@ function downloadPdf() {
               class="ml-2 text-sm font-medium hidden sm:inline"
               :class="step >= s ? 'text-primary-700' : 'text-gray-400'"
             >
-              {{ s === 1 ? 'Search' : s === 2 ? 'Details' : 'Payment' }}
+              {{ s === 1 ? 'Search' : s === 2 ? 'Details' : 'Confirm' }}
             </span>
             <div
               v-if="s < 3"
@@ -330,6 +429,16 @@ function downloadPdf() {
             </div>
           </div>
         </div>
+
+        <!-- Info section (shown for Pro users who see no landing) -->
+        <div v-if="isPro && searchResults.length === 0" class="mt-4 card-thai p-5 bg-gradient-to-br from-gray-50 to-gray-100">
+          <h3 class="font-semibold text-gray-900 mb-2">Why do you need an onward ticket?</h3>
+          <p class="text-sm text-gray-600">
+            Thai immigration may ask for proof of onward travel when you enter Thailand.
+            Airlines can also deny boarding if you don't have one. Our service provides a
+            <strong>real airline reservation</strong> with a verifiable PNR code valid for 48+ hours.
+          </p>
+        </div>
       </div>
 
       <!-- Step 2: Passenger Details -->
@@ -349,10 +458,21 @@ function downloadPdf() {
           </div>
         </div>
 
+        <!-- Pro hint for non-Pro users -->
+        <div v-if="!isPro" class="card-thai p-3 bg-gradient-to-r from-primary-50 to-amber-50 border-primary-200 mb-4">
+          <div class="flex items-center gap-2 text-sm">
+            <CrownFilled class="text-primary-500" />
+            <span class="text-primary-700">
+              <strong>Pro members</strong> book free (2/month).
+              <button @click="showUpgradeModal = true" class="underline hover:text-primary-900">Upgrade to Pro</button>
+            </span>
+          </div>
+        </div>
+
         <!-- Passenger form -->
         <div class="card-thai p-6 md:p-8">
           <h2 class="text-xl font-semibold text-gray-900 mb-6">Passenger Details</h2>
-          <form @submit.prevent="goToPayment" class="space-y-4">
+          <form @submit.prevent="goToStep3" class="space-y-4">
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">First Name (as on passport)</label>
@@ -416,8 +536,25 @@ function downloadPdf() {
               />
             </div>
 
-            <!-- Service fee -->
-            <div class="card-thai p-4 bg-amber-50 border-amber-200">
+            <!-- Pricing info: context-aware -->
+            <div v-if="isPro && !proLimitReached" class="card-thai p-4 bg-green-50 border-green-200">
+              <div class="flex items-center gap-2 mb-1">
+                <CrownFilled class="text-primary-500" />
+                <h4 class="font-bold text-gray-900">Included with Pro</h4>
+              </div>
+              <p class="text-sm text-gray-600">
+                {{ proBookingsRemaining }} of {{ proStatus?.monthlyLimit }} free booking{{ proBookingsRemaining !== 1 ? 's' : '' }} remaining this month.
+                Real airline reservation with verifiable PNR, valid 48+ hours.
+              </p>
+            </div>
+            <div v-else-if="proLimitReached" class="card-thai p-4 bg-amber-50 border-amber-200">
+              <h4 class="font-bold text-gray-900">Monthly Pro limit reached</h4>
+              <p class="text-sm text-gray-600 mt-1">
+                You've used your {{ proStatus?.monthlyLimit }} free bookings this month.
+                You can still book for ${{ (SERVICE_FEE_CENTS / 100).toFixed(2) }} per ticket.
+              </p>
+            </div>
+            <div v-else class="card-thai p-4 bg-amber-50 border-amber-200">
               <h4 class="font-bold text-gray-900">Service Fee: ${{ (SERVICE_FEE_CENTS / 100).toFixed(2) }}</h4>
               <p class="text-sm text-gray-600 mt-1">
                 Includes a real airline reservation with verifiable PNR code, valid for 48+ hours.
@@ -434,17 +571,32 @@ function downloadPdf() {
                 Back
               </button>
               <button type="submit" class="btn-thai flex-1">
-                Continue to Payment
+                {{ isPro && !proLimitReached ? 'Reserve Flight' : 'Continue to Payment' }}
               </button>
             </div>
           </form>
         </div>
       </div>
 
-      <!-- Step 3: Payment & Confirmation -->
+      <!-- Step 3: Payment (non-Pro) / Booking (Pro) & Confirmation -->
       <div v-if="step === 3" class="animate-fade-in">
-        <!-- Before payment confirmed -->
-        <div v-if="!booking" class="card-thai p-6 md:p-8">
+        <!-- Pro user: auto-booking in progress -->
+        <div v-if="isPro && !proLimitReached && !booking && paying" class="card-thai p-6 md:p-8 text-center">
+          <LoadingOutlined class="animate-spin text-4xl text-primary-500 mb-4" />
+          <h2 class="text-xl font-semibold text-gray-900 mb-2">Reserving Your Flight</h2>
+          <p class="text-gray-500">Creating your airline reservation...</p>
+        </div>
+
+        <!-- Pro booking error -->
+        <div v-if="isPro && !proLimitReached && !booking && !paying && error" class="card-thai p-6 md:p-8 text-center">
+          <div class="p-4 bg-red-50 border border-red-200 rounded-xl mb-4">
+            <p class="text-red-700 text-sm">{{ error }}</p>
+          </div>
+          <button @click="step = 2" class="btn-thai-outline">Back to Details</button>
+        </div>
+
+        <!-- Non-Pro / limit reached: Stripe payment -->
+        <div v-if="(!isPro || proLimitReached) && !booking" class="card-thai p-6 md:p-8">
           <h2 class="text-xl font-semibold text-gray-900 mb-2">Complete Payment</h2>
           <p class="text-gray-500 mb-6">
             Pay ${{ (SERVICE_FEE_CENTS / 100).toFixed(2) }} service fee to reserve your flight.
@@ -499,8 +651,8 @@ function downloadPdf() {
           </div>
         </div>
 
-        <!-- After booking confirmed -->
-        <div v-else class="text-center">
+        <!-- Booking confirmation (shown for both Pro and paid) -->
+        <div v-if="booking" class="text-center">
           <div class="card-thai p-6 md:p-8">
             <CheckCircleFilled class="text-5xl text-green-500 mb-4" />
             <h2 class="text-2xl font-bold text-gray-900 mb-2">Reservation Confirmed!</h2>
@@ -527,50 +679,25 @@ function downloadPdf() {
               Download PDF Confirmation
             </button>
 
-            <p class="text-sm text-gray-500">A confirmation email has been sent to {{ passenger.email }}</p>
+            <p class="text-sm text-gray-500">Save your PNR code and download the PDF for your records.</p>
 
             <button
               @click="reset"
               class="mt-6 text-sm text-primary-600 hover:text-primary-700 underline"
             >
-              Book another ticket
+              Book another reservation
             </button>
           </div>
         </div>
       </div>
-
-      <!-- Info section -->
-      <div v-if="step === 1" class="mt-8 card-thai p-6 bg-gradient-to-br from-gray-50 to-gray-100">
-        <h3 class="font-semibold text-gray-900 mb-3">Why do you need an onward ticket?</h3>
-        <div class="space-y-3 text-sm text-gray-600">
-          <p>
-            Thai immigration may ask for proof of onward travel when you enter Thailand.
-            Airlines can also deny boarding if you don't have one.
-          </p>
-          <p>
-            Our service provides a <strong>real airline reservation</strong> with a verifiable PNR code
-            that is valid for 48+ hours -- enough time to clear immigration and settle in.
-          </p>
-          <ul class="space-y-2 mt-3">
-            <li class="flex items-start gap-2">
-              <CheckCircleFilled class="text-green-500 mt-0.5 flex-shrink-0" />
-              <span>Real PNR code verifiable on airline websites</span>
-            </li>
-            <li class="flex items-start gap-2">
-              <CheckCircleFilled class="text-green-500 mt-0.5 flex-shrink-0" />
-              <span>Instant delivery via email and downloadable PDF</span>
-            </li>
-            <li class="flex items-start gap-2">
-              <CheckCircleFilled class="text-green-500 mt-0.5 flex-shrink-0" />
-              <span>Valid for 48+ hours from booking</span>
-            </li>
-            <li class="flex items-start gap-2">
-              <CheckCircleFilled class="text-green-500 mt-0.5 flex-shrink-0" />
-              <span>Accepted by airlines and immigration worldwide</span>
-            </li>
-          </ul>
-        </div>
-      </div>
     </div>
+
+    <!-- Upgrade Modal -->
+    <UpgradeModal
+      :is-open="showUpgradeModal"
+      feature-name="Onward Ticket"
+      trigger-reason="pro_feature"
+      @close="showUpgradeModal = false"
+    />
   </div>
 </template>

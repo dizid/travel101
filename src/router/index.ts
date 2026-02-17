@@ -24,7 +24,7 @@ const routes: RouteRecordRaw[] = [
     path: '/onward-ticket',
     name: 'onward-ticket',
     component: () => import('@views/OnwardTicketView.vue'),
-    meta: { title: 'Onward Ticket — Flight Reservation', seoKey: 'onwardTicket' },
+    meta: { title: 'Onward Ticket — Proof of Onward Travel', seoKey: 'onwardTicket', requiresAuth: true },
   },
   {
     path: '/warnings',

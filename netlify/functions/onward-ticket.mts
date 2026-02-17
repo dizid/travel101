@@ -5,8 +5,11 @@ import { requireAuth } from './lib/auth.mts'
 import { getDb } from './lib/db.mts'
 import { jsonResponse, errorResponse, badRequest, serverError, methodNotAllowed } from './lib/responses.mts'
 
-// Service fee for onward ticket reservation ($12.00)
+// Service fee for non-Pro onward ticket reservation ($12.00)
 const SERVICE_FEE_CENTS = 1200
+
+// Pro users get 2 free bookings per month
+const PRO_MONTHLY_LIMIT = 2
 
 // Lazy-initialized clients
 function getDuffel() {
@@ -54,6 +57,10 @@ interface SearchBody {
   date: string
 }
 
+interface StatusBody {
+  action: 'status'
+}
+
 interface CreatePaymentBody {
   action: 'create-payment'
 }
@@ -69,10 +76,10 @@ interface BookBody {
     email: string
     phone: string
   }
-  paymentIntentId: string
+  paymentIntentId?: string // Required for non-Pro, optional for Pro
 }
 
-type RequestBody = SearchBody | CreatePaymentBody | BookBody
+type RequestBody = SearchBody | StatusBody | CreatePaymentBody | BookBody
 
 export default async (req: Request, context: Context) => {
   if (req.method !== 'POST') return methodNotAllowed()
@@ -81,7 +88,6 @@ export default async (req: Request, context: Context) => {
   try {
     userId = await requireAuth(req)
   } catch (authError) {
-    // requireAuth throws a Response on failure
     if (authError instanceof Response) return authError
     return errorResponse('Unauthorized', 401)
   }
@@ -101,17 +107,50 @@ export default async (req: Request, context: Context) => {
     switch (body.action) {
       case 'search':
         return await handleSearch(body, userId)
+      case 'status':
+        return await handleStatus(userId)
       case 'create-payment':
         return await handleCreatePayment(userId)
       case 'book':
         return await handleBook(body, userId)
       default:
-        return badRequest('Invalid action. Must be: search, create-payment, or book')
+        return badRequest('Invalid action. Must be: search, status, create-payment, or book')
     }
   } catch (error) {
     console.error('Onward ticket error:', error)
     return serverError('Failed to process onward ticket request')
   }
+}
+
+/**
+ * Return Pro status and booking count for the current month.
+ */
+async function handleStatus(userId: string): Promise<Response> {
+  const db = getDb()
+
+  // Check Pro status from DB directly (don't trust x-test-mode for cost-sensitive features)
+  const userResult = await db`
+    SELECT is_pro FROM user_profiles WHERE user_id = ${userId}
+  `
+  const isPro = userResult.length > 0 && userResult[0].is_pro === true
+
+  let bookingsThisMonth = 0
+  if (isPro) {
+    const countResult = await db`
+      SELECT COUNT(*)::int as count FROM onward_bookings
+      WHERE user_id = ${userId}
+        AND booking_type = 'pro'
+        AND created_at >= date_trunc('month', NOW())
+    `
+    bookingsThisMonth = countResult[0]?.count || 0
+  }
+
+  return jsonResponse({
+    isPro,
+    bookingsThisMonth,
+    monthlyLimit: PRO_MONTHLY_LIMIT,
+    serviceFee: SERVICE_FEE_CENTS,
+  })
 }
 
 /**
@@ -123,6 +162,11 @@ async function handleSearch(body: SearchBody, userId: string): Promise<Response>
 
   if (!origin || !destination || !date) {
     return badRequest('Missing required fields: origin, destination, date')
+  }
+
+  // Validate airport codes (3 uppercase letters)
+  if (!/^[A-Z]{3}$/.test(origin) || !/^[A-Z]{3}$/.test(destination)) {
+    return badRequest('Invalid airport code. Must be 3 uppercase letters (e.g., BKK)')
   }
 
   // Validate date format (YYYY-MM-DD)
@@ -211,7 +255,6 @@ async function handleSearch(body: SearchBody, userId: string): Promise<Response>
         created_at = NOW()
     `
   } catch (cacheError) {
-    // Caching failure is non-critical
     console.error('Failed to cache onward ticket search:', cacheError)
   }
 
@@ -219,7 +262,7 @@ async function handleSearch(body: SearchBody, userId: string): Promise<Response>
 }
 
 /**
- * Create a Stripe PaymentIntent for our service fee.
+ * Create a Stripe PaymentIntent for non-Pro users ($12 service fee).
  */
 async function handleCreatePayment(userId: string): Promise<Response> {
   const stripe = getStripe()
@@ -234,28 +277,118 @@ async function handleCreatePayment(userId: string): Promise<Response> {
 }
 
 /**
- * Book a hold order via Duffel after verifying Stripe payment.
- * If the hold fails, automatically refund the payment.
+ * Book a hold order via Duffel.
+ * Pro users: skip payment, enforced monthly limit (2/month).
+ * Non-Pro users: verify Stripe payment first.
  */
 async function handleBook(body: BookBody, userId: string): Promise<Response> {
   const { offerId, passenger, paymentIntentId } = body
 
-  if (!offerId || !passenger || !paymentIntentId) {
-    return badRequest('Missing required fields: offerId, passenger, paymentIntentId')
+  if (!offerId || !passenger) {
+    return badRequest('Missing required fields: offerId, passenger')
   }
 
   if (!passenger.given_name || !passenger.family_name || !passenger.born_on || !passenger.gender || !passenger.email || !passenger.phone) {
     return badRequest('Missing passenger details: given_name, family_name, born_on, gender, email, phone')
   }
 
-  const stripe = getStripe()
-  const duffel = getDuffel()
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(passenger.email)) {
+    return badRequest('Invalid email address')
+  }
 
-  // Verify Stripe payment succeeded
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(passenger.born_on) || new Date(passenger.born_on) >= new Date()) {
+    return badRequest('Invalid date of birth')
+  }
+
+  if (!/^off_[a-zA-Z0-9]+$/.test(offerId)) {
+    return badRequest('Invalid offer ID')
+  }
+
+  const db = getDb()
+
+  // Check Pro status from DB directly (don't trust x-test-mode for cost-sensitive features)
+  const userResult = await db`
+    SELECT is_pro FROM user_profiles WHERE user_id = ${userId}
+  `
+  const isPro = userResult.length > 0 && userResult[0].is_pro === true
+
+  if (isPro) {
+    // Pro path: enforce monthly booking limit
+    const countResult = await db`
+      SELECT COUNT(*)::int as count FROM onward_bookings
+      WHERE user_id = ${userId}
+        AND booking_type = 'pro'
+        AND created_at >= date_trunc('month', NOW())
+    `
+    const bookingsThisMonth = countResult[0]?.count || 0
+
+    if (bookingsThisMonth >= PRO_MONTHLY_LIMIT) {
+      // Pro limit reached — they can still pay $12 per ticket
+      if (!paymentIntentId) {
+        return errorResponse(
+          `Monthly Pro booking limit reached (${PRO_MONTHLY_LIMIT}/month). You can still book by paying the $12 service fee.`,
+          403,
+          'BOOKING_LIMIT_REACHED'
+        )
+      }
+      // Fall through to paid path below
+    } else {
+      // Pro booking: no payment needed
+      return await createDuffelBooking(db, offerId, passenger, userId, null, 'pro')
+    }
+  }
+
+  // Paid path: verify Stripe payment
+  if (!paymentIntentId) {
+    return badRequest('Payment required. Provide paymentIntentId.')
+  }
+
+  // Idempotency check for paid bookings
+  const existing = await db`
+    SELECT duffel_order_id, pnr, airline, origin, destination,
+           departure_time, arrival_time, hold_expires_at, passenger_name
+    FROM onward_bookings
+    WHERE stripe_payment_intent_id = ${paymentIntentId}
+    LIMIT 1
+  `
+  if (existing.length > 0) {
+    const row = existing[0]
+    return jsonResponse({
+      bookingId: row.duffel_order_id,
+      pnr: row.pnr,
+      airline: row.airline,
+      origin: row.origin,
+      destination: row.destination,
+      departureTime: row.departure_time,
+      arrivalTime: row.arrival_time || null,
+      expiresAt: row.hold_expires_at,
+      passengerName: row.passenger_name,
+    })
+  }
+
+  const stripe = getStripe()
+
   const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId)
   if (paymentIntent.status !== 'succeeded') {
     return errorResponse('Payment not completed', 400)
   }
+
+  return await createDuffelBooking(db, offerId, passenger, userId, paymentIntentId, 'paid')
+}
+
+/**
+ * Shared Duffel booking logic for both Pro and paid paths.
+ * If bookingType is 'paid' and Duffel fails, refunds the Stripe payment.
+ */
+async function createDuffelBooking(
+  db: ReturnType<typeof getDb>,
+  offerId: string,
+  passenger: BookBody['passenger'],
+  userId: string,
+  paymentIntentId: string | null,
+  bookingType: 'pro' | 'paid',
+): Promise<Response> {
+  const duffel = getDuffel()
 
   // Get the offer to find the passenger ID
   const offerResponse = await duffel.offers.get(offerId)
@@ -285,14 +418,18 @@ async function handleBook(body: BookBody, userId: string): Promise<Response> {
   } catch (duffelError) {
     console.error('Duffel order creation failed:', duffelError)
 
-    // Refund Stripe payment since the hold failed
-    try {
-      await stripe.refunds.create({ payment_intent: paymentIntentId })
-    } catch (refundError) {
-      console.error('Stripe refund also failed:', refundError)
+    // Refund Stripe payment if this was a paid booking
+    if (bookingType === 'paid' && paymentIntentId) {
+      try {
+        const stripe = getStripe()
+        await stripe.refunds.create({ payment_intent: paymentIntentId })
+      } catch (refundError) {
+        console.error('Stripe refund also failed:', refundError)
+      }
+      return errorResponse('Failed to create reservation. Your payment has been refunded.', 500)
     }
 
-    return errorResponse('Failed to create reservation. Payment refunded.', 500)
+    return errorResponse('Failed to create reservation. Please try again.', 500)
   }
 
   // Extract flight details from the order
@@ -301,37 +438,47 @@ async function handleBook(body: BookBody, userId: string): Promise<Response> {
   const firstSegment = firstSlice?.segments[0]
   const lastSegment = firstSlice?.segments[firstSlice.segments.length - 1]
   const departureTime = firstSegment?.departing_at || ''
+  const arrivalTime = lastSegment?.arriving_at || ''
   const originCode = firstSegment?.origin?.iata_code || ''
   const destinationCode = lastSegment?.destination?.iata_code || ''
+  const passengerName = `${passenger.given_name.trim()} ${passenger.family_name.trim()}`
+  const amountCharged = bookingType === 'paid' ? SERVICE_FEE_CENTS : 0
 
   // Store booking in the database
-  const db = getDb()
   try {
     await db`
       INSERT INTO onward_bookings (
-        user_id, duffel_order_id, stripe_payment_intent_id, pnr,
-        airline, origin, destination, departure_time, hold_expires_at,
-        passenger_name, passenger_email, amount_charged, currency, status
+        user_id, duffel_order_id, stripe_payment_intent_id, duffel_offer_id, pnr,
+        airline, origin, destination, departure_time, arrival_time, hold_expires_at,
+        passenger_name, passenger_email, amount_charged, currency, status, booking_type
       ) VALUES (
         ${userId},
         ${order.data.id},
         ${paymentIntentId},
+        ${offerId},
         ${order.data.booking_reference},
         ${order.data.owner?.name || 'Unknown'},
         ${originCode},
         ${destinationCode},
         ${departureTime},
+        ${arrivalTime},
         ${order.data.payment_status.payment_required_by || ''},
-        ${passenger.given_name + ' ' + passenger.family_name},
+        ${passengerName},
         ${passenger.email},
-        ${SERVICE_FEE_CENTS},
+        ${amountCharged},
         ${'USD'},
-        ${'active'}
+        ${'active'},
+        ${bookingType}
       )
     `
   } catch (dbError) {
-    // Log but don't fail — the booking was already created with Duffel
-    console.error('Failed to store booking in database:', dbError)
+    console.error('CRITICAL: Failed to store booking in database:', {
+      duffelOrderId: order.data.id,
+      pnr: order.data.booking_reference,
+      paymentIntentId,
+      userId,
+      error: dbError,
+    })
   }
 
   return jsonResponse({
@@ -340,9 +487,9 @@ async function handleBook(body: BookBody, userId: string): Promise<Response> {
     airline: order.data.owner?.name,
     origin: originCode,
     destination: destinationCode,
-    departureTime: firstSegment?.departing_at || '',
-    arrivalTime: lastSegment?.arriving_at || '',
+    departureTime,
+    arrivalTime,
     expiresAt: order.data.payment_status.payment_required_by || null,
-    passengerName: passenger.given_name + ' ' + passenger.family_name,
+    passengerName,
   })
 }

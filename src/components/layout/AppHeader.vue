@@ -29,6 +29,7 @@ const navigation = [
   { name: 'Visa Guide', path: '/visa', icon: '🛂' },
   { name: 'TDAC', path: '/tdac', icon: '📝' },
   { name: 'Good to Know', path: '/warnings', icon: '💡' },
+  { name: 'Onward', path: '/onward-ticket', icon: '✈️' },
   { name: 'Festivals', path: '/festivals', icon: '🎉' },
   { name: 'Heritage', path: '/heritage', icon: '🏛️' },
   { name: 'Places', path: '/attractions', icon: '🗺️' },
@@ -85,6 +86,7 @@ const closeMobileMenu = () => {
           >
             <span class="mr-1.5">{{ item.icon }}</span>
             {{ item.name }}
+            <span v-if="item.path === '/onward-ticket'" class="text-[10px] bg-primary-500 text-white px-1.5 py-0.5 rounded-full uppercase font-bold ml-1">New</span>
           </RouterLink>
         </nav>
 
@@ -204,6 +206,7 @@ const closeMobileMenu = () => {
           >
             <span class="text-xl">{{ item.icon }}</span>
             {{ item.name }}
+            <span v-if="item.path === '/onward-ticket'" class="text-[10px] bg-primary-500 text-white px-1.5 py-0.5 rounded-full uppercase font-bold ml-1">New</span>
           </RouterLink>
 
           <div class="pt-3 mt-3 border-t border-gray-100">

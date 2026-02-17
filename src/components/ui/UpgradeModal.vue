@@ -19,6 +19,7 @@ const emit = defineEmits<{
 const { startCheckout, loading } = useSubscription()
 
 const proFeatures = [
+  { icon: '✈️', label: 'Onward Tickets', description: '2 free bookings/month' },
   { icon: '♾️', label: 'Unlimited AI Chats', description: 'No daily limits' },
   { icon: '🎯', label: 'AI Itineraries', description: 'Personalized trip plans' },
   { icon: '💎', label: 'Hidden Gems', description: 'Pro-only secrets' },

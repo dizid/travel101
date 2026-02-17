@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS onward_bookings (
   origin VARCHAR(10) NOT NULL,
   destination VARCHAR(10) NOT NULL,
   departure_time TIMESTAMPTZ NOT NULL,
+  arrival_time TIMESTAMPTZ,
   hold_expires_at TIMESTAMPTZ NOT NULL,
   passenger_name VARCHAR(255) NOT NULL,
   passenger_email VARCHAR(255),
@@ -18,3 +19,6 @@ CREATE TABLE IF NOT EXISTS onward_bookings (
 );
 
 CREATE INDEX idx_onward_bookings_user ON onward_bookings(user_id);
+CREATE UNIQUE INDEX idx_onward_bookings_payment ON onward_bookings(stripe_payment_intent_id);
+CREATE INDEX idx_onward_bookings_created ON onward_bookings(created_at DESC);
+CREATE UNIQUE INDEX idx_onward_bookings_duffel ON onward_bookings(duffel_order_id);
