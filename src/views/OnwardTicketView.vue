@@ -47,6 +47,13 @@ const stripeError = ref('')
 // Upgrade modal state
 const showUpgradeModal = ref(false)
 
+// Ref for scroll-to-search
+const searchCard = ref<HTMLElement | null>(null)
+
+function scrollToSearch() {
+  searchCard.value?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+}
+
 // Computed helpers
 const isPro = computed(() => proStatus.value?.isPro === true)
 const proBookingsRemaining = computed(() => {
@@ -261,7 +268,10 @@ function downloadPdf() {
 
         <!-- Pricing comparison -->
         <div class="flex flex-col sm:flex-row gap-3">
-          <div class="flex-1 bg-white rounded-xl p-4 border-2 border-primary-300 relative">
+          <div
+            @click="showUpgradeModal = true"
+            class="flex-1 bg-white rounded-xl p-4 border-2 border-primary-300 relative cursor-pointer hover:shadow-lg transition-shadow"
+          >
             <div class="absolute -top-2.5 left-4 px-2 py-0.5 bg-primary-500 text-white text-xs font-bold rounded-full">
               Best Value
             </div>
@@ -272,7 +282,10 @@ function downloadPdf() {
             <p class="text-2xl font-bold text-primary-600">Free</p>
             <p class="text-xs text-gray-500">2 bookings/month included with $10/mo Pro</p>
           </div>
-          <div class="flex-1 bg-white rounded-xl p-4 border border-gray-200">
+          <div
+            @click="scrollToSearch"
+            class="flex-1 bg-white rounded-xl p-4 border-2 border-primary-400 cursor-pointer hover:shadow-lg transition-shadow"
+          >
             <span class="font-bold text-gray-900">One-Time</span>
             <p class="text-2xl font-bold text-gray-700">$12<span class="text-sm font-normal text-gray-500">/ticket</span></p>
             <p class="text-xs text-gray-500">Pay per booking, no subscription</p>
@@ -334,7 +347,7 @@ function downloadPdf() {
 
       <!-- Step 1: Search -->
       <div v-if="step === 1" class="animate-fade-in">
-        <div class="card-thai p-6 md:p-8 mb-6">
+        <div ref="searchCard" class="card-thai p-6 md:p-8 mb-6">
           <h2 class="text-xl font-semibold text-gray-900 mb-2">Find Your Onward Flight</h2>
           <p class="text-gray-500 mb-6">Search for one-way flights from Thailand for your proof of onward travel.</p>
 

@@ -80,7 +80,7 @@ export function useOnwardTicket() {
   const paying = ref(false)
   const proStatus = ref<OnwardTicketStatus | null>(null)
 
-  // Fetch Pro status and booking count for this month
+  // Fetch Pro status and booking count for this month (auth optional — returns non-Pro defaults if not logged in)
   async function fetchStatus() {
     const result = await post<StatusResponse>('/onward-ticket', {
       action: 'status',
@@ -102,7 +102,7 @@ export function useOnwardTicket() {
       origin,
       destination,
       date,
-    })
+    }, { requiresAuth: false })
 
     searching.value = false
 

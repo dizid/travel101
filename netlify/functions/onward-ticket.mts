@@ -1,7 +1,7 @@
 import type { Context } from '@netlify/functions'
 import { Duffel } from '@duffel/api'
 import Stripe from 'stripe'
-import { requireAuth } from './lib/auth.mts'
+import { requireAuth, validateAuth } from './lib/auth.mts'
 import { getDb } from './lib/db.mts'
 import { jsonResponse, errorResponse, badRequest, serverError, methodNotAllowed } from './lib/responses.mts'
 
@@ -84,14 +84,6 @@ type RequestBody = SearchBody | StatusBody | CreatePaymentBody | BookBody
 export default async (req: Request, context: Context) => {
   if (req.method !== 'POST') return methodNotAllowed()
 
-  let userId: string
-  try {
-    userId = await requireAuth(req)
-  } catch (authError) {
-    if (authError instanceof Response) return authError
-    return errorResponse('Unauthorized', 401)
-  }
-
   let body: RequestBody
   try {
     body = await req.json()
@@ -105,14 +97,27 @@ export default async (req: Request, context: Context) => {
 
   try {
     switch (body.action) {
+      // Public actions — no auth required
       case 'search':
-        return await handleSearch(body, userId)
-      case 'status':
-        return await handleStatus(userId)
-      case 'create-payment':
+        return await handleSearch(body)
+
+      // Optional auth — returns defaults for unauthenticated users
+      case 'status': {
+        const auth = await validateAuth(req)
+        return await handleStatus(auth.userId)
+      }
+
+      // Auth required
+      case 'create-payment': {
+        const userId = await requireAuthSafe(req)
+        if (userId instanceof Response) return userId
         return await handleCreatePayment(userId)
-      case 'book':
+      }
+      case 'book': {
+        const userId = await requireAuthSafe(req)
+        if (userId instanceof Response) return userId
         return await handleBook(body, userId)
+      }
       default:
         return badRequest('Invalid action. Must be: search, status, create-payment, or book')
     }
@@ -122,10 +127,30 @@ export default async (req: Request, context: Context) => {
   }
 }
 
+// Helper to require auth without throwing
+async function requireAuthSafe(req: Request): Promise<string | Response> {
+  try {
+    return await requireAuth(req)
+  } catch (authError) {
+    if (authError instanceof Response) return authError
+    return errorResponse('Unauthorized', 401)
+  }
+}
+
 /**
  * Return Pro status and booking count for the current month.
  */
-async function handleStatus(userId: string): Promise<Response> {
+async function handleStatus(userId: string | null): Promise<Response> {
+  // Unauthenticated users get default non-Pro status
+  if (!userId) {
+    return jsonResponse({
+      isPro: false,
+      bookingsThisMonth: 0,
+      monthlyLimit: PRO_MONTHLY_LIMIT,
+      serviceFee: SERVICE_FEE_CENTS,
+    })
+  }
+
   const db = getDb()
 
   // Check Pro status from DB directly (don't trust x-test-mode for cost-sensitive features)
@@ -157,7 +182,7 @@ async function handleStatus(userId: string): Promise<Response> {
  * Search for holdable (pay-later) flight offers via Duffel.
  * Results are cached in ai_cache for 15 minutes.
  */
-async function handleSearch(body: SearchBody, userId: string): Promise<Response> {
+async function handleSearch(body: SearchBody): Promise<Response> {
   const { origin, destination, date } = body
 
   if (!origin || !destination || !date) {
