@@ -10,6 +10,9 @@ const footerLinks = {
     { name: 'TDAC Form', path: '/tdac' },
     { name: 'Good to Know', path: '/warnings' },
     { name: 'Places to Visit', path: '/attractions' },
+    { name: 'Festivals', path: '/festivals' },
+    { name: 'Heritage Sites', path: '/heritage' },
+    { name: 'About', path: '/about' },
   ],
   resources: [
     { name: 'Plan Your Trip', path: '/itinerary' },
@@ -36,7 +39,7 @@ const footerLinks = {
               <span class="text-xl">🌴</span>
             </div>
             <div>
-              <h3 class="font-display font-bold text-white">Smart Traveler</h3>
+              <h3 class="font-display font-bold text-white">HappyRoam</h3>
               <p class="text-xs text-primary-400">Thailand</p>
             </div>
           </div>
@@ -46,6 +49,37 @@ const footerLinks = {
           <p class="text-sm font-thai text-primary-400">
             สวัสดี • Sawasdee
           </p>
+
+          <!-- Social links -->
+          <div class="flex items-center gap-3 mt-4">
+            <a
+              href="https://twitter.com/happyroam"
+              target="_blank"
+              rel="noopener"
+              class="text-gray-400 hover:text-primary-400 transition-colors text-lg leading-none"
+              title="Twitter"
+            >
+              𝕏
+            </a>
+            <a
+              href="https://facebook.com/happyroam"
+              target="_blank"
+              rel="noopener"
+              class="text-gray-400 hover:text-primary-400 transition-colors font-bold text-base leading-none"
+              title="Facebook"
+            >
+              f
+            </a>
+            <a
+              href="https://instagram.com/happyroam"
+              target="_blank"
+              rel="noopener"
+              class="text-gray-400 hover:text-primary-400 transition-colors text-base leading-none"
+              title="Instagram"
+            >
+              📷
+            </a>
+          </div>
         </div>
 
         <!-- Guides -->
@@ -105,13 +139,16 @@ const footerLinks = {
     <!-- Bottom bar -->
     <div class="border-t border-gray-800">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <!-- AI Disclaimer -->
-        <p class="text-sm text-gray-500 text-center mb-4">
-          ✨ AI-assisted content — please verify important travel details independently.
+        <!-- Disclaimers -->
+        <p class="text-sm text-gray-500 text-center mb-2">
+          Content researched by our team with AI assistance. Always verify important travel details.
+        </p>
+        <p class="text-xs text-gray-600 text-center mb-4">
+          Some links on this site are affiliate links. We may earn a commission at no extra cost to you.
         </p>
         <div class="flex flex-col md:flex-row items-center justify-between gap-4">
           <p class="text-sm text-gray-500">
-            © {{ currentYear }} Global Smart Traveler. Made with 💛 for Thailand lovers.
+            © {{ currentYear }} HappyRoam. Made with 💛 for Thailand lovers.
           </p>
           <div class="flex items-center gap-6 text-sm text-gray-500">
             <RouterLink to="/privacy" class="hover:text-gray-300 transition-colors">Privacy</RouterLink>

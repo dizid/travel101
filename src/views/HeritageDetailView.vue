@@ -4,10 +4,14 @@ import { useRoute, useRouter } from 'vue-router'
 import { useApi } from '@/composables/useApi'
 import { useWeather } from '@/composables/useWeather'
 import { useFestivals } from '@/composables/useFestivals'
+import { useLandmarkSchema, useBreadcrumbs } from '@/composables/useSeo'
+import { updateMetaTags } from '@/utils/seo'
+import type { LandmarkSchema } from '@/utils/seo'
 import type { HeritageDetail, HeritageImage, HeritageEvent, HeritageMetadata, UpcomingFestival } from '@/types'
 import HeritageGallery from '@/components/features/heritage/HeritageGallery.vue'
 import HeritageTimeline from '@/components/features/heritage/HeritageTimeline.vue'
 import LoadingSpinner from '@/components/ui/LoadingSpinner.vue'
+import AffiliateButton from '@/components/common/AffiliateButton.vue'
 import {
   EnvironmentOutlined,
   ClockCircleOutlined,
@@ -35,6 +39,41 @@ const { fetchWeather, weatherData, weatherIcon, currentTemp, rainChanceToday, uv
 // Festivals
 const { fetchByProvince, getFestivalEmoji, formatFestivalDate } = useFestivals()
 const provinceFestivals = ref<UpcomingFestival[]>([])
+
+// SEO: Landmark structured data
+const landmarkSchema = computed<LandmarkSchema | null>(() => {
+  if (!site.value) return null
+  const s = site.value
+  const meta = s.heritageMetadata || {}
+  return {
+    name: s.name,
+    description: (s.description || '').slice(0, 300),
+    address: s.province,
+    province: s.province,
+    slug: s.slug,
+    isUNESCO: meta.unescoStatus === 'world_heritage_site',
+    yearBuilt: meta.constructionDate ? parseInt(meta.constructionDate) || undefined : undefined,
+  }
+})
+useLandmarkSchema(landmarkSchema)
+
+// SEO: Breadcrumbs
+useBreadcrumbs([
+  { name: 'Home', url: '/' },
+  { name: 'Heritage', url: '/heritage' },
+])
+
+// SEO: Update meta tags when site loads
+watch(() => site.value, (s) => {
+  if (s) {
+    updateMetaTags({
+      title: `${s.name} - ${s.province}`,
+      description: (s.description || '').slice(0, 160),
+      url: `/heritage/${s.slug}`,
+      type: 'place',
+    })
+  }
+}, { immediate: true })
 
 // Computed
 const metadata = computed<HeritageMetadata>(() => site.value?.heritageMetadata || {})
@@ -494,18 +533,28 @@ onMounted(() => {
               </div>
             </div>
 
-            <!-- Book Tour Card -->
-            <div class="bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl shadow-sm p-6 text-white">
-              <h3 class="font-semibold mb-2">Book a Guided Tour</h3>
-              <p class="text-white/80 text-sm mb-4">
-                Get the most out of your visit with an expert local guide
+            <!-- Book Tours Card -->
+            <div v-if="site" class="bg-white rounded-xl shadow-sm p-6">
+              <h3 class="font-semibold text-gray-900 mb-2">Book a Tour</h3>
+              <p class="text-sm text-gray-500 mb-4">
+                Explore {{ site.name }} with an expert local guide
               </p>
-              <a
-                href="#"
-                class="block w-full py-2.5 bg-white text-primary-600 text-center font-medium rounded-lg hover:bg-gray-100 transition-colors"
-              >
-                View Tours
-              </a>
+              <div class="space-y-2">
+                <AffiliateButton partner="klook" :destination="site.province" :attraction-name="site.name" variant="primary" />
+                <AffiliateButton partner="getyourguide" :destination="site.province" :attraction-name="site.name" variant="secondary" />
+                <AffiliateButton partner="viator" :destination="site.province" :attraction-name="site.name" variant="secondary" />
+              </div>
+              <p class="text-xs text-gray-400 mt-3">Affiliate links</p>
+            </div>
+
+            <!-- Stay Nearby Card -->
+            <div v-if="site" class="bg-white rounded-xl shadow-sm p-6">
+              <h3 class="font-semibold text-gray-900 mb-2">Stay Nearby</h3>
+              <p class="text-sm text-gray-500 mb-4">
+                Find hotels near {{ site.name }}
+              </p>
+              <AffiliateButton partner="agoda" :destination="site.province" variant="primary" />
+              <p class="text-xs text-gray-400 mt-3">Affiliate link</p>
             </div>
 
             <!-- Location Map Placeholder -->

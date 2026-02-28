@@ -160,17 +160,31 @@ watchDebounced(
     <!-- Header -->
     <div class="bg-white border-b border-gray-100">
       <div class="max-w-3xl mx-auto px-4 sm:px-6 py-8">
-        <div class="flex items-center gap-4">
+        <div class="flex items-center gap-4 mb-6">
           <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center text-white shadow-thai">
             <UserOutlined class="text-2xl" />
           </div>
           <div>
             <h1 class="text-2xl font-display font-bold text-gray-900">
-              My Profile
+              My Travel Profile
             </h1>
             <p class="text-gray-500">
-              Tell us about yourself for personalized recommendations
+              Your preferences power personalized recommendations across the site
             </p>
+          </div>
+        </div>
+
+        <!-- Value explanation -->
+        <div class="bg-gradient-to-r from-primary-50 to-accent-50/50 rounded-xl p-4 border border-primary-100">
+          <div class="flex items-start gap-3">
+            <span class="text-xl flex-shrink-0">✨</span>
+            <div class="text-sm">
+              <p class="font-medium text-gray-800 mb-1">How personalization works</p>
+              <p class="text-gray-600">
+                We match every destination against your interests, travel style, and budget.
+                You'll see match scores (like "92% match") on places that fit you best.
+              </p>
+            </div>
           </div>
         </div>
       </div>

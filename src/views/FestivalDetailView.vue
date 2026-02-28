@@ -2,7 +2,11 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter, RouterLink } from 'vue-router'
 import { useFestivals } from '@/composables/useFestivals'
+import { useEventSchema, useBreadcrumbs } from '@/composables/useSeo'
+import { updateMetaTags } from '@/utils/seo'
 import type { UpcomingFestival } from '@/types'
+import type { EventSchema } from '@/utils/seo'
+import AffiliateCard from '@/components/common/AffiliateCard.vue'
 import LoadingSpinner from '@/components/ui/LoadingSpinner.vue'
 import ShareButton from '@/components/ui/ShareButton.vue'
 import {
@@ -30,6 +34,42 @@ const {
 } = useFestivals()
 
 const festival = ref<UpcomingFestival | null>(null)
+
+// SEO: Event structured data
+const eventSchema = computed<EventSchema | null>(() => {
+  if (!festival.value) return null
+  const f = festival.value
+  const location = f.isNationwide ? 'Thailand' : (f.bestLocations?.[0] || f.provinces?.[0] || 'Thailand')
+  const province = f.provinces?.[0] || f.region || 'Thailand'
+  return {
+    name: f.name,
+    description: f.description || `Discover the ${f.name} festival in Thailand`,
+    startDate: f.nextDate || f.date2026 || f.date2025 || '',
+    location,
+    province,
+    slug: f.slug,
+    eventType: f.festivalType,
+  }
+})
+useEventSchema(eventSchema)
+
+// SEO: Breadcrumbs
+useBreadcrumbs([
+  { name: 'Home', url: '/' },
+  { name: 'Festivals', url: '/festivals' },
+])
+
+// SEO: Update meta tags when festival loads
+watch(festival, (f) => {
+  if (f) {
+    updateMetaTags({
+      title: f.name,
+      description: (f.description || `Discover the ${f.name} festival in Thailand`).slice(0, 160),
+      url: `/festivals/${f.slug}`,
+      type: 'article',
+    })
+  }
+}, { immediate: true })
 
 // Current tab for content sections
 type ContentTab = 'overview' | 'activities' | 'tips' | 'locations'
@@ -493,7 +533,7 @@ onMounted(() => {
           </div>
 
           <!-- Sidebar -->
-          <div class="lg:col-span-1">
+          <div class="lg:col-span-1 space-y-6">
             <!-- Quick Links Card -->
             <div class="bg-white rounded-2xl shadow-md p-6 sticky top-20">
               <h3 class="font-semibold text-gray-900 mb-4">Quick Navigation</h3>
@@ -520,6 +560,15 @@ onMounted(() => {
                 View All Festivals
               </RouterLink>
             </div>
+
+            <!-- Book Activities -->
+            <AffiliateCard
+              v-if="festival"
+              context="activities"
+              :destination="festival.provinces?.[0] || 'Thailand'"
+              :attraction-name="festival.name"
+              compact
+            />
           </div>
         </div>
       </div>

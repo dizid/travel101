@@ -27,7 +27,7 @@ const lastUpdated = 'January 2026'
         <section class="mb-8">
           <h2 class="text-xl font-semibold text-gray-900 mb-4">Acceptance of Terms</h2>
           <p class="text-gray-600">
-            By accessing and using Global Smart Traveler, you agree to be bound by these Terms of Service.
+            By accessing and using HappyRoam, you agree to be bound by these Terms of Service.
             If you do not agree to these terms, please do not use our service.
           </p>
         </section>
@@ -35,7 +35,7 @@ const lastUpdated = 'January 2026'
         <section class="mb-8">
           <h2 class="text-xl font-semibold text-gray-900 mb-4">Service Description</h2>
           <p class="text-gray-600">
-            Global Smart Traveler provides travel information, visa guidance, and trip planning tools for Thailand.
+            HappyRoam provides travel information, visa guidance, and trip planning tools for Thailand.
             Our service includes both free features and premium Pro features available through subscription.
           </p>
         </section>
@@ -49,14 +49,14 @@ const lastUpdated = 'January 2026'
             <li>Provide accurate information in your profile</li>
             <li>Use the service for lawful purposes only</li>
             <li>Not attempt to circumvent any security features</li>
-            <li>Respect the intellectual property of Global Smart Traveler</li>
+            <li>Respect the intellectual property of HappyRoam</li>
           </ul>
         </section>
 
         <section class="mb-8">
           <h2 class="text-xl font-semibold text-gray-900 mb-4">Disclaimer</h2>
           <p class="text-gray-600">
-            The information provided on Global Smart Traveler is for general guidance only.
+            The information provided on HappyRoam is for general guidance only.
             Visa requirements and travel regulations change frequently.
             Always verify current requirements with official government sources and embassies before traveling.
             We are not responsible for decisions made based on our information.
@@ -75,7 +75,7 @@ const lastUpdated = 'January 2026'
         <section class="mb-8">
           <h2 class="text-xl font-semibold text-gray-900 mb-4">Limitation of Liability</h2>
           <p class="text-gray-600">
-            Global Smart Traveler and its creators shall not be liable for any indirect, incidental,
+            HappyRoam and its creators shall not be liable for any indirect, incidental,
             or consequential damages arising from your use of the service.
           </p>
         </section>

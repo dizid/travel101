@@ -27,7 +27,7 @@ const lastUpdated = 'January 2026'
         <section class="mb-8">
           <h2 class="text-xl font-semibold text-gray-900 mb-4">Information We Collect</h2>
           <p class="text-gray-600 mb-4">
-            When you use Global Smart Traveler, we may collect the following types of information:
+            When you use HappyRoam, we may collect the following types of information:
           </p>
           <ul class="list-disc pl-6 text-gray-600 space-y-2">
             <li>Account information (email, name) when you sign up</li>

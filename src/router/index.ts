@@ -165,6 +165,12 @@ const routes: RouteRecordRaw[] = [
     meta: { title: 'Festival', dynamicSeo: true },
   },
   {
+    path: '/about',
+    name: 'about',
+    component: () => import('@views/AboutView.vue'),
+    meta: { title: 'About HappyRoam', seoKey: 'about' },
+  },
+  {
     path: '/:pathMatch(.*)*',
     name: 'not-found',
     component: () => import('@views/NotFoundView.vue'),

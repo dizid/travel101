@@ -14,6 +14,7 @@ import {
   LoadingOutlined,
   ThunderboltOutlined,
 } from '@ant-design/icons-vue'
+import AffiliateCard from '@/components/common/AffiliateCard.vue'
 import WeatherWidget from '@components/features/WeatherWidget.vue'
 import CurrencyCalculator from '@components/features/CurrencyCalculator.vue'
 import UsageMeter from '@components/ui/UsageMeter.vue'
@@ -332,6 +333,13 @@ const profileCompleteness = computed(() => {
               </div>
             </div>
           </div>
+
+          <!-- Book Your Trip -->
+          <AffiliateCard
+            context="dashboard"
+            destination="Thailand"
+            compact
+          />
 
           <!-- Weather Widget -->
           <WeatherWidget location="Bangkok" />

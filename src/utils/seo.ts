@@ -22,7 +22,7 @@ export interface AttractionSchema {
 }
 
 const BASE_URL = 'https://happyroam.travel'
-const DEFAULT_IMAGE = `${BASE_URL}/og-image.jpg`
+const DEFAULT_IMAGE = `${BASE_URL}/og-image.svg`
 const SITE_NAME = 'HappyRoam Thailand'
 
 /**
@@ -122,6 +122,7 @@ export function generateOrganizationSchema(): string {
     sameAs: [
       'https://twitter.com/happyroam',
       'https://facebook.com/happyroam',
+      'https://instagram.com/happyroam',
     ],
   }
 
@@ -143,6 +144,90 @@ export function generateBreadcrumbSchema(items: { name: string; url: string }[])
     })),
   }
 
+  return JSON.stringify(schema)
+}
+
+/**
+ * Generate JSON-LD for a festival/event
+ */
+export interface EventSchema {
+  name: string
+  description: string
+  image?: string
+  startDate: string
+  endDate?: string
+  location: string
+  province: string
+  slug: string
+  eventType?: string
+}
+
+export function generateEventSchema(event: EventSchema): string {
+  const schema = {
+    '@context': 'https://schema.org',
+    '@type': 'Event',
+    name: event.name,
+    description: event.description,
+    image: event.image || DEFAULT_IMAGE,
+    startDate: event.startDate,
+    ...(event.endDate && { endDate: event.endDate }),
+    eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
+    location: {
+      '@type': 'Place',
+      name: event.location,
+      address: {
+        '@type': 'PostalAddress',
+        addressRegion: event.province,
+        addressCountry: 'Thailand',
+      },
+    },
+    url: `${BASE_URL}/festivals/${event.slug}`,
+    organizer: {
+      '@type': 'Organization',
+      name: SITE_NAME,
+      url: BASE_URL,
+    },
+  }
+  return JSON.stringify(schema)
+}
+
+/**
+ * Generate JSON-LD for a heritage/landmark site
+ */
+export interface LandmarkSchema {
+  name: string
+  description: string
+  image?: string
+  address: string
+  province: string
+  slug: string
+  isUNESCO?: boolean
+  yearBuilt?: number
+}
+
+export function generateLandmarkSchema(landmark: LandmarkSchema): string {
+  const schema = {
+    '@context': 'https://schema.org',
+    '@type': 'LandmarksOrHistoricalBuildings',
+    name: landmark.name,
+    description: landmark.description,
+    image: landmark.image || DEFAULT_IMAGE,
+    address: {
+      '@type': 'PostalAddress',
+      addressLocality: landmark.address,
+      addressRegion: landmark.province,
+      addressCountry: 'Thailand',
+    },
+    url: `${BASE_URL}/heritage/${landmark.slug}`,
+    isAccessibleForFree: false,
+    publicAccess: true,
+    ...(landmark.isUNESCO && {
+      additionalType: 'https://schema.org/WorldHeritageSite',
+    }),
+    ...(landmark.yearBuilt && {
+      foundingDate: String(landmark.yearBuilt),
+    }),
+  }
   return JSON.stringify(schema)
 }
 
@@ -218,6 +303,61 @@ export const pageMeta: Record<string, PageMeta> = {
     title: 'Onward Ticket — Proof of Onward Travel for Thailand',
     description: 'Book a verified onward flight reservation for Thai immigration. Pro members get 2 free bookings/month, or pay just $12 per ticket. Real airline PNR, instant delivery.',
     url: '/onward-ticket',
+  },
+  heritage: {
+    title: 'Thailand Heritage Sites',
+    description: 'Explore Thailand\'s UNESCO World Heritage sites, ancient temples, and historical parks. Ayutthaya, Sukhothai, Grand Palace, and more.',
+    url: '/heritage',
+  },
+  festivals: {
+    title: 'Thai Festivals & Events',
+    description: 'Discover 50+ Thai festivals — Songkran, Loy Krathong, Yi Peng, and more. Dates, locations, tips, and crowd levels for 2026.',
+    url: '/festivals',
+  },
+  safety: {
+    title: 'Thailand Safety Guide',
+    description: 'Stay safe in Thailand with region-specific safety information, scam alerts, and emergency contacts.',
+    url: '/safety',
+  },
+  medical: {
+    title: 'Medical Tourism in Thailand',
+    description: 'Top hospitals and clinics in Thailand for medical tourism. JCI-accredited facilities, dental care, and wellness retreats.',
+    url: '/medical',
+  },
+  '90day': {
+    title: '90-Day Reporting Guide',
+    description: 'Complete guide to Thailand\'s 90-day reporting requirement. TM47 form, deadlines, online reporting, and immigration offices.',
+    url: '/90-day',
+  },
+  setupGuide: {
+    title: 'Thailand Setup Guide',
+    description: 'Essential setup guide for Thailand — SIM cards, banking, transport apps, and getting settled as a traveler or expat.',
+    url: '/setup-guide',
+  },
+  costCalculator: {
+    title: 'Thailand Cost of Living Calculator',
+    description: 'Calculate your cost of living in Thailand. Compare prices across Bangkok, Chiang Mai, Phuket, and other cities.',
+    url: '/cost-calculator',
+  },
+  packing: {
+    title: 'Thailand Packing List',
+    description: 'AI-powered packing list for Thailand. Get personalized recommendations based on your trip type, season, and activities.',
+    url: '/packing',
+  },
+  people: {
+    title: 'People & Culture in Thailand',
+    description: 'Meet the diverse communities of Thailand — locals, expats, digital nomads, and travelers living the Thai experience.',
+    url: '/people',
+  },
+  contact: {
+    title: 'Contact HappyRoam',
+    description: 'Get in touch with HappyRoam Thailand. Questions, feedback, and partnership inquiries welcome.',
+    url: '/contact',
+  },
+  about: {
+    title: 'About HappyRoam',
+    description: 'Learn about HappyRoam Thailand — your AI-powered travel guide with 400+ destinations, 50+ festivals, and personalized recommendations.',
+    url: '/about',
   },
 }
 

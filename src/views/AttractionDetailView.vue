@@ -30,7 +30,7 @@ import {
 } from '@ant-design/icons-vue'
 import type { TipType, SecretType, RecommendationType } from '@/types'
 import { generateAffiliateUrl, trackAffiliateClick, generateHeritageHotelUrl, generateTransportUrl } from '@/utils/affiliates'
-import { useAttractionMeta, useAttractionSchema } from '@/composables/useSeo'
+import { useAttractionMeta, useAttractionSchema, useBreadcrumbs } from '@/composables/useSeo'
 import { useFavorites } from '@/composables/useFavorites'
 import ShareButton from '@/components/ui/ShareButton.vue'
 import MatchScoreCard from '@/components/ui/MatchScoreCard.vue'
@@ -45,6 +45,7 @@ const { toggleFavorite, isFavorite } = useFavorites()
 const activeTab = ref<'tips' | 'secrets' | 'recommendations'>('tips')
 const matchInfo = ref<{ score: number; reasons: string[] } | null>(null)
 const showMatchCard = ref(false)
+const imageError = ref(false)
 
 // AI personalization state
 const personalizedIntro = ref<string | null>(null)
@@ -140,6 +141,10 @@ const attractionForSchema = computed(() => {
 
 useAttractionMeta(attractionForSeo)
 useAttractionSchema(attractionForSchema)
+useBreadcrumbs([
+  { name: 'Home', url: '/' },
+  { name: 'Places', url: '/attractions' },
+])
 
 // Check if attraction has rich content
 const hasRichContent = computed(() => {
@@ -366,15 +371,27 @@ const gradientClass = computed(() => {
     <div v-else-if="attraction" class="max-w-4xl mx-auto px-4 sm:px-6 py-8">
       <!-- Hero image -->
       <div class="relative h-64 md:h-80 rounded-2xl overflow-hidden mb-8">
-        <div
-          class="absolute inset-0 bg-gradient-to-br"
-          :class="gradientClass"
+        <!-- Real image when available -->
+        <img
+          v-if="attraction.imageUrl && !imageError"
+          :src="attraction.imageUrl"
+          :alt="attraction.name"
+          class="absolute inset-0 w-full h-full object-cover"
+          loading="lazy"
+          @error="imageError = true"
         />
-        <div class="absolute inset-0 flex items-center justify-center">
-          <span class="text-8xl opacity-30">
-            {{ categoryLabels[attraction.category]?.icon || '🗺️' }}
-          </span>
-        </div>
+        <!-- Gradient + emoji fallback -->
+        <template v-else>
+          <div
+            class="absolute inset-0 bg-gradient-to-br"
+            :class="gradientClass"
+          />
+          <div class="absolute inset-0 flex items-center justify-center">
+            <span class="text-8xl opacity-30">
+              {{ categoryLabels[attraction.category]?.icon || '🗺️' }}
+            </span>
+          </div>
+        </template>
 
         <!-- Badges -->
         <div class="absolute top-4 left-4 flex gap-2">

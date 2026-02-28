@@ -7,11 +7,15 @@ import type { Ref } from 'vue'
 import {
   updateMetaTags,
   generateAttractionSchema,
+  generateEventSchema,
+  generateLandmarkSchema,
   generateBreadcrumbSchema,
   injectStructuredData,
   removeStructuredData,
   type PageMeta,
   type AttractionSchema,
+  type EventSchema,
+  type LandmarkSchema,
 } from '@/utils/seo'
 
 /**
@@ -66,6 +70,54 @@ export function useBreadcrumbs(items: { name: string; url: string }[]) {
     const schema = generateBreadcrumbSchema(items)
     injectStructuredData(SCHEMA_ID, schema)
   })
+
+  onUnmounted(() => {
+    removeStructuredData(SCHEMA_ID)
+  })
+}
+
+/**
+ * Add event structured data to page (for festivals)
+ */
+export function useEventSchema(event: Ref<EventSchema | null>) {
+  const SCHEMA_ID = 'event-schema'
+
+  const applySchema = () => {
+    if (event.value) {
+      const schema = generateEventSchema(event.value)
+      injectStructuredData(SCHEMA_ID, schema)
+    }
+  }
+
+  onMounted(() => {
+    applySchema()
+  })
+
+  watch(event, applySchema, { deep: true })
+
+  onUnmounted(() => {
+    removeStructuredData(SCHEMA_ID)
+  })
+}
+
+/**
+ * Add landmark structured data to page (for heritage sites)
+ */
+export function useLandmarkSchema(landmark: Ref<LandmarkSchema | null>) {
+  const SCHEMA_ID = 'landmark-schema'
+
+  const applySchema = () => {
+    if (landmark.value) {
+      const schema = generateLandmarkSchema(landmark.value)
+      injectStructuredData(SCHEMA_ID, schema)
+    }
+  }
+
+  onMounted(() => {
+    applySchema()
+  })
+
+  watch(landmark, applySchema, { deep: true })
 
   onUnmounted(() => {
     removeStructuredData(SCHEMA_ID)

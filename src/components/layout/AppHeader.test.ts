@@ -53,26 +53,28 @@ describe('AppHeader', () => {
     it('renders logo and brand name', () => {
       const wrapper = mountHeader()
 
-      expect(wrapper.text()).toContain('Smart Traveler')
+      expect(wrapper.text()).toContain('HappyRoam')
       expect(wrapper.text()).toContain('Thailand')
     })
 
     it('renders main navigation items', () => {
       const wrapper = mountHeader()
 
-      expect(wrapper.text()).toContain('Visa Guide')
-      expect(wrapper.text()).toContain('TDAC')
-      expect(wrapper.text()).toContain('Good to Know')
+      // Primary discovery nav
       expect(wrapper.text()).toContain('Places')
+      expect(wrapper.text()).toContain('Festivals')
+      expect(wrapper.text()).toContain('Heritage')
+      // Plan dropdown items
+      expect(wrapper.text()).toContain('Plan')
+      expect(wrapper.text()).toContain('About')
     })
 
     it('renders navigation icons', () => {
       const wrapper = mountHeader()
 
-      expect(wrapper.text()).toContain('🛂')
-      expect(wrapper.text()).toContain('📝')
-      expect(wrapper.text()).toContain('💡')
       expect(wrapper.text()).toContain('🗺️')
+      expect(wrapper.text()).toContain('🎉')
+      expect(wrapper.text()).toContain('🏛️')
     })
 
     it('logo links to home page', () => {

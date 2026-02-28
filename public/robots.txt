@@ -9,3 +9,7 @@ Crawl-delay: 1
 # Disallow admin/auth paths
 Disallow: /auth/
 Disallow: /api/
+Disallow: /dashboard
+Disallow: /profile
+Disallow: /saved
+Disallow: /onward-ticket
