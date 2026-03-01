@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import type { Attraction, AttractionCategory } from '@/types'
 import { EnvironmentOutlined, StarFilled, HeartOutlined, HeartFilled } from '@ant-design/icons-vue'
@@ -15,6 +15,9 @@ const props = defineProps<{
 
 const { toggleFavorite, isFavorite } = useFavorites()
 const isLiked = computed(() => isFavorite(props.attraction.slug))
+
+// Track image load errors so we can fall back to the gradient+emoji
+const imageError = ref(false)
 
 function handleFavoriteClick(event: Event) {
   event.preventDefault()
@@ -84,15 +87,28 @@ const gradientClass = computed(() => {
     :to="`/attractions/${attraction.slug || attraction.id}`"
     class="group block card-thai p-0 overflow-hidden hover:shadow-thai-lg transition-all duration-300"
   >
-    <!-- Image placeholder -->
+    <!-- Image area: real photo when available, gradient+emoji fallback otherwise -->
     <div class="relative h-40 overflow-hidden">
-      <div
-        class="absolute inset-0 bg-gradient-to-br opacity-80 group-hover:opacity-90 transition-opacity"
-        :class="gradientClass"
+      <!-- Real photo -->
+      <img
+        v-if="attraction.imageUrl && !imageError"
+        :src="attraction.imageUrl"
+        :alt="attraction.name + ', ' + (attraction.province || 'Thailand')"
+        class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+        loading="lazy"
+        @error="imageError = true"
       />
-      <div class="absolute inset-0 flex items-center justify-center">
-        <span class="text-5xl opacity-50">{{ config.icon }}</span>
-      </div>
+
+      <!-- Gradient + emoji fallback — shown when no image or image fails to load -->
+      <template v-if="!attraction.imageUrl || imageError">
+        <div
+          class="absolute inset-0 bg-gradient-to-br opacity-80 group-hover:opacity-90 transition-opacity"
+          :class="gradientClass"
+        />
+        <div class="absolute inset-0 flex items-center justify-center">
+          <span class="text-5xl opacity-50">{{ config.icon }}</span>
+        </div>
+      </template>
 
       <!-- Hidden gem badge -->
       <div

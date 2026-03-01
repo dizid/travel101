@@ -232,6 +232,123 @@ export function generateLandmarkSchema(landmark: LandmarkSchema): string {
 }
 
 /**
+ * Generate JSON-LD for an FAQ page
+ */
+export interface FAQItem {
+  question: string
+  answer: string
+}
+
+export function generateFAQSchema(items: FAQItem[]): string {
+  const schema = {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: items.map(item => ({
+      '@type': 'Question',
+      name: item.question,
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: item.answer,
+      },
+    })),
+  }
+  return JSON.stringify(schema)
+}
+
+/**
+ * Generate JSON-LD for an Article (travel guides)
+ */
+export interface ArticleSchema {
+  title: string
+  description: string
+  image?: string
+  slug: string
+  author: string
+  publishedAt: string
+  updatedAt: string
+  wordCount?: number
+}
+
+export function generateArticleSchema(article: ArticleSchema): string {
+  const schema = {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline: article.title,
+    description: article.description,
+    image: article.image || DEFAULT_IMAGE,
+    url: `${BASE_URL}/guides/${article.slug}`,
+    datePublished: article.publishedAt,
+    dateModified: article.updatedAt,
+    author: {
+      '@type': 'Organization',
+      name: article.author || SITE_NAME,
+      url: BASE_URL,
+    },
+    publisher: {
+      '@type': 'Organization',
+      name: SITE_NAME,
+      url: BASE_URL,
+      logo: {
+        '@type': 'ImageObject',
+        url: `${BASE_URL}/logo.png`,
+      },
+    },
+    ...(article.wordCount && { wordCount: article.wordCount }),
+    mainEntityOfPage: {
+      '@type': 'WebPage',
+      '@id': `${BASE_URL}/guides/${article.slug}`,
+    },
+  }
+  return JSON.stringify(schema)
+}
+
+/**
+ * Generate JSON-LD WebSite schema with SearchAction for sitelinks search box
+ */
+export function generateWebSiteSchema(): string {
+  const schema = {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name: SITE_NAME,
+    url: BASE_URL,
+    description: 'Your personalized Thailand travel guide with AI-powered recommendations',
+    potentialAction: {
+      '@type': 'SearchAction',
+      target: {
+        '@type': 'EntryPoint',
+        urlTemplate: `${BASE_URL}/attractions?search={search_term_string}`,
+      },
+      'query-input': 'required name=search_term_string',
+    },
+  }
+  return JSON.stringify(schema)
+}
+
+/**
+ * Generate JSON-LD HowTo schema (e.g. visa guide, 90-day reporting)
+ */
+export interface HowToStep {
+  name: string
+  text: string
+}
+
+export function generateHowToSchema(name: string, description: string, steps: HowToStep[]): string {
+  const schema = {
+    '@context': 'https://schema.org',
+    '@type': 'HowTo',
+    name,
+    description,
+    step: steps.map((step, index) => ({
+      '@type': 'HowToStep',
+      position: index + 1,
+      name: step.name,
+      text: step.text,
+    })),
+  }
+  return JSON.stringify(schema)
+}
+
+/**
  * Inject JSON-LD into page
  */
 export function injectStructuredData(id: string, schema: string): void {
@@ -358,6 +475,11 @@ export const pageMeta: Record<string, PageMeta> = {
     title: 'About HappyRoam',
     description: 'Learn about HappyRoam Thailand — your AI-powered travel guide with 400+ destinations, 50+ festivals, and personalized recommendations.',
     url: '/about',
+  },
+  guides: {
+    title: 'Thailand Travel Guides',
+    description: 'In-depth travel guides for Thailand. Budget tips, destination guides, food recommendations, and practical advice from experienced travelers.',
+    url: '/guides',
   },
 }
 

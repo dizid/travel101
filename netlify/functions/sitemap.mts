@@ -32,20 +32,35 @@ export default async function handler(_req: Request, _context: Context) {
     ORDER BY updated_at DESC
   `
 
+  // Get all published travel guides
+  const guides = await sql`
+    SELECT slug, updated_at
+    FROM travel_guides
+    WHERE is_published = true
+    ORDER BY updated_at DESC
+  `
+
   const staticPages = [
     { url: '/', priority: '1.0', changefreq: 'daily' },
     { url: '/visa', priority: '0.9', changefreq: 'weekly' },
     { url: '/attractions', priority: '0.9', changefreq: 'daily' },
     { url: '/heritage', priority: '0.8', changefreq: 'weekly' },
     { url: '/festivals', priority: '0.8', changefreq: 'weekly' },
+    { url: '/guides', priority: '0.8', changefreq: 'daily' },
     { url: '/tdac', priority: '0.8', changefreq: 'monthly' },
     { url: '/warnings', priority: '0.8', changefreq: 'weekly' },
     { url: '/safety', priority: '0.7', changefreq: 'monthly' },
     { url: '/itinerary', priority: '0.7', changefreq: 'weekly' },
+    { url: '/smart-match', priority: '0.7', changefreq: 'weekly' },
+    { url: '/setup-guide', priority: '0.7', changefreq: 'monthly' },
+    { url: '/cost-calculator', priority: '0.7', changefreq: 'monthly' },
+    { url: '/packing', priority: '0.7', changefreq: 'monthly' },
+    { url: '/90-day', priority: '0.7', changefreq: 'monthly' },
+    { url: '/onward-ticket', priority: '0.7', changefreq: 'monthly' },
     { url: '/medical', priority: '0.6', changefreq: 'monthly' },
     { url: '/about', priority: '0.6', changefreq: 'monthly' },
     { url: '/people', priority: '0.5', changefreq: 'monthly' },
-    { url: '/profile', priority: '0.5', changefreq: 'monthly' },
+    // /profile intentionally excluded — authenticated user-only page
     { url: '/privacy', priority: '0.3', changefreq: 'yearly' },
     { url: '/terms', priority: '0.3', changefreq: 'yearly' },
     { url: '/contact', priority: '0.4', changefreq: 'yearly' },
@@ -106,6 +121,20 @@ export default async function handler(_req: Request, _context: Context) {
     <lastmod>${lastmod}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
+  </url>
+`
+  }
+
+  // Add guide pages
+  for (const guide of guides) {
+    const lastmod = guide.updated_at
+      ? new Date(guide.updated_at).toISOString().split('T')[0]
+      : today
+    xml += `  <url>
+    <loc>${BASE_URL}/guides/${guide.slug}</loc>
+    <lastmod>${lastmod}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
   </url>
 `
   }

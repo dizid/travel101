@@ -145,7 +145,7 @@ watch(currentIndex, (newIndex, oldIndex) => {
       >
         <img
           :src="images[0].imageUrl"
-          :alt="images[0].altText || siteName"
+          :alt="images[0].altText || (siteName + ' heritage site, Thailand')"
           class="w-full h-full object-cover aspect-square md:aspect-[4/3] group-hover:scale-105 transition-transform duration-300"
           loading="lazy"
         />
@@ -170,7 +170,7 @@ watch(currentIndex, (newIndex, oldIndex) => {
       >
         <img
           :src="image.thumbnailUrl || image.imageUrl"
-          :alt="image.altText || `${siteName} - Image ${index + 2}`"
+          :alt="image.altText || (siteName + ' heritage site, Thailand')"
           class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
           loading="lazy"
         />
@@ -342,7 +342,7 @@ watch(currentIndex, (newIndex, oldIndex) => {
               >
                 <img
                   :src="image.thumbnailUrl || image.imageUrl"
-                  :alt="image.altText"
+                  :alt="image.altText || (siteName + ' heritage site, Thailand')"
                   class="w-full h-full object-cover"
                 />
               </button>

@@ -30,6 +30,7 @@ const primaryNav = [
   { name: 'Places', path: '/attractions', icon: '🗺️' },
   { name: 'Festivals', path: '/festivals', icon: '🎉' },
   { name: 'Heritage', path: '/heritage', icon: '🏛️' },
+  { name: 'Guides', path: '/guides', icon: '📚' },
 ]
 
 const planNav = [

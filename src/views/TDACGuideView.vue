@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useUserStore } from '@stores/userStore'
 import {
   CheckCircleFilled,
@@ -10,8 +10,20 @@ import {
   ExclamationCircleOutlined,
   LinkOutlined,
 } from '@ant-design/icons-vue'
+import BreadcrumbNav from '@components/ui/BreadcrumbNav.vue'
+import { generateBreadcrumbSchema, injectStructuredData } from '@/utils/seo'
 
 const userStore = useUserStore()
+
+onMounted(() => {
+  injectStructuredData(
+    'breadcrumb-schema',
+    generateBreadcrumbSchema([
+      { name: 'Home', url: '/' },
+      { name: 'TDAC Guide', url: '/tdac' },
+    ])
+  )
+})
 
 const sections = [
   { id: 'personal', label: 'Personal Info', icon: '👤' },
@@ -83,6 +95,11 @@ const commonMistakes = [
           </p>
         </div>
       </div>
+    </div>
+
+    <!-- Breadcrumb navigation -->
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 pt-4">
+      <BreadcrumbNav :items="[{ name: 'Home', url: '/' }, { name: 'TDAC Guide' }]" />
     </div>
 
     <!-- Quick summary -->
@@ -285,6 +302,9 @@ const commonMistakes = [
           Opens in a new tab • Official Thai Immigration website
         </p>
       </div>
+
+      <!-- Last updated -->
+      <p class="text-xs text-gray-400 mt-8 text-center">TDAC guide last updated: March 2026</p>
     </div>
   </div>
 </template>

@@ -83,7 +83,7 @@ const gradientClass = computed(() => {
       <img
         v-if="primaryImage?.imageUrl"
         :src="primaryImage.imageUrl"
-        :alt="primaryImage.altText || site.name"
+        :alt="primaryImage.altText || (site.name + ', ' + (site.province || '') + ', Thailand')"
         class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
         loading="lazy"
       />

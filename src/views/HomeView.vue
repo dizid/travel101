@@ -120,7 +120,7 @@ const planTools = [
             </div>
             <div class="w-px h-8 bg-gray-200" />
             <div class="text-center">
-              <div class="text-2xl md:text-3xl font-bold text-gray-900">6</div>
+              <div class="text-2xl md:text-3xl font-bold text-gray-900">8</div>
               <div class="text-xs text-gray-500">UNESCO Sites</div>
             </div>
           </div>

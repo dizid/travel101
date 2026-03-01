@@ -9,6 +9,8 @@ import type { EventSchema } from '@/utils/seo'
 import AffiliateCard from '@/components/common/AffiliateCard.vue'
 import LoadingSpinner from '@/components/ui/LoadingSpinner.vue'
 import ShareButton from '@/components/ui/ShareButton.vue'
+import BreadcrumbNav from '@/components/ui/BreadcrumbNav.vue'
+import { useGuides, type Guide } from '@/composables/useGuides'
 import {
   CalendarOutlined,
   EnvironmentOutlined,
@@ -34,6 +36,10 @@ const {
 } = useFestivals()
 
 const festival = ref<UpcomingFestival | null>(null)
+
+// Related guides
+const { fetchAll: fetchAllGuides, getCategoryConfig: getGuideCategoryConfig } = useGuides()
+const relatedGuides = ref<Guide[]>([])
 
 // SEO: Event structured data
 const eventSchema = computed<EventSchema | null>(() => {
@@ -96,6 +102,16 @@ async function loadFestival() {
   }
 
   festival.value = data
+
+  // Load related guides (culture and practical guides are most relevant to festivals)
+  const allGuides = await fetchAllGuides()
+  relatedGuides.value = allGuides
+    .sort((a, b) => {
+      // Prioritize culture/food guides for festivals, then practical
+      const priority: Record<string, number> = { culture: 3, food: 2, practical: 1, destination: 0, budget: 0 }
+      return (priority[b.category] || 0) - (priority[a.category] || 0)
+    })
+    .slice(0, 2)
 }
 
 // Computed helpers
@@ -193,6 +209,17 @@ onMounted(() => {
 
         <!-- Content -->
         <div class="relative max-w-7xl mx-auto px-4 py-12 sm:px-6 lg:px-8">
+          <!-- Breadcrumb navigation (visible when festival is loaded) -->
+          <BreadcrumbNav
+            v-if="festival"
+            :items="[
+              { name: 'Home', url: '/' },
+              { name: 'Festivals', url: '/festivals' },
+              { name: festival.name },
+            ]"
+            class="text-white/70 [&_a]:text-white/70 [&_a:hover]:text-white [&_span]:text-white/90 [&_.text-gray-300]:text-white/40"
+          />
+
           <!-- Back Button -->
           <RouterLink
             to="/festivals"
@@ -559,6 +586,25 @@ onMounted(() => {
               >
                 View All Festivals
               </RouterLink>
+            </div>
+
+            <!-- Related Guides -->
+            <div v-if="relatedGuides.length" class="bg-white rounded-2xl shadow-md p-6">
+              <h3 class="font-semibold text-gray-900 mb-3">Travel Guides</h3>
+              <div class="space-y-3">
+                <RouterLink
+                  v-for="g in relatedGuides"
+                  :key="g.slug"
+                  :to="`/guides/${g.slug}`"
+                  class="block px-3 py-2.5 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  <div class="text-xs font-medium text-primary-600 mb-0.5">
+                    {{ getGuideCategoryConfig(g.category).icon }} {{ getGuideCategoryConfig(g.category).label }}
+                  </div>
+                  <div class="text-sm font-medium text-gray-800 line-clamp-2">{{ g.title }}</div>
+                  <div class="text-xs text-gray-500 mt-0.5">{{ g.readingTimeMin }} min read</div>
+                </RouterLink>
+              </div>
             </div>
 
             <!-- Book Activities -->

@@ -96,9 +96,10 @@ const typeDisplay = computed(() => {
       <img
         v-if="festival.imageUrl"
         :src="festival.imageUrl"
-        :alt="festival.name"
+        :alt="festival.name + ' festival in Thailand'"
         class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
         loading="lazy"
+        @error="($event.target as HTMLImageElement).style.display = 'none'"
       />
       <div
         v-else

@@ -19,6 +19,7 @@ export default defineConfig({
       include: [
         'src/composables/**/*.ts',
         'src/stores/**/*.ts',
+        'src/utils/**/*.ts',
         'netlify/functions/**/*.mts',
         'netlify/functions/lib/**/*.mts',
       ],

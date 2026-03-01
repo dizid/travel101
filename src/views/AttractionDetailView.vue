@@ -35,6 +35,7 @@ import { useFavorites } from '@/composables/useFavorites'
 import ShareButton from '@/components/ui/ShareButton.vue'
 import MatchScoreCard from '@/components/ui/MatchScoreCard.vue'
 import WeatherWidget from '@/components/features/WeatherWidget.vue'
+import { useGuides, type Guide } from '@/composables/useGuides'
 
 const route = useRoute()
 const countryStore = useCountryStore()
@@ -52,6 +53,10 @@ const personalizedIntro = ref<string | null>(null)
 const loadingIntro = ref(false)
 const isChatOpen = ref(false)
 
+// Related guides
+const { fetchAll: fetchAllGuides, getCategoryConfig: getGuideCategoryConfig } = useGuides()
+const relatedGuides = ref<Guide[]>([])
+
 // Fetch attraction details and AI intro on mount
 onMounted(async () => {
   const slug = route.params.id as string
@@ -63,6 +68,19 @@ onMounted(async () => {
   if (userStore.hasProfile) {
     fetchPersonalizedIntro(slug)
   }
+
+  // Load related guides (destination guides relevant to attraction's province)
+  fetchAllGuides().then(allGuides => {
+    const province = countryStore.currentAttraction?.province
+    relatedGuides.value = allGuides
+      .sort((a, b) => {
+        // Prioritize destination guides that mention the attraction's province
+        const aMatch = (a.province === province ? 2 : 0) + (a.category === 'destination' ? 1 : 0)
+        const bMatch = (b.province === province ? 2 : 0) + (b.category === 'destination' ? 1 : 0)
+        return bMatch - aMatch
+      })
+      .slice(0, 2)
+  })
 })
 
 // Re-fetch when route changes
@@ -375,7 +393,7 @@ const gradientClass = computed(() => {
         <img
           v-if="attraction.imageUrl && !imageError"
           :src="attraction.imageUrl"
-          :alt="attraction.name"
+          :alt="attraction.name + ', ' + (attraction.province || '') + ', Thailand'"
           class="absolute inset-0 w-full h-full object-cover"
           loading="lazy"
           @error="imageError = true"
@@ -850,6 +868,25 @@ const gradientClass = computed(() => {
             :location="attraction.province || 'Bangkok'"
             :compact="false"
           />
+
+          <!-- Related Guides -->
+          <div v-if="relatedGuides.length" class="bg-white rounded-2xl shadow-md p-6">
+            <h3 class="font-semibold text-gray-900 mb-3">Travel Guides</h3>
+            <div class="space-y-3">
+              <RouterLink
+                v-for="g in relatedGuides"
+                :key="g.slug"
+                :to="`/guides/${g.slug}`"
+                class="block px-3 py-2.5 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                <div class="text-xs font-medium text-primary-600 mb-0.5">
+                  {{ getGuideCategoryConfig(g.category).icon }} {{ getGuideCategoryConfig(g.category).label }}
+                </div>
+                <div class="text-sm font-medium text-gray-800 line-clamp-2">{{ g.title }}</div>
+                <div class="text-xs text-gray-500 mt-0.5">{{ g.readingTimeMin }} min read</div>
+              </RouterLink>
+            </div>
+          </div>
         </div>
       </div>
     </div>

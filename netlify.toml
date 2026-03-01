@@ -77,6 +77,25 @@
   status = 200
   force = true
 
+# Guides (has sub-paths for slugs and categories)
+[[redirects]]
+  from = "/api/guides/categories"
+  to = "/.netlify/functions/guides"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/guides/*"
+  to = "/.netlify/functions/guides"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/guides"
+  to = "/.netlify/functions/guides"
+  status = 200
+  force = true
+
 # Catch-all for other API routes (simple single-path functions)
 [[redirects]]
   from = "/api/*"

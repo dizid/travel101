@@ -14,8 +14,16 @@ const footerLinks = {
     { name: 'Heritage Sites', path: '/heritage' },
     { name: 'About', path: '/about' },
   ],
+  travelGuides: [
+    { name: 'All Travel Guides', path: '/guides' },
+    { name: 'First-Time Thailand', path: '/guides/first-time-thailand' },
+    { name: 'Budget Travel Guide', path: '/guides/thailand-budget-guide' },
+    { name: 'Thai Food Guide', path: '/guides/thai-food-guide' },
+    { name: 'Island Hopping Guide', path: '/guides/island-hopping-guide' },
+  ],
   resources: [
     { name: 'Plan Your Trip', path: '/itinerary' },
+    { name: 'Cost Calculator', path: '/cost-calculator' },
     { name: 'Digital Nomad Guide', path: '/attractions?category=nomad' },
     { name: 'Hidden Gems', path: '/attractions?hidden=true' },
   ],
@@ -31,7 +39,7 @@ const footerLinks = {
   <footer class="bg-gray-900 text-gray-300">
     <!-- Main footer -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16">
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12">
+      <div class="grid grid-cols-2 md:grid-cols-5 gap-8 md:gap-10">
         <!-- Brand column -->
         <div class="col-span-2 md:col-span-1">
           <div class="flex items-center gap-3 mb-4">
@@ -87,6 +95,21 @@ const footerLinks = {
           <h4 class="font-semibold text-white mb-4">Guides</h4>
           <ul class="space-y-2">
             <li v-for="link in footerLinks.guides" :key="link.path">
+              <RouterLink
+                :to="link.path"
+                class="text-sm hover:text-primary-400 transition-colors"
+              >
+                {{ link.name }}
+              </RouterLink>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Travel Guides -->
+        <div>
+          <h4 class="font-semibold text-white mb-4">Travel Guides</h4>
+          <ul class="space-y-2">
+            <li v-for="link in footerLinks.travelGuides" :key="link.path">
               <RouterLink
                 :to="link.path"
                 class="text-sm hover:text-primary-400 transition-colors"

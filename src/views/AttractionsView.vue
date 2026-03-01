@@ -11,6 +11,8 @@ import PersonalizationBar from '@components/ui/PersonalizationBar.vue'
 import ProfileQuickEdit from '@components/features/ProfileQuickEdit.vue'
 import type { AttractionCategory, UpcomingFestival } from '@/types'
 import { SearchOutlined, StarFilled, LoadingOutlined, EnvironmentOutlined } from '@ant-design/icons-vue'
+import BreadcrumbNav from '@components/ui/BreadcrumbNav.vue'
+import { generateBreadcrumbSchema, injectStructuredData } from '@/utils/seo'
 
 const route = useRoute()
 const router = useRouter()
@@ -43,6 +45,15 @@ const upcomingFestivals = ref<UpcomingFestival[]>([])
 
 // Fetch attractions on mount
 onMounted(async () => {
+  // Inject breadcrumb schema for SEO
+  injectStructuredData(
+    'breadcrumb-schema',
+    generateBreadcrumbSchema([
+      { name: 'Home', url: '/' },
+      { name: 'Places', url: '/attractions' },
+    ])
+  )
+
   if (!countryStore.attractionsLoaded) {
     await countryStore.fetchAttractions({ personalized: hasProfile.value })
   }
@@ -248,24 +259,39 @@ async function setCategory(cat: typeof activeCategory.value) {
 
 <template>
   <div class="min-h-screen bg-gradient-to-b from-rose-50/30 to-white">
-    <!-- Header -->
-    <div class="bg-white border-b border-gray-100">
-      <div class="max-w-6xl mx-auto px-4 sm:px-6 py-8 md:py-12">
-        <div class="text-center">
-          <div class="inline-flex items-center gap-2 px-3 py-1.5 bg-rose-100 text-rose-700 rounded-full text-sm font-medium mb-4">
-            🗺️ Explore Thailand
-          </div>
-          <h1 class="text-3xl md:text-4xl font-display font-bold text-gray-900 mb-3">
-            Places to Visit
-          </h1>
-          <p class="text-gray-600 max-w-2xl mx-auto">
-            From famous beaches to secret spots only locals know about.
-            Find your perfect Thai adventure.
-          </p>
-        </div>
+    <!-- Hero -->
+    <div class="relative overflow-hidden bg-gradient-to-br from-primary-600 via-primary-700 to-accent-600 text-white h-64 md:h-80">
+      <!-- Decorative blur blobs -->
+      <div class="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl" />
+      <div class="absolute bottom-0 left-0 w-64 h-64 bg-accent-400/20 rounded-full blur-3xl" />
 
+      <!-- Content -->
+      <div class="relative max-w-6xl mx-auto px-4 sm:px-6 flex flex-col items-center justify-center h-full text-center">
+        <div class="inline-flex items-center gap-2 px-3 py-1.5 bg-white/20 backdrop-blur rounded-full text-sm font-medium mb-4">
+          🗺️ Explore Thailand
+        </div>
+        <h1 class="text-3xl md:text-5xl font-display font-bold mb-3">
+          Explore Thailand
+        </h1>
+        <p class="text-white/90 max-w-xl mx-auto mb-2 text-base md:text-lg">
+          From famous beaches to secret spots only locals know about.
+        </p>
+        <p class="text-white/70 text-sm">400+ destinations across 77 provinces</p>
+      </div>
+
+      <!-- Wave divider -->
+      <div class="absolute bottom-0 left-0 right-0">
+        <svg viewBox="0 0 1440 40" fill="none" xmlns="http://www.w3.org/2000/svg" class="w-full" preserveAspectRatio="none">
+          <path d="M0 40L48 34.7C96 29.3 192 18.7 288 16C384 13.3 480 18.7 576 21.3C672 24 768 24 864 21.3C960 18.7 1056 13.3 1152 13.3C1248 13.3 1344 18.7 1392 21.3L1440 24V40H1392C1344 40 1248 40 1152 40C1056 40 960 40 864 40C768 40 672 40 576 40C480 40 384 40 288 40C192 40 96 40 48 40H0Z" fill="rgb(249 250 251)" />
+        </svg>
+      </div>
+    </div>
+
+    <!-- Search bar (below hero) -->
+    <div class="bg-gray-50 border-b border-gray-100">
+      <div class="max-w-6xl mx-auto px-4 sm:px-6 py-6">
         <!-- Search with autocomplete -->
-        <div class="max-w-xl mx-auto mt-8">
+        <div class="max-w-xl mx-auto">
           <div class="relative">
             <SearchOutlined class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 z-10" />
             <input
@@ -348,6 +374,9 @@ async function setCategory(cat: typeof activeCategory.value) {
 
     <!-- Content -->
     <div class="max-w-6xl mx-auto px-4 sm:px-6 py-8">
+      <!-- Breadcrumb navigation -->
+      <BreadcrumbNav :items="[{ name: 'Home', url: '/' }, { name: 'Places' }]" />
+
       <!-- Category filters -->
       <div class="flex flex-wrap gap-2 mb-8 overflow-x-auto pb-2">
         <button

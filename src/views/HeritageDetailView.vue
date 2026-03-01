@@ -12,6 +12,7 @@ import HeritageGallery from '@/components/features/heritage/HeritageGallery.vue'
 import HeritageTimeline from '@/components/features/heritage/HeritageTimeline.vue'
 import LoadingSpinner from '@/components/ui/LoadingSpinner.vue'
 import AffiliateButton from '@/components/common/AffiliateButton.vue'
+import BreadcrumbNav from '@/components/ui/BreadcrumbNav.vue'
 import {
   EnvironmentOutlined,
   ClockCircleOutlined,
@@ -193,6 +194,17 @@ onMounted(() => {
       <!-- Gallery Section -->
       <div class="bg-white">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <!-- Breadcrumb navigation (shown once site data is loaded) -->
+          <BreadcrumbNav
+            v-if="site"
+            :items="[
+              { name: 'Home', url: '/' },
+              { name: 'Heritage', url: '/heritage' },
+              { name: site.name },
+            ]"
+            class="mb-2"
+          />
+
           <!-- Back Button -->
           <button
             @click="goBack"

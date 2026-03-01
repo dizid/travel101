@@ -165,6 +165,18 @@ const routes: RouteRecordRaw[] = [
     meta: { title: 'Festival', dynamicSeo: true },
   },
   {
+    path: '/guides',
+    name: 'guides',
+    component: () => import('@views/GuidesView.vue'),
+    meta: { title: 'Thailand Travel Guides', seoKey: 'guides' },
+  },
+  {
+    path: '/guides/:slug',
+    name: 'guide-detail',
+    component: () => import('@views/GuideDetailView.vue'),
+    meta: { title: 'Travel Guide', dynamicSeo: true },
+  },
+  {
     path: '/about',
     name: 'about',
     component: () => import('@views/AboutView.vue'),

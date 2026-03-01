@@ -70,19 +70,21 @@ const buttonClass = computed(() => {
   return `px-4 py-2.5 rounded-lg font-medium transition-colors ${config.value.color} ${config.value.hoverColor}`
 })
 
-function handleClick() {
+function trackClick() {
   trackAffiliateClick(props.partner, props.destination, props.attractionName)
-  window.open(affiliateUrl.value, '_blank', 'noopener,noreferrer')
 }
 </script>
 
 <template>
-  <button
-    @click="handleClick"
+  <a
+    :href="affiliateUrl"
+    target="_blank"
+    rel="nofollow noopener noreferrer"
+    @click="trackClick"
     :class="buttonClass"
     class="inline-flex items-center justify-center gap-2 transition-colors"
   >
     <span v-if="variant !== 'minimal'">{{ config.icon }}</span>
     <span>{{ config.label }}</span>
-  </button>
+  </a>
 </template>

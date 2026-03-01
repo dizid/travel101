@@ -15,6 +15,8 @@ import {
   FilterOutlined,
   CloseOutlined,
 } from '@ant-design/icons-vue'
+import BreadcrumbNav from '@/components/ui/BreadcrumbNav.vue'
+import { generateBreadcrumbSchema, injectStructuredData } from '@/utils/seo'
 
 const {
   loading,
@@ -194,6 +196,15 @@ watch([queryParams, activeTab], () => {
 }, { deep: true })
 
 onMounted(() => {
+  // Inject breadcrumb schema for SEO
+  injectStructuredData(
+    'breadcrumb-schema',
+    generateBreadcrumbSchema([
+      { name: 'Home', url: '/' },
+      { name: 'Festivals', url: '/festivals' },
+    ])
+  )
+
   fetchFestivals()
   fetchFilterOptions()
   // Also fetch upcoming for the banner
@@ -202,56 +213,42 @@ onMounted(() => {
   })
 })
 
-// Stats computed
-const hiddenGemCount = computed(() =>
-  festivals.value.filter(f => f.isHiddenGem).length
-)
+
 </script>
 
 <template>
   <div class="min-h-screen bg-gray-50">
     <!-- Hero Section -->
-    <div class="relative bg-gradient-to-br from-purple-600 via-pink-600 to-orange-500 text-white">
-      <div class="absolute inset-0 bg-black/20" />
+    <div class="relative overflow-hidden bg-gradient-to-br from-purple-700 via-primary-700 to-accent-600 text-white h-64 md:h-80">
+      <!-- Decorative blur blobs -->
+      <div class="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl" />
+      <div class="absolute bottom-0 left-0 w-64 h-64 bg-purple-400/20 rounded-full blur-3xl" />
 
-      <!-- Decorative elements -->
-      <div class="absolute inset-0 overflow-hidden">
-        <div class="absolute top-10 left-10 text-6xl opacity-20 animate-bounce">🎉</div>
-        <div class="absolute top-20 right-20 text-5xl opacity-20 animate-pulse">🏮</div>
-        <div class="absolute bottom-10 left-1/4 text-4xl opacity-20">💦</div>
-        <div class="absolute bottom-20 right-1/3 text-5xl opacity-20">🪷</div>
+      <!-- Subtle floating emoji accents -->
+      <div class="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
+        <div class="absolute top-8 left-10 text-5xl opacity-15">🎉</div>
+        <div class="absolute top-16 right-16 text-4xl opacity-15">🏮</div>
+        <div class="absolute bottom-12 left-1/4 text-3xl opacity-15">🪷</div>
       </div>
 
-      <div class="relative max-w-7xl mx-auto px-4 py-16 sm:px-6 lg:px-8">
-        <div class="text-center">
-          <h1 class="text-4xl sm:text-5xl font-bold mb-4">
-            Thai Festivals & Events
-          </h1>
-          <p class="text-xl text-white/90 max-w-2xl mx-auto">
-            Discover {{ total }} festivals from spectacular nationwide celebrations to hidden local gems.
-            Plan your trip around Thailand's most vibrant cultural experiences.
-          </p>
+      <!-- Content -->
+      <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col items-center justify-center h-full text-center">
+        <div class="inline-flex items-center gap-2 px-3 py-1.5 bg-white/20 backdrop-blur rounded-full text-sm font-medium mb-4">
+          🎉 Cultural Calendar
         </div>
+        <h1 class="text-3xl md:text-5xl font-display font-bold mb-3">
+          Thai Festivals &amp; Events
+        </h1>
+        <p class="text-white/90 max-w-xl mx-auto text-base md:text-lg">
+          50+ festivals — from Songkran to Loy Krathong
+        </p>
+      </div>
 
-        <!-- Stats Row -->
-        <div class="mt-8 flex flex-wrap justify-center gap-6 text-center">
-          <div class="px-6 py-3 bg-white/10 backdrop-blur rounded-xl">
-            <div class="text-3xl font-bold">{{ total }}</div>
-            <div class="text-sm text-white/80">Festivals</div>
-          </div>
-          <div class="px-6 py-3 bg-white/10 backdrop-blur rounded-xl">
-            <div class="text-3xl font-bold">{{ upcomingFestivals.length }}</div>
-            <div class="text-sm text-white/80">Coming Up</div>
-          </div>
-          <div class="px-6 py-3 bg-white/10 backdrop-blur rounded-xl">
-            <div class="text-3xl font-bold">{{ hiddenGemCount }}</div>
-            <div class="text-sm text-white/80">Hidden Gems</div>
-          </div>
-          <div class="px-6 py-3 bg-white/10 backdrop-blur rounded-xl">
-            <div class="text-3xl font-bold">{{ regionOptions.length }}</div>
-            <div class="text-sm text-white/80">Regions</div>
-          </div>
-        </div>
+      <!-- Wave divider -->
+      <div class="absolute bottom-0 left-0 right-0">
+        <svg viewBox="0 0 1440 40" fill="none" xmlns="http://www.w3.org/2000/svg" class="w-full" preserveAspectRatio="none">
+          <path d="M0 40L48 34.7C96 29.3 192 18.7 288 16C384 13.3 480 18.7 576 21.3C672 24 768 24 864 21.3C960 18.7 1056 13.3 1152 13.3C1248 13.3 1344 18.7 1392 21.3L1440 24V40H1392C1344 40 1248 40 1152 40C1056 40 960 40 864 40C768 40 672 40 576 40C480 40 384 40 288 40C192 40 96 40 48 40H0Z" fill="rgb(249 250 251)" />
+        </svg>
       </div>
     </div>
 
@@ -347,6 +344,9 @@ const hiddenGemCount = computed(() =>
 
     <!-- Main Content -->
     <div class="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
+      <!-- Breadcrumb navigation -->
+      <BreadcrumbNav :items="[{ name: 'Home', url: '/' }, { name: 'Festivals' }]" />
+
       <!-- Upcoming Banner (only on All tab) -->
       <div v-if="activeTab === 'all' && upcomingFestivals.length > 0" class="mb-8">
         <h2 class="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">

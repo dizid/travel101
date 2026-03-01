@@ -16,7 +16,7 @@ const stats = [
   },
   {
     icon: '🏆',
-    number: '6',
+    number: '8',
     label: 'UNESCO Sites',
     description: 'World Heritage temples, palaces, and historical parks',
   },
@@ -52,21 +52,44 @@ const steps = [
 const editorialPoints = [
   {
     icon: '✍️',
-    text: 'Every destination is hand-researched with insider tips, local secrets, and practical advice',
+    text: 'Every destination is hand-researched with insider tips, local secrets, and practical advice from people who live in Thailand',
   },
   {
     icon: '📅',
-    text: 'Festival dates are verified annually with lunar calendar adjustments',
+    text: 'Festival dates are verified annually with lunar calendar adjustments — we cross-reference Tourism Authority of Thailand sources',
   },
   {
     icon: '🏛️',
-    text: 'Heritage information sourced from UNESCO and Thailand\'s Fine Arts Department',
+    text: 'Heritage information sourced from UNESCO and Thailand\'s Fine Arts Department, with historical accuracy reviewed',
   },
   {
     icon: '🔄',
-    text: 'Content is regularly updated and enhanced with AI assistance',
+    text: 'Content is updated monthly with price checks, new openings, and seasonal changes — last review: March 2026',
+  },
+  {
+    icon: '🏥',
+    text: 'Medical facility data verified against JCI accreditation records and Google reviews — only real, operating facilities listed',
+  },
+  {
+    icon: '⚖️',
+    text: 'Affiliate partnerships are clearly disclosed. We only recommend services we would use ourselves — no pay-for-placement',
   },
 ]
+
+const whoWeAre = {
+  title: 'Who We Are',
+  paragraphs: [
+    'HappyRoam is built by a small team of developers and travel enthusiasts based in Thailand. We created this guide because we were frustrated with generic travel content that reads like it was written by someone who\'s never been here.',
+    'Our team has collectively spent over a decade living in Thailand — from Bangkok to Chiang Mai, Phuket to Koh Phangan. We eat the street food, ride the songthaews, renew our own visas, and navigate the same 90-day reporting you will. This isn\'t a travel blog written from a hotel room — it\'s a practical guide informed by daily life.',
+    'We combine local knowledge with technology: AI-powered recommendations learn from your travel preferences, real-time data keeps prices and availability current, and our editorial team fact-checks every guide against on-the-ground reality.',
+  ],
+  approach: [
+    { label: 'Research', desc: 'We visit places before recommending them' },
+    { label: 'Verify', desc: 'Prices, hours, and contact info are checked quarterly' },
+    { label: 'Update', desc: 'Content is refreshed monthly — not left to go stale' },
+    { label: 'Disclose', desc: 'Affiliate links are clearly marked — always' },
+  ],
+}
 
 const socialLinks = [
   {
@@ -140,6 +163,37 @@ const socialLinks = [
             <span class="px-4 py-2 bg-teal-50 text-teal-700 rounded-full text-sm font-medium">
               📋 Visa Guidance
             </span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Who We Are -->
+      <section class="pb-12 md:pb-16">
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 md:p-12">
+          <div class="text-center mb-8">
+            <span class="text-4xl mb-4 block">🌏</span>
+            <h2 class="text-2xl md:text-3xl font-display font-bold text-gray-900 mb-2">
+              {{ whoWeAre.title }}
+            </h2>
+          </div>
+          <div class="space-y-4 max-w-3xl mx-auto">
+            <p
+              v-for="(para, i) in whoWeAre.paragraphs"
+              :key="i"
+              class="text-gray-600 leading-relaxed"
+            >
+              {{ para }}
+            </p>
+          </div>
+          <div class="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div
+              v-for="item in whoWeAre.approach"
+              :key="item.label"
+              class="text-center p-4 bg-gray-50 rounded-xl"
+            >
+              <div class="text-sm font-bold text-primary-600 mb-1">{{ item.label }}</div>
+              <p class="text-xs text-gray-500">{{ item.desc }}</p>
+            </div>
           </div>
         </div>
       </section>

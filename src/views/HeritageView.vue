@@ -10,6 +10,8 @@ import {
   EnvironmentOutlined,
   HistoryOutlined,
 } from '@ant-design/icons-vue'
+import BreadcrumbNav from '@/components/ui/BreadcrumbNav.vue'
+import { generateBreadcrumbSchema, injectStructuredData } from '@/utils/seo'
 
 const { get } = useApi()
 
@@ -139,6 +141,15 @@ watch([queryParams], () => {
 }, { deep: true })
 
 onMounted(() => {
+  // Inject breadcrumb schema for SEO
+  injectStructuredData(
+    'breadcrumb-schema',
+    generateBreadcrumbSchema([
+      { name: 'Home', url: '/' },
+      { name: 'Heritage', url: '/heritage' },
+    ])
+  )
+
   fetchSites()
   fetchFilterOptions()
 })
@@ -147,20 +158,29 @@ onMounted(() => {
 <template>
   <div class="min-h-screen bg-gray-50">
     <!-- Hero Section -->
-    <div class="relative bg-gradient-to-br from-amber-600 via-orange-600 to-red-700 text-white">
-      <div class="absolute inset-0 bg-black/20" />
-      <div class="absolute inset-0 bg-[url('/patterns/thai-pattern.svg')] opacity-10" />
+    <div class="relative overflow-hidden bg-gradient-to-br from-amber-700 via-amber-800 to-primary-700 text-white h-64 md:h-80">
+      <!-- Decorative blur blobs -->
+      <div class="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl" />
+      <div class="absolute bottom-0 left-0 w-64 h-64 bg-amber-500/20 rounded-full blur-3xl" />
 
-      <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24">
-        <div class="text-center">
-          <span class="text-5xl mb-4 block">🏛️</span>
-          <h1 class="text-4xl md:text-5xl font-display font-bold mb-4">
-            Thailand's Living Heritage
-          </h1>
-          <p class="text-lg md:text-xl text-white/90 max-w-2xl mx-auto">
-            Explore ancient temples, royal palaces, and UNESCO World Heritage sites that tell the story of Thailand's rich history
-          </p>
+      <!-- Content -->
+      <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col items-center justify-center h-full text-center">
+        <div class="inline-flex items-center gap-2 px-3 py-1.5 bg-white/20 backdrop-blur rounded-full text-sm font-medium mb-4">
+          🏛️ Cultural Heritage
         </div>
+        <h1 class="text-3xl md:text-5xl font-display font-bold mb-3">
+          Heritage &amp; Culture
+        </h1>
+        <p class="text-white/90 max-w-xl mx-auto text-base md:text-lg">
+          Ancient temples, palaces, and UNESCO World Heritage sites
+        </p>
+      </div>
+
+      <!-- Wave divider -->
+      <div class="absolute bottom-0 left-0 right-0">
+        <svg viewBox="0 0 1440 40" fill="none" xmlns="http://www.w3.org/2000/svg" class="w-full" preserveAspectRatio="none">
+          <path d="M0 40L48 34.7C96 29.3 192 18.7 288 16C384 13.3 480 18.7 576 21.3C672 24 768 24 864 21.3C960 18.7 1056 13.3 1152 13.3C1248 13.3 1344 18.7 1392 21.3L1440 24V40H1392C1344 40 1248 40 1152 40C1056 40 960 40 864 40C768 40 672 40 576 40C480 40 384 40 288 40C192 40 96 40 48 40H0Z" fill="rgb(249 250 251)" />
+        </svg>
       </div>
     </div>
 
@@ -247,6 +267,9 @@ onMounted(() => {
 
     <!-- Content -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <!-- Breadcrumb navigation -->
+      <BreadcrumbNav :items="[{ name: 'Home', url: '/' }, { name: 'Heritage' }]" />
+
       <!-- Upcoming Festivals Banner -->
       <UpcomingFestivalBanner :limit="3" />
 

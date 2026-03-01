@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useUserStore } from '@stores/userStore'
 import { useCountryStore } from '@stores/countryStore'
 import type { VisaWizardState, ChecklistItem, VisaRecommendation } from '@/types'
@@ -17,6 +17,8 @@ import {
   WarningOutlined,
   InfoCircleOutlined,
 } from '@ant-design/icons-vue'
+import BreadcrumbNav from '@components/ui/BreadcrumbNav.vue'
+import { generateBreadcrumbSchema, injectStructuredData } from '@/utils/seo'
 
 const userStore = useUserStore()
 const countryStore = useCountryStore()
@@ -278,6 +280,16 @@ watch(
     }
   }
 )
+
+onMounted(() => {
+  injectStructuredData(
+    'breadcrumb-schema',
+    generateBreadcrumbSchema([
+      { name: 'Home', url: '/' },
+      { name: 'Visa Guide', url: '/visa' },
+    ])
+  )
+})
 </script>
 
 <template>
@@ -317,6 +329,10 @@ watch(
     </div>
 
     <!-- Wizard content -->
+    <!-- Breadcrumb navigation -->
+    <div class="max-w-3xl mx-auto px-4 sm:px-6 pt-4">
+      <BreadcrumbNav :items="[{ name: 'Home', url: '/' }, { name: 'Visa Guide' }]" />
+    </div>
     <div class="max-w-3xl mx-auto px-4 sm:px-6 py-8 md:py-12">
       <!-- Step 1: Your Situation -->
       <div v-if="wizardState.step === 1" class="animate-fade-in">
@@ -860,6 +876,9 @@ watch(
           <RightOutlined class="text-xs" />
         </RouterLink>
       </div>
+
+      <!-- Last updated -->
+      <p class="text-xs text-gray-400 mt-8 text-center">Visa information last updated: March 2026</p>
     </div>
   </div>
 </template>
