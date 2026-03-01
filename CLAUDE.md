@@ -67,12 +67,12 @@ src/
 ├── components/
 │   ├── layout/          # AppHeader, AppFooter
 │   ├── ui/              # LoadingSpinner, ProBadge, EmptyState, SectionHeader,
-│   │                    # FeatureCard, AILimitBanner, ExitIntentPopup,
-│   │                    # MatchScoreCard, NewsletterSignup, PersonalizationBar,
-│   │                    # ShareButton, UpgradeModal, UsageMeter
+│   │                    # FeatureCard, AILimitBanner, BreadcrumbNav,
+│   │                    # ExitIntentPopup, MatchScoreCard, NewsletterSignup,
+│   │                    # PersonalizationBar, ShareButton, UpgradeModal, UsageMeter
 │   ├── common/          # AffiliateButton, AffiliateCard
 │   └── features/        # AttractionCard, AttractionChat, AIChat, WarningCard,
-│                        # CurrencyCalculator, FestivalCard, FlightSearch,
+│                        # CurrencyCalculator, FestivalCard, FlightSearch, GuideCard,
 │                        # ItineraryActivityModal, ItineraryCostAnalytics,
 │                        # ItineraryGenerateModal, ProfileQuickEdit, ScamAlert,
 │                        # TransportSearch, UpcomingFestivalBanner, WeatherWidget
@@ -88,8 +88,10 @@ src/
 │   ├── useFestivals.ts  # Thai festivals data
 │   ├── useFlights.ts    # Flight search
 │   ├── useGeolocation.ts # Browser geolocation
+│   ├── useGuides.ts     # Travel guides content
 │   ├── useItinerary.ts  # AI itinerary generation
 │   ├── useMatcher.ts    # Profile-based attraction scoring
+│   ├── useOnwardTicket.ts # Onward ticket booking
 │   ├── useSafety.ts     # Safety information
 │   ├── useSeo.ts        # SEO meta tags
 │   ├── useSubscription.ts # Stripe subscription status
@@ -97,7 +99,7 @@ src/
 ├── stores/
 │   ├── userStore.ts     # Profile, auth, activity (localStorage persist)
 │   └── countryStore.ts  # Thailand data, visas, warnings, attractions
-├── views/               # 27 page components
+├── views/               # 31 page components
 │   ├── HomeView.vue             # Landing page
 │   ├── DashboardView.vue        # User dashboard
 │   ├── ProfileView.vue          # User profile settings
@@ -109,18 +111,22 @@ src/
 │   ├── FestivalDetailView.vue   # Single festival detail
 │   ├── HeritageView.vue         # Heritage sites listing
 │   ├── HeritageDetailView.vue   # Single heritage site detail
+│   ├── GuidesView.vue           # Travel guides listing
+│   ├── GuideDetailView.vue      # Guide detail with markdown + TOC
 │   ├── VisaWizardView.vue       # Visa requirements wizard
 │   ├── NinetyDayView.vue        # 90-day reporting guide
 │   ├── TDACGuideView.vue        # TDAC guide
 │   ├── SetupGuideView.vue       # Getting started guide
+│   ├── OnwardTicketView.vue     # Onward ticket booking
 │   ├── ItineraryView.vue        # AI itinerary builder
 │   ├── CostCalculatorView.vue   # Trip cost calculator
 │   ├── PackingView.vue          # AI packing list
-│   ├── SafetyView.vue           # Safety information
+│   ├── SafetyView.vue           # Safety information (enriched)
 │   ├── AlertsView.vue           # Travel alerts
 │   ├── WarningsView.vue         # Travel warnings
-│   ├── MedicalView.vue          # Medical information
+│   ├── MedicalView.vue          # Medical information (17 real hospitals)
 │   ├── PeopleView.vue           # People/culture info
+│   ├── AboutView.vue            # About page with editorial credibility
 │   ├── ContactView.vue          # Contact page
 │   ├── PrivacyView.vue          # Privacy policy
 │   ├── TermsView.vue            # Terms of service
@@ -128,9 +134,15 @@ src/
 ├── router/              # Vue Router with lazy-loaded routes
 ├── lib/                 # Auth client wrapper
 ├── types/               # TypeScript interfaces
+├── utils/               # Utility modules
+│   ├── affiliates.ts    # Affiliate link generation + tracking
+│   ├── booking-pdf.ts   # Onward ticket PDF generation
+│   ├── export.ts        # Data export utilities
+│   ├── markdown.ts      # Lightweight markdown-to-HTML renderer
+│   └── seo.ts           # SEO meta tags, JSON-LD schemas
 └── styles/              # Tailwind + global CSS
 
-netlify/functions/       # Serverless backend (24 functions)
+netlify/functions/       # Serverless backend (26 functions)
 ├── user.mts             # User profile CRUD
 ├── ai.mts               # Claude API for travel advice
 ├── attraction-ai.mts    # Personalized attraction AI (intros, tips, chat)
@@ -140,15 +152,17 @@ netlify/functions/       # Serverless backend (24 functions)
 ├── currency.mts         # Currency conversion rates
 ├── festivals.mts        # Thai festivals data
 ├── flights.mts          # Flight search integration
+├── guides.mts           # Travel guides (list, get by slug, categories)
 ├── heritage.mts         # Heritage sites data
 ├── itinerary.mts        # AI itinerary generation
 ├── matches.mts          # Profile-based attraction matching
+├── onward-ticket.mts    # Onward ticket booking + PDF
 ├── packing.mts          # AI packing list generator
 ├── safety.mts           # Safety information by region
 ├── usage.mts            # AI usage tracking
 ├── weather.mts          # Weather forecasts
 ├── newsletter.mts       # Email newsletter signup
-├── sitemap.mts          # Dynamic XML sitemap
+├── sitemap.mts          # Dynamic XML sitemap (includes guide pages)
 ├── google-places.mts    # Google Places API integration
 ├── enrich-place.mts     # AI place enrichment pipeline
 ├── ingest-places.mts    # Bulk place ingestion
@@ -165,7 +179,7 @@ netlify/functions/       # Serverless backend (24 functions)
     └── usage.mts        # Usage tracking utilities
 
 db/
-├── migrations/          # SQL migrations (001-010)
+├── migrations/          # SQL migrations (001-013)
 │   ├── 001_attractions.sql
 │   ├── 002_places_expansion.sql
 │   ├── 003_add_cost_tier.sql
@@ -176,11 +190,17 @@ db/
 │   ├── 007_ai_usage_tracking.sql
 │   ├── 008_ai_usage_fk.sql
 │   ├── 009_festivals.sql
-│   └── 010_more_festivals.sql
+│   ├── 010_more_festivals.sql
+│   ├── 011_travel_guides.sql
+│   ├── 011_unesco_heritage_sites.sql
+│   ├── 011_fix_province_and_categories.sql
+│   ├── 012_onward_bookings.sql
+│   └── 013_onward_bookings_pro.sql
 └── seed/
     ├── attractions_seed.sql
     ├── heritage_seed.sql
-    └── places_seed.sql
+    ├── places_seed.sql
+    └── guides_seed.sql   # 8 travel guides (81KB)
 ```
 
 ## Data Model
@@ -196,12 +216,14 @@ db/
 **Extended tables**:
 - **heritage_sites**: Heritage and cultural sites with historical data
 - **festivals**: Thai festivals with dates, locations, descriptions
+- **travel_guides**: Blog/editorial content with markdown, categories, tags, reading time
 - **places**: Expanded place data from Google Places integration
 - **ai_cache**: Cached AI responses for performance
 - **ai_usage**: Per-user AI usage tracking and limits
+- **onward_bookings**: Onward ticket bookings with PDF generation
 - **safety_***: Safety information tables by region
 
-**Note**: Migration 003 has a numbering conflict (two files). Both have been applied.
+**Note**: Migrations 003 and 011 each have numbering conflicts (multiple files). All have been applied.
 
 ## Key Patterns
 
@@ -216,6 +238,10 @@ db/
 **API Routing**: `/api/*` redirects to `/.netlify/functions/:splat` via netlify.toml
 
 **Affiliate System**: Klook, Agoda, 12go, GetYourGuide, SafetyWing affiliate links with tracking
+
+**SEO**: JSON-LD schemas (FAQPage, Article, WebSite, HowTo, BreadcrumbList), BreadcrumbNav on all hierarchical pages, dynamic sitemap with guide pages, hreflang tags
+
+**Content System**: Travel guides with markdown rendering, table of contents extraction, related guides cross-linking on guide/attraction/festival detail pages
 
 ## Path Aliases
 

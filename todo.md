@@ -30,7 +30,8 @@ http://localhost:3000/dashboard?test=test123
 - [ ] Push notification system
 
 ### Sprint 4: Guides & Directories
-- [ ] Medical Tourism Hub with seed data
+- [x] Medical Tourism Hub with seed data (17 real hospitals + editorial intro)
+- [x] Travel Guides system (8 guides, 74k+ chars, markdown rendering, TOC, related guides)
 - [ ] More cities in Cost Calculator
 - [ ] More providers in Setup Guide
 
@@ -53,7 +54,7 @@ Once you have Impact affiliate link, update the Airalo URL format in affiliates.
 | 12Go Asia | ✅ Active | 14551206 | https://agent.12go.asia |
 | Klook | ✅ Active | 108922 | https://affiliate.klook.com |
 | Viator | ✅ Active | P00284724 | https://partners.viator.com |
-| Booking.com | ⏳ Apply now | - | https://www.booking.com/affiliate-program/v2/index.html |
+| Booking.com | ❌ Rejected by CJ — quality upgrade done, reapply | - | https://www.booking.com/affiliate-program/v2/index.html |
 | GetYourGuide | ⏳ Apply now | - | https://partner.getyourguide.com |
 | SafetyWing | ⏳ Applying | - | https://safetywing.com/partners |
 | NordVPN | ⏳ Applying | - | https://nordvpn.com/affiliate |
@@ -65,7 +66,7 @@ Once you have Impact affiliate link, update the Airalo URL format in affiliates.
 
 **Next steps — apply to these (copy-paste text in plans/nifty-moseying-puddle.md):**
 
-1. [ ] **Booking.com** — Sign up via Awin/CJ, use NL/EUR, ~3 days approval
+1. [ ] **Booking.com** — Reapply via CJ (rejected 2026-03-01, quality upgrade completed)
 2. [ ] **GetYourGuide** — Apply as affiliate partner, ~2-5 days approval
 3. [ ] **SafetyWing** — Follow up on application if no response
 4. [ ] **NordVPN** — Follow up on application if no response

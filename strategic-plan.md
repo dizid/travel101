@@ -60,18 +60,20 @@ CREATE TABLE visa_updates (
 
 ### 1.2 Warnings & Safety Information
 
-**Current State:** 6 generic warnings. Lacks specificity.
+**Current State:** Enriched SafetyView with 8 accordion sections (general safety, transport, food/water, health, embassy contacts, solo/women travelers, weather, scams). MedicalView has 17 real hospitals + editorial intro.
 
-**Improvements:**
+**Completed (2026-03):**
 
-| Category | Current | Needed |
-|----------|---------|--------|
-| **Location-specific** | None | "Riptides at Karon Beach May-Oct", "Watch for scams near Grand Palace" |
-| **Seasonal** | Basic monsoon mention | Detailed weather hazards by month/region |
-| **Legal consequences** | Vague | Specific penalties (overstay: 500 THB/day, max 20k, then ban) |
-| **Scam details** | Generic list | Specific scams with locations and how to avoid |
-| **Health** | None | Vaccinations, dengue seasons, hospital recommendations |
-| **Emergency contacts** | None | Tourist police 1155, hospitals, embassies |
+| Category | Status |
+|----------|--------|
+| **Location-specific** | Partially done via enriched SafetyView sections |
+| **Seasonal** | Done — weather section in SafetyView |
+| **Legal consequences** | Done — included in safety accordion |
+| **Scam details** | Done — dedicated scam section |
+| **Health** | Done — MedicalView with 17 real hospitals |
+| **Emergency contacts** | Done — embassy contacts in SafetyView |
+
+**Remaining improvements:**
 
 **Database Schema:**
 ```sql
@@ -104,20 +106,20 @@ CREATE TABLE emergency_contacts (
 
 ### 1.3 Practical Travel Information
 
-**Currently Missing:** Essential practical info travelers need.
+**Status:** DONE via Travel Guides system (2026-03). 8 guides seeded covering practical topics:
 
-**New Content Categories:**
+| Guide | Category | Status |
+|-------|----------|--------|
+| Ultimate Thailand Guide for First-Time Visitors | destination | Published |
+| Best Time to Visit Thailand: Month-by-Month | practical | Published |
+| Thailand on a Budget: Under $30/Day | budget | Published |
+| Bangkok Neighborhoods: Where to Stay | destination | Published |
+| Island Hopping in Southern Thailand | destination | Published |
+| Chiang Mai for Digital Nomads | destination | Published |
+| Thai Food Guide: What to Eat & Where | food | Published |
+| Thailand Safety: What Every Traveler Should Know | safety | Published |
 
-| Category | Content Examples |
-|----------|-----------------|
-| **Money** | ATM fees (220 THB), best exchange rates, tipping customs, card acceptance |
-| **SIM/Internet** | True/AIS/DTAC comparison, tourist SIM packages, 5G coverage |
-| **Transportation** | Grab vs taxis, BTS/MRT in Bangkok, domestic flights, bus companies |
-| **Accommodation** | Booking tips, areas to stay by type, average prices by region |
-| **Language** | Essential Thai phrases, translation apps, when English works |
-| **Culture** | Temple etiquette, wai greeting, removing shoes, dress codes |
-| **Weather** | Best times by region, what to pack, monsoon survival tips |
-| **Food Safety** | Street food tips, water safety, common allergies |
+Built with: `travel_guides` table, `guides.mts` API, `useGuides.ts` composable, `GuidesView.vue` + `GuideDetailView.vue`, markdown rendering with TOC, related guides cross-linking.
 
 **Database Schema:**
 ```sql
@@ -237,7 +239,7 @@ Generate detailed travel content for [ATTRACTION] in Thailand:
 | **Mobile sidebar** | AttractionDetailView | Convert to off-canvas drawer on mobile |
 | **Floating AI button** | AttractionDetailView:552 | Move to bottom nav or make dismissible |
 | **Form validation** | ProfileView, VisaWizard | Show inline errors before submission |
-| **No breadcrumbs** | Detail pages | Add breadcrumb component |
+| **No breadcrumbs** | Detail pages | ~~Add breadcrumb component~~ DONE — BreadcrumbNav on 9+ views |
 | **No error states** | All API calls | Add error UI + retry button |
 
 ### 2.2 New Components Needed
@@ -625,7 +627,7 @@ Day 10: Launch
 
 **Day 1-2: Core Components**
 - [ ] Create `SkeletonLoader.vue` (card, list, detail variants)
-- [ ] Create `Breadcrumb.vue` with router integration
+- [x] Create `BreadcrumbNav.vue` with router integration (DONE)
 - [ ] Create `ErrorState.vue` with retry callback
 - [ ] Create `Toast.vue` notification system
 
@@ -735,16 +737,16 @@ Day 10: Launch
 
 ### Information Quality
 - [ ] Visa info shows "Last verified" date
-- [ ] Warnings have location-specific content
+- [x] Warnings have location-specific content (SafetyView enriched with 8 sections)
 - [ ] 100+ attractions with rich content
 - [ ] Each attraction has 5+ tips
-- [ ] Practical guides cover all categories
-- [ ] Emergency contacts are complete
+- [x] Practical guides cover all categories (8 travel guides published)
+- [x] Emergency contacts are complete (embassy contacts in SafetyView, 17 hospitals in MedicalView)
 
 ### UI/UX
 - [ ] Mobile sidebar is a drawer
 - [ ] Skeleton loaders on all lists
-- [ ] Breadcrumbs on detail pages
+- [x] Breadcrumbs on detail pages (BreadcrumbNav on 9+ views)
 - [ ] Error states with retry
 - [ ] Form validation is inline
 - [ ] Accessibility score > 90

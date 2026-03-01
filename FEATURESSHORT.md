@@ -6,10 +6,11 @@
 - Good to Know cultural tips and warnings
 
 ## Attractions
-- 200+ curated attractions with search and filtering
+- 200+ curated attractions with real images and search/filtering
 - Hidden gems off-the-beaten-path collection
 - UNESCO heritage sites and temples directory
 - Thai festivals calendar with upcoming countdown
+- Hero imagery on listing pages
 
 ## Personalization
 - Travel profile with interests, style, budget
@@ -28,12 +29,25 @@
 - Currency converter with live rates
 - Visa expiry tracking and alerts (Pro)
 
-## Safety
-- Province-level safety ratings (Pro)
+## Travel Guides
+- 8 in-depth editorial guides (74k+ chars)
+- Markdown rendering with table of contents
+- Related guides cross-linking across detail pages
+
+## Safety & Medical
+- Province-level safety ratings with 8 detailed sections (Pro)
 - Scam reports database with submissions (Pro)
+- 17 real hospitals with editorial medical tourism intro
+
+## SEO & Trust
+- JSON-LD schemas (FAQPage, Article, WebSite, HowTo, BreadcrumbList)
+- Breadcrumb navigation on 9+ views
+- Dynamic sitemap with all routes + guide pages
+- About page with editorial credibility
 
 ## Booking
-- Affiliate links: Klook, Agoda, 12Go, GetYourGuide
+- Affiliate links: Klook, Agoda, 12Go, GetYourGuide, SafetyWing
+- Onward ticket booking with PDF generation
 
 ## Account
 - User authentication via Neon Auth

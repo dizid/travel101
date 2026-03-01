@@ -7,12 +7,14 @@ Get approved for affiliate programs:
 
 | Program | Status | Affiliate ID | Priority |
 |---------|--------|-------------|----------|
-| Klook | Pending | — | 1 (SE Asia activities) |
-| Booking.com | Pending | — | 2 (Hotels) |
-| GetYourGuide | Pending | — | 3 (Tours & activities) |
-| Skyscanner | Pending | — | 4 (Flights) |
-| Viator | Active | P00284724 | 5 (Tours backup) |
-| Agoda | Rejected | — | Re-apply when site is more developed |
+| Klook | Active | 108922 | 1 (SE Asia activities) |
+| 12Go Asia | Active | 14551206 | 2 (Transport bookings) |
+| Viator | Active | P00284724 | 3 (Tours backup) |
+| Booking.com | Rejected by CJ — quality upgrade done, ready to reapply | — | 4 (Hotels) |
+| GetYourGuide | Pending | — | 5 (Tours & activities) |
+| SafetyWing | Pending | — | 6 (Travel insurance) |
+| Skyscanner | Later (need 5K/mo traffic) | — | 7 (Flights) |
+| Agoda | Rejected | 1956706 | Re-apply when more established |
 
 ### Phase 2: Basic Integration
 Once affiliate IDs are obtained:
