@@ -107,6 +107,37 @@ const safetySections = ref([
     open: false,
     content: `<p><strong>Emergency Numbers:</strong></p><ul><li><strong>1155</strong> — Tourist Police (English-speaking, 24/7)</li><li><strong>191</strong> — Police</li><li><strong>1669</strong> — Ambulance</li><li><strong>199</strong> — Fire Department</li></ul><p><strong>Key Embassies in Bangkok:</strong></p><ul><li><strong>US Embassy:</strong> 95 Wireless Road — 02-205-4000</li><li><strong>UK Embassy:</strong> 14 Wireless Road — 02-305-8333</li><li><strong>Australian Embassy:</strong> 181 Wireless Road — 02-344-6300</li><li><strong>Canadian Embassy:</strong> Abdulrahim Place — 02-646-4300</li></ul><p><strong>What To Do If Something Goes Wrong:</strong></p><ul><li>Call <strong>1155 (Tourist Police)</strong> first</li><li>File a police report (required for insurance claims)</li><li>Contact your embassy for serious situations</li><li>For medical emergencies, go to the nearest hospital — they treat first, handle payment after</li></ul>`,
   },
+  {
+    icon: '💰',
+    title: 'Tipping Etiquette',
+    summary: 'When, where, and how much to tip in Thailand',
+    open: false,
+    content: `<p><strong>General Rule:</strong> Tipping is not mandatory in Thailand, but it's appreciated and increasingly common in tourist areas. Thais themselves rarely tip beyond rounding up small amounts.</p>
+<p><strong>Restaurants:</strong> No tip at street stalls or food courts. At sit-down restaurants, 10% is generous — many locals leave 20-50 THB. If a service charge (10%) is included, no additional tip is needed.</p>
+<p><strong>Taxis & Grab:</strong> Round up to the nearest 10 or 20 THB. A 73 THB fare → pay 80 THB. For Grab rides, tipping through the app is optional.</p>
+<p><strong>Hotels:</strong> 20-50 THB per bag for bellboys. 20-50 THB/day for housekeeping (leave on the pillow). Nothing expected at budget guesthouses.</p>
+<p><strong>Massage & Spa:</strong> 50-100 THB for a Thai massage (300 THB), 100-200 THB for spa treatments (1,000+ THB). This is the one place Thais expect tips.</p>
+<p><strong>Tour Guides:</strong> 100-300 THB per person for full-day tours. 50-100 THB for half-day.</p>
+<p><strong>When NOT to tip:</strong> 7-Eleven, markets, public transport, fast food, government offices. Tipping in these contexts would be unusual.</p>`,
+  },
+  {
+    icon: '🔌',
+    title: 'Power & Electricity',
+    summary: 'Plugs, voltage, and adapter requirements',
+    open: false,
+    content: `<p><strong>Voltage:</strong> Thailand uses <strong>220V / 50Hz</strong>. Most modern electronics (laptops, phone chargers) are dual-voltage (100-240V) and work without a converter. Check your charger's label.</p>
+<p><strong>Plug Types:</strong> Thailand uses Type A (two flat pins, like US/Japan), Type B (two flat + ground), and Type C (two round pins, like Europe). Most Thai sockets accept both flat and round pins.</p>
+<p><strong>What You Need:</strong></p>
+<ul>
+<li><strong>From US/Canada/Japan:</strong> Your plugs work in most Thai sockets. No adapter needed for 2-pin devices.</li>
+<li><strong>From UK:</strong> You need a Type A or C adapter (3-pin UK plugs won't fit).</li>
+<li><strong>From Europe:</strong> Type C (round 2-pin) works in most Thai sockets.</li>
+<li><strong>From Australia/NZ:</strong> You need a Type A or C adapter.</li>
+</ul>
+<p><strong>Where to Buy Adapters:</strong> 7-Eleven (basic), Big C/Lotus's (variety), Lazada/Shopee (delivered). Airport shops charge 2-3x more.</p>
+<p><strong>Power Outages:</strong> Brief outages occur during heavy storms. Most hotels have backup generators. Charge your devices when you can during monsoon season.</p>
+<p><strong>Pro Tip:</strong> Bring a small power strip with USB ports — many budget accommodations have limited outlets.</p>`,
+  },
 ])
 
 const filteredReports = computed(() => {

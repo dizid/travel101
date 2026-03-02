@@ -87,6 +87,12 @@ const routes: RouteRecordRaw[] = [
     meta: { title: 'Thailand Safety Guide', requiresPro: true },
   },
   {
+    path: '/emergency',
+    name: 'emergency',
+    component: () => import('@views/EmergencyView.vue'),
+    meta: { title: 'Emergency Contacts — Thailand', seoKey: 'emergency' },
+  },
+  {
     path: '/90-day',
     name: '90-day',
     component: () => import('@views/NinetyDayView.vue'),
@@ -175,6 +181,18 @@ const routes: RouteRecordRaw[] = [
     name: 'guide-detail',
     component: () => import('@views/GuideDetailView.vue'),
     meta: { title: 'Travel Guide', dynamicSeo: true },
+  },
+  {
+    path: '/phrasebook',
+    name: 'phrasebook',
+    component: () => import('@views/PhrasebookView.vue'),
+    meta: { title: 'Thai Phrasebook', seoKey: 'phrasebook' },
+  },
+  {
+    path: '/visa-countdown',
+    name: 'visa-countdown',
+    component: () => import('@views/VisaCountdownView.vue'),
+    meta: { title: 'Visa Countdown Timer', seoKey: 'visaCountdown' },
   },
   {
     path: '/about',

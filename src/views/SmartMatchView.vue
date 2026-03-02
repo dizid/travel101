@@ -19,6 +19,7 @@ import {
   PlusCircleOutlined,
   CheckOutlined,
 } from '@ant-design/icons-vue'
+import ProGate from '@components/ui/ProGate.vue'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -343,7 +344,8 @@ function getScoreBgColor(score: number) {
       </div>
 
       <!-- Matches Content -->
-      <div v-else class="space-y-8">
+      <ProGate v-else featureName="Smart Match">
+      <div class="space-y-8">
         <!-- Top Matches Hero -->
         <div v-if="topMatches.length > 0" class="card-thai bg-gradient-to-r from-pink-50 to-rose-50 border-pink-200 overflow-hidden">
           <div class="flex items-center gap-2 mb-6">
@@ -703,6 +705,7 @@ function getScoreBgColor(score: number) {
           <p class="text-gray-500">Try adjusting your filters or updating your profile.</p>
         </div>
       </div>
+      </ProGate>
     </div>
 
     <!-- Add to Itinerary Modal -->

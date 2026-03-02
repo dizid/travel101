@@ -11,6 +11,7 @@ import {
   ReloadOutlined,
 } from '@ant-design/icons-vue'
 import ProBadge from '@components/ui/ProBadge.vue'
+import ProGate from '@components/ui/ProGate.vue'
 
 interface PackingItem {
   item: string
@@ -168,6 +169,7 @@ onMounted(() => {
     </div>
 
     <div class="max-w-4xl mx-auto px-4 sm:px-6 py-8">
+      <ProGate featureName="AI Packing Lists">
       <!-- Trip Configuration -->
       <div class="card-thai mb-8 print:hidden">
         <h2 class="font-semibold text-gray-900 mb-4">Trip Details</h2>
@@ -376,6 +378,7 @@ onMounted(() => {
           We'll generate a personalized packing list based on your destinations, activities, and weather.
         </p>
       </div>
+      </ProGate>
     </div>
   </div>
 </template>

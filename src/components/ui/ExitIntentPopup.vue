@@ -8,26 +8,54 @@ const isSubmitting = ref(false)
 const isSuccess = ref(false)
 const error = ref('')
 
+// Tracks whether the user has been on the page long enough to see the popup
+const canShow = ref(false)
+
 const STORAGE_KEY = 'exitPopupDismissed'
-const DISMISS_DURATION = 24 * 60 * 60 * 1000 // 24 hours
+const DISMISS_COUNT_KEY = 'exitPopupDismissCount'
+const MAX_DISMISSALS = 3
+const DISMISS_DURATION_SHORT = 24 * 60 * 60 * 1000 // 24h — close button
+const DISMISS_DURATION_LONG = 3 * 24 * 60 * 60 * 1000 // 72h — "Maybe Later"
 
 function shouldShow(): boolean {
+  // Stop showing after 3 dismissals
+  const count = parseInt(localStorage.getItem(DISMISS_COUNT_KEY) || '0', 10)
+  if (count >= MAX_DISMISSALS) return false
+
   const dismissed = localStorage.getItem(STORAGE_KEY)
   if (!dismissed) return true
   const dismissedAt = parseInt(dismissed, 10)
-  return Date.now() - dismissedAt > DISMISS_DURATION
+  // Default to 24h cooldown; duration written at dismiss time determines when it expires
+  return Date.now() - dismissedAt > DISMISS_DURATION_SHORT
+}
+
+function incrementDismissCount() {
+  const count = parseInt(localStorage.getItem(DISMISS_COUNT_KEY) || '0', 10)
+  localStorage.setItem(DISMISS_COUNT_KEY, (count + 1).toString())
 }
 
 function handleMouseLeave(e: MouseEvent) {
-  // Only trigger when mouse moves to top of viewport
-  if (e.clientY <= 5 && shouldShow() && !isVisible.value) {
+  // Don't trigger on mobile — no mouse exit events are meaningful there
+  if (window.innerWidth < 768) return
+  // Only trigger on actual viewport exit (mouse leaves through the top)
+  if (e.clientY <= 0 && canShow.value && shouldShow() && !isVisible.value) {
     isVisible.value = true
   }
 }
 
 function close() {
   isVisible.value = false
+  incrementDismissCount()
   localStorage.setItem(STORAGE_KEY, Date.now().toString())
+}
+
+function maybeLater() {
+  isVisible.value = false
+  incrementDismissCount()
+  // Store a timestamp offset by the difference between short and long durations
+  // so shouldShow() (which subtracts DISMISS_DURATION_SHORT) correctly waits 72h
+  const effectiveTimestamp = Date.now() + (DISMISS_DURATION_LONG - DISMISS_DURATION_SHORT)
+  localStorage.setItem(STORAGE_KEY, effectiveTimestamp.toString())
 }
 
 async function handleSubmit() {
@@ -69,6 +97,8 @@ async function handleSubmit() {
 
 onMounted(() => {
   document.addEventListener('mouseleave', handleMouseLeave)
+  // Require 30 seconds on page before popup can show
+  setTimeout(() => { canShow.value = true }, 30000)
 })
 
 onUnmounted(() => {
@@ -103,13 +133,21 @@ onUnmounted(() => {
             v-if="isVisible"
             class="relative w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden"
           >
-            <!-- Close button -->
-            <button
-              @click="close"
-              class="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 text-gray-500 transition-colors z-10"
-            >
-              <CloseOutlined />
-            </button>
+            <!-- Close controls: Maybe Later + X -->
+            <div class="absolute top-4 right-4 flex items-center gap-2 z-10">
+              <button
+                @click="maybeLater"
+                class="text-xs text-gray-400 hover:text-gray-600 transition-colors px-2 py-1"
+              >
+                Maybe Later
+              </button>
+              <button
+                @click="close"
+                class="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 text-gray-500 transition-colors"
+              >
+                <CloseOutlined />
+              </button>
+            </div>
 
             <!-- Success state -->
             <div v-if="isSuccess" class="p-8 text-center">

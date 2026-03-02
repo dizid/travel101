@@ -166,7 +166,10 @@ const profileCompleteness = computed(() => {
             </div>
             <div v-if="userStore.activities.length === 0" class="card-thai text-center py-8">
               <span class="text-4xl mb-3 block">📋</span>
-              <p class="text-gray-500">No activity yet. Start exploring!</p>
+              <h3 class="text-base font-medium text-gray-700 mb-1">No activity yet</h3>
+              <p class="text-sm text-gray-500 max-w-xs mx-auto">
+                Start exploring Thailand — visit places, check visa guides, or try the AI chat to get personalized recommendations.
+              </p>
             </div>
             <div v-else class="space-y-3">
               <div
@@ -184,8 +187,8 @@ const profileCompleteness = computed(() => {
           </div>
         </div>
 
-        <!-- Sidebar -->
-        <div class="space-y-6">
+        <!-- Sidebar (shown first on mobile, right on desktop) -->
+        <div class="order-first lg:order-last space-y-6">
           <!-- Pro upgrade card -->
           <div
             v-if="!userStore.isPro"
@@ -278,10 +281,17 @@ const profileCompleteness = computed(() => {
 
           <!-- AI Usage (free users) -->
           <div v-if="!isProUsage" class="card-thai">
-            <h3 class="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <h3 class="font-semibold text-gray-900 mb-1 flex items-center gap-2">
               <ThunderboltOutlined class="text-primary-500" />
               Today's AI Usage
             </h3>
+            <p class="text-xs text-gray-500 mt-1 mb-3">
+              Free accounts include daily AI credits.
+              <RouterLink to="/dashboard#pro" class="text-primary-600 font-medium hover:underline">
+                Upgrade to Pro
+              </RouterLink>
+              for unlimited access.
+            </p>
 
             <div class="space-y-4">
               <div>

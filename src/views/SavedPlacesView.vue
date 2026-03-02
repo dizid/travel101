@@ -41,8 +41,8 @@ const isEmpty = computed(() => savedAttractions.value.length === 0)
         <h2 class="text-xl font-semibold text-gray-700 mb-2">
           No saved places yet
         </h2>
-        <p class="text-gray-500 mb-6">
-          Tap the heart icon on any attraction to save it here
+        <p class="text-gray-500 mb-6 max-w-sm mx-auto">
+          When you find places you love, tap the heart icon to save them here for easy access later.
         </p>
         <RouterLink
           to="/attractions"

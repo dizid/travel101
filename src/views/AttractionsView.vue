@@ -12,6 +12,7 @@ import ProfileQuickEdit from '@components/features/ProfileQuickEdit.vue'
 import type { AttractionCategory, UpcomingFestival } from '@/types'
 import { SearchOutlined, StarFilled, LoadingOutlined, EnvironmentOutlined } from '@ant-design/icons-vue'
 import BreadcrumbNav from '@components/ui/BreadcrumbNav.vue'
+import SkeletonLoader from '@components/ui/SkeletonLoader.vue'
 import { generateBreadcrumbSchema, injectStructuredData } from '@/utils/seo'
 
 const route = useRoute()
@@ -495,17 +496,22 @@ async function setCategory(cat: typeof activeCategory.value) {
         class="text-center py-16"
       >
         <span class="text-5xl mb-4 block">🔍</span>
-        <h3 class="text-lg font-medium text-gray-900 mb-2">No places found</h3>
-        <p class="text-gray-500">Try adjusting your search or filters.</p>
+        <h3 class="text-lg font-medium text-gray-900 mb-2">No places match your filters</h3>
+        <p class="text-gray-500 mb-6">Try adjusting your filters or clearing them to see all destinations.</p>
+        <button
+          @click="() => { searchQuery = ''; setCategory('all') }"
+          class="inline-flex items-center gap-2 px-6 py-3 bg-primary-600 text-white rounded-full hover:bg-primary-700 transition-colors font-medium"
+        >
+          Clear Filters
+        </button>
       </div>
 
       <!-- Loading state -->
       <div
         v-if="countryStore.attractionsLoading && filteredAttractions.length === 0"
-        class="text-center py-16"
+        class="grid sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6"
       >
-        <LoadingOutlined class="text-4xl text-primary-500 mb-4" />
-        <p class="text-gray-500">Loading attractions...</p>
+        <SkeletonLoader variant="card" :count="6" />
       </div>
     </div>
 

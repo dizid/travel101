@@ -35,9 +35,12 @@ const primaryNav = [
 
 const planNav = [
   { name: 'Visa Guide', path: '/visa', icon: '🛂' },
+  { name: 'Visa Countdown', path: '/visa-countdown', icon: '⏳' },
   { name: 'TDAC Form', path: '/tdac', icon: '📝' },
   { name: 'Onward Ticket', path: '/onward-ticket', icon: '✈️' },
+  { name: 'Phrasebook', path: '/phrasebook', icon: '🗣️' },
   { name: 'Good to Know', path: '/warnings', icon: '💡' },
+  { name: 'Emergency Contacts', path: '/emergency', icon: '🆘' },
 ]
 
 const isActiveRoute = (path: string) => {

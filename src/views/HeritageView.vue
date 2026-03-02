@@ -4,7 +4,7 @@ import { useApi } from '@/composables/useApi'
 import type { HeritageSite, HeritageImage } from '@/types'
 import HeritageCard from '@/components/features/heritage/HeritageCard.vue'
 import UpcomingFestivalBanner from '@/components/features/UpcomingFestivalBanner.vue'
-import LoadingSpinner from '@/components/ui/LoadingSpinner.vue'
+import SkeletonLoader from '@/components/ui/SkeletonLoader.vue'
 import {
   SearchOutlined,
   EnvironmentOutlined,
@@ -274,8 +274,8 @@ onMounted(() => {
       <UpcomingFestivalBanner :limit="3" />
 
       <!-- Loading State -->
-      <div v-if="loading" class="flex items-center justify-center py-20">
-        <LoadingSpinner size="lg" />
+      <div v-if="loading" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <SkeletonLoader variant="card" :count="6" />
       </div>
 
       <!-- Error State -->

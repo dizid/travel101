@@ -7,8 +7,11 @@ const currentYear = new Date().getFullYear()
 const footerLinks = {
   guides: [
     { name: 'Visa Guide', path: '/visa' },
+    { name: 'Visa Countdown', path: '/visa-countdown' },
     { name: 'TDAC Form', path: '/tdac' },
     { name: 'Good to Know', path: '/warnings' },
+    { name: 'Emergency Contacts', path: '/emergency' },
+    { name: 'Thai Phrasebook', path: '/phrasebook' },
     { name: 'Places to Visit', path: '/attractions' },
     { name: 'Festivals', path: '/festivals' },
     { name: 'Heritage Sites', path: '/heritage' },

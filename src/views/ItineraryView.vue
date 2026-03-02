@@ -8,12 +8,11 @@ import { downloadIcsCalendar, copyItineraryToClipboard, printItinerary } from '@
 import ItineraryGenerateModal from '@/components/features/ItineraryGenerateModal.vue'
 import ItineraryActivityModal from '@/components/features/ItineraryActivityModal.vue'
 import ItineraryCostAnalytics from '@/components/features/ItineraryCostAnalytics.vue'
+import ProGate from '@components/ui/ProGate.vue'
 import type { ItineraryActivity } from '@/composables/useItinerary'
 import {
   CalendarOutlined,
   PlusOutlined,
-  LockOutlined,
-  CrownFilled,
   EnvironmentOutlined,
   ClockCircleOutlined,
   DeleteOutlined,
@@ -425,44 +424,9 @@ async function handleDeleteActivity(activityId: string) {
 
     <!-- Content -->
     <div class="max-w-5xl mx-auto px-4 sm:px-6 py-8">
-      <!-- Pro Gate -->
-      <div v-if="!isPro" class="card-thai text-center py-12">
-        <div class="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-amber-100 to-amber-200 flex items-center justify-center">
-          <LockOutlined class="text-3xl text-amber-600" />
-        </div>
-        <h2 class="text-2xl font-display font-bold text-gray-900 mb-3">
-          Unlock AI Trip Planning
-        </h2>
-        <p class="text-gray-600 max-w-md mx-auto mb-6">
-          Get personalized itineraries crafted by AI based on your travel style, interests, and budget. Perfect for first-timers and seasoned travelers alike!
-        </p>
-
-        <div class="grid sm:grid-cols-3 gap-4 max-w-xl mx-auto mb-8">
-          <div class="p-4 rounded-xl bg-gray-50">
-            <span class="text-2xl block mb-2">🎯</span>
-            <span class="text-sm font-medium text-gray-700">Personalized</span>
-          </div>
-          <div class="p-4 rounded-xl bg-gray-50">
-            <span class="text-2xl block mb-2">📍</span>
-            <span class="text-sm font-medium text-gray-700">Day-by-day</span>
-          </div>
-          <div class="p-4 rounded-xl bg-gray-50">
-            <span class="text-2xl block mb-2">💡</span>
-            <span class="text-sm font-medium text-gray-700">Smart Tips</span>
-          </div>
-        </div>
-
-        <RouterLink
-          to="/dashboard#pro"
-          class="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-amber-400 to-orange-500 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all"
-        >
-          <CrownFilled />
-          Upgrade to Pro - $10/mo
-        </RouterLink>
-      </div>
-
-      <!-- Loading -->
-      <div v-else-if="loading" class="text-center py-12">
+      <ProGate featureName="AI-Powered Itineraries">
+        <!-- Loading -->
+      <div v-if="loading" class="text-center py-12">
         <LoadingOutlined class="text-4xl text-primary-500 animate-spin" />
         <p class="text-gray-500 mt-4">Loading your trips...</p>
       </div>
@@ -797,6 +761,7 @@ async function handleDeleteActivity(activityId: string) {
           </button>
         </div>
       </div>
+      </ProGate>
     </div>
 
     <!-- Generate Modal -->

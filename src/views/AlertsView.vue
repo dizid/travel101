@@ -3,8 +3,6 @@ import { ref, computed, onMounted } from 'vue'
 import { useAlerts, type Alert, type VisaType } from '@/composables/useAlerts'
 import {
   BellOutlined,
-  LockOutlined,
-  CrownFilled,
   CheckOutlined,
   DeleteOutlined,
   CalendarOutlined,
@@ -13,6 +11,7 @@ import {
   SettingOutlined,
   CloseOutlined,
 } from '@ant-design/icons-vue'
+import ProGate from '@components/ui/ProGate.vue'
 
 const {
   alerts,
@@ -129,44 +128,9 @@ const upcomingNonUrgent = computed(() =>
 
     <!-- Content -->
     <div class="max-w-5xl mx-auto px-4 sm:px-6 py-8">
-      <!-- Pro Gate -->
-      <div v-if="!isPro" class="card-thai text-center py-12">
-        <div class="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-amber-100 to-amber-200 flex items-center justify-center">
-          <LockOutlined class="text-3xl text-amber-600" />
-        </div>
-        <h2 class="text-2xl font-display font-bold text-gray-900 mb-3">
-          Stay on Top of Your Trip
-        </h2>
-        <p class="text-gray-600 max-w-md mx-auto mb-6">
-          Never miss a visa deadline, 90-day report, or important travel date. Get smart reminders tailored to your trip.
-        </p>
-
-        <div class="grid sm:grid-cols-3 gap-4 max-w-xl mx-auto mb-8">
-          <div class="p-4 rounded-xl bg-gray-50">
-            <span class="text-2xl block mb-2">🛂</span>
-            <span class="text-sm font-medium text-gray-700">Visa Expiry</span>
-          </div>
-          <div class="p-4 rounded-xl bg-gray-50">
-            <span class="text-2xl block mb-2">📋</span>
-            <span class="text-sm font-medium text-gray-700">90-Day Reports</span>
-          </div>
-          <div class="p-4 rounded-xl bg-gray-50">
-            <span class="text-2xl block mb-2">💡</span>
-            <span class="text-sm font-medium text-gray-700">Travel Tips</span>
-          </div>
-        </div>
-
-        <RouterLink
-          to="/dashboard#pro"
-          class="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-amber-400 to-orange-500 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all"
-        >
-          <CrownFilled />
-          Upgrade to Pro - $10/mo
-        </RouterLink>
-      </div>
-
+      <ProGate featureName="Travel Alerts">
       <!-- Loading -->
-      <div v-else-if="loading" class="text-center py-12">
+      <div v-if="loading" class="text-center py-12">
         <LoadingOutlined class="text-4xl text-primary-500 animate-spin" />
         <p class="text-gray-500 mt-4">Loading alerts...</p>
       </div>
@@ -322,6 +286,7 @@ const upcomingNonUrgent = computed(() =>
           </div>
         </div>
       </div>
+      </ProGate>
     </div>
 
     <!-- Setup Modal -->

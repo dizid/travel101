@@ -3,7 +3,7 @@ import { ref, onMounted, watch } from 'vue'
 import { SearchOutlined, ReadOutlined } from '@ant-design/icons-vue'
 import GuideCard from '@/components/features/GuideCard.vue'
 import BreadcrumbNav from '@/components/ui/BreadcrumbNav.vue'
-import LoadingSpinner from '@/components/ui/LoadingSpinner.vue'
+import SkeletonLoader from '@/components/ui/SkeletonLoader.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import { useGuides } from '@/composables/useGuides'
 import { updateMetaTags, getPageMeta, generateBreadcrumbSchema, injectStructuredData } from '@/utils/seo'
@@ -130,8 +130,8 @@ onMounted(() => {
       </div>
 
       <!-- Loading -->
-      <div v-if="loading" class="flex justify-center py-20">
-        <LoadingSpinner size="lg" text="Loading guides..." />
+      <div v-if="loading" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <SkeletonLoader variant="card" :count="6" />
       </div>
 
       <!-- Error -->

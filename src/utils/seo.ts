@@ -481,6 +481,21 @@ export const pageMeta: Record<string, PageMeta> = {
     description: 'In-depth travel guides for Thailand. Budget tips, destination guides, food recommendations, and practical advice from experienced travelers.',
     url: '/guides',
   },
+  emergency: {
+    title: 'Emergency Contacts — Thailand',
+    description: 'Thailand emergency numbers, embassy directory, and what to do in an emergency. Tourist Police 1155, ambulance 1669, and 15 embassy contacts in Bangkok.',
+    url: '/emergency',
+  },
+  phrasebook: {
+    title: 'Thai Phrasebook — 200+ Essential Phrases',
+    description: 'Learn 200+ essential Thai phrases for travel. Greetings, ordering food, bargaining, directions, and emergencies — with Thai script and phonetic pronunciation.',
+    url: '/phrasebook',
+  },
+  visaCountdown: {
+    title: 'Visa Countdown Timer',
+    description: 'Track your Thailand visa expiry with a visual countdown timer. Supports visa exemption, tourist visa, DTV, and more. 90-day reporting reminders included.',
+    url: '/visa-countdown',
+  },
 }
 
 /**

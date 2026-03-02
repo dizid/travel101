@@ -81,13 +81,22 @@ const planTools = [
           </p>
 
           <!-- CTAs — Explore Places is primary -->
-          <div class="flex flex-col sm:flex-row items-center justify-center gap-4 animate-slide-up animate-delay-200">
-            <RouterLink to="/attractions" class="btn-thai text-lg px-8 py-4">
-              Explore Places
-              <RightOutlined class="text-sm" />
-            </RouterLink>
-            <RouterLink to="/visa" class="btn-thai-outline text-lg px-8 py-4">
-              Plan Your Trip
+          <div class="flex flex-col items-center justify-center gap-4 animate-slide-up animate-delay-200">
+            <div class="flex flex-col sm:flex-row items-center gap-4">
+              <RouterLink to="/attractions" class="btn-thai text-lg px-8 py-4">
+                Explore Places
+                <RightOutlined class="text-sm" />
+              </RouterLink>
+              <RouterLink to="/visa" class="btn-thai-outline text-lg px-8 py-4">
+                Plan Your Trip
+              </RouterLink>
+            </div>
+            <RouterLink
+              v-if="!userStore.isAuthenticated"
+              to="/dashboard"
+              class="text-sm text-primary-600 font-medium hover:text-primary-700 underline underline-offset-4"
+            >
+              Create Free Account →
             </RouterLink>
           </div>
 

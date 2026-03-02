@@ -20,7 +20,7 @@ export interface Guide {
   viewCount: number
 }
 
-export type GuideCategory = 'destination' | 'practical' | 'culture' | 'food' | 'budget'
+export type GuideCategory = 'destination' | 'practical' | 'culture' | 'food' | 'budget' | 'neighborhood'
 
 // Shared state
 const guides = ref<Guide[]>([])
@@ -34,6 +34,7 @@ const CATEGORY_CONFIG: Record<string, { label: string; icon: string; color: stri
   culture: { label: 'Culture', icon: '🏛️', color: 'bg-purple-100 text-purple-700 border-purple-200' },
   food: { label: 'Food', icon: '🍜', color: 'bg-orange-100 text-orange-700 border-orange-200' },
   budget: { label: 'Budget', icon: '💰', color: 'bg-emerald-100 text-emerald-700 border-emerald-200' },
+  neighborhood: { label: 'Neighborhood', icon: '🏘️', color: 'bg-amber-100 text-amber-700 border-amber-200' },
 }
 
 // Build URL with query params

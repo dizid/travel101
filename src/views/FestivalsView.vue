@@ -6,6 +6,7 @@ import { useUserStore } from '@/stores/userStore'
 import type { Festival, UpcomingFestival, FestivalType, FestivalRegion } from '@/types'
 import FestivalCard from '@/components/features/FestivalCard.vue'
 import LoadingSpinner from '@/components/ui/LoadingSpinner.vue'
+import SkeletonLoader from '@/components/ui/SkeletonLoader.vue'
 import ProBadge from '@/components/ui/ProBadge.vue'
 import UpgradeModal from '@/components/ui/UpgradeModal.vue'
 import {
@@ -401,8 +402,8 @@ onMounted(() => {
       </div>
 
       <!-- Loading State -->
-      <div v-if="loading" class="flex justify-center py-16">
-        <LoadingSpinner size="lg" />
+      <div v-if="loading" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <SkeletonLoader variant="card" :count="6" />
       </div>
 
       <!-- Error State -->
