@@ -1,7 +1,8 @@
 import type { Context, Config } from '@netlify/functions'
 import Anthropic from '@anthropic-ai/sdk'
 import { getDb } from './lib/db.mts'
-import { checkAndIncrementUsage, isTestMode, type FeatureType } from './lib/usage.mts'
+import { checkAndIncrementUsage, type FeatureType } from './lib/usage.mts'
+import { optionalAuth } from './lib/auth.mts'
 
 interface UserPrefs {
   nationality?: string
@@ -73,10 +74,9 @@ export default async (req: Request, context: Context) => {
     return json({ error: 'Method not allowed' }, 405)
   }
 
-  // Auth check - require user to be logged in (test mode bypasses this)
-  const userId = req.headers.get('x-user-id')
-  const testMode = isTestMode(req)
-  if (!userId && !testMode) {
+  // Auth check - require user to be logged in
+  const userId = await optionalAuth(req)
+  if (!userId) {
     return json({ error: 'Unauthorized - login required for AI features' }, 401)
   }
 
@@ -115,10 +115,9 @@ export default async (req: Request, context: Context) => {
     }
     const featureType = featureMap[action]
 
-    // Check usage limits (test mode bypasses limits)
-    // Skip usage check entirely in test mode without userId
+    // Check usage limits
     if (featureType && userId) {
-      const usageCheck = await checkAndIncrementUsage(db, userId, featureType, testMode)
+      const usageCheck = await checkAndIncrementUsage(db, userId, featureType)
       if (!usageCheck.allowed) {
         return json({
           error: `Daily ${action.replace('_', ' ')} limit reached`,

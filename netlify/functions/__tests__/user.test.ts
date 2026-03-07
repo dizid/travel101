@@ -2,6 +2,20 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import '../__mocks__/db'
 import { setMockQueryResult, clearMockResults, getMockQueryLog, mockSql } from '../__mocks__/db'
 import { createMockRequest, parseResponse } from './helpers.js'
+
+vi.mock('../lib/auth.mts', () => ({
+  requireAuth: vi.fn(async (req: Request) => {
+    const userId = req.headers.get('x-user-id')
+    if (!userId) {
+      throw new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    }
+    return userId
+  }),
+}))
+
 import userHandler from '../user.mts'
 
 // Mock context

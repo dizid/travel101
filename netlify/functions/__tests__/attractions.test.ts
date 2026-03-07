@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import '../__mocks__/db'
 import { setMockQueryResult, clearMockResults } from '../__mocks__/db'
+import { setMockEnv, clearMockEnv } from './setup.js'
 import { createMockRequest, parseResponse } from './helpers.js'
 import attractionsHandler from '../attractions.mts'
 
@@ -65,7 +66,9 @@ const mockRecommendation = {
 describe('attractions function', () => {
   beforeEach(() => {
     clearMockResults()
+    clearMockEnv()
     vi.clearAllMocks()
+    setMockEnv('DATABASE_URL', 'postgresql://test:test@localhost/test')
   })
 
   describe('request validation', () => {

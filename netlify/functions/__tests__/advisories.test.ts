@@ -65,7 +65,7 @@ describe('advisories function', () => {
 
   describe('GET /api/advisories', () => {
     it('should return Thailand advisories', async () => {
-      setMockQueryResult('SELECT response_data FROM ai_cache', [])
+      setMockQueryResult('SELECT data FROM ai_cache', [])
       setMockQueryResult('INSERT INTO ai_cache', [])
 
       const req = createMockRequest('GET', '/api/advisories', {
@@ -83,7 +83,7 @@ describe('advisories function', () => {
     })
 
     it('should include advisory levels reference', async () => {
-      setMockQueryResult('SELECT response_data FROM ai_cache', [])
+      setMockQueryResult('SELECT data FROM ai_cache', [])
       setMockQueryResult('INSERT INTO ai_cache', [])
 
       const req = createMockRequest('GET', '/api/advisories', {
@@ -99,7 +99,7 @@ describe('advisories function', () => {
     })
 
     it('should include multiple advisory sources', async () => {
-      setMockQueryResult('SELECT response_data FROM ai_cache', [])
+      setMockQueryResult('SELECT data FROM ai_cache', [])
       setMockQueryResult('INSERT INTO ai_cache', [])
 
       const req = createMockRequest('GET', '/api/advisories', {
@@ -116,7 +116,7 @@ describe('advisories function', () => {
     })
 
     it('should include regional alerts for southern provinces', async () => {
-      setMockQueryResult('SELECT response_data FROM ai_cache', [])
+      setMockQueryResult('SELECT data FROM ai_cache', [])
       setMockQueryResult('INSERT INTO ai_cache', [])
 
       const req = createMockRequest('GET', '/api/advisories', {
@@ -137,7 +137,7 @@ describe('advisories function', () => {
     })
 
     it('should include lastChecked timestamp', async () => {
-      setMockQueryResult('SELECT response_data FROM ai_cache', [])
+      setMockQueryResult('SELECT data FROM ai_cache', [])
       setMockQueryResult('INSERT INTO ai_cache', [])
 
       const req = createMockRequest('GET', '/api/advisories', {
@@ -155,7 +155,7 @@ describe('advisories function', () => {
 
   describe('province filtering', () => {
     it('should filter regional alerts by province', async () => {
-      setMockQueryResult('SELECT response_data FROM ai_cache', [])
+      setMockQueryResult('SELECT data FROM ai_cache', [])
       setMockQueryResult('SELECT * FROM province_safety', [mockProvinceSafety])
       setMockQueryResult('INSERT INTO ai_cache', [])
 
@@ -172,7 +172,7 @@ describe('advisories function', () => {
     })
 
     it('should include province safety data when available', async () => {
-      setMockQueryResult('SELECT response_data FROM ai_cache', [])
+      setMockQueryResult('SELECT data FROM ai_cache', [])
       setMockQueryResult('SELECT * FROM province_safety', [mockProvinceSafety])
       setMockQueryResult('INSERT INTO ai_cache', [])
 
@@ -189,7 +189,7 @@ describe('advisories function', () => {
     })
 
     it('should return null provinceSafety when not found', async () => {
-      setMockQueryResult('SELECT response_data FROM ai_cache', [])
+      setMockQueryResult('SELECT data FROM ai_cache', [])
       setMockQueryResult('SELECT * FROM province_safety', [])
       setMockQueryResult('INSERT INTO ai_cache', [])
 
@@ -204,7 +204,7 @@ describe('advisories function', () => {
     })
 
     it('should filter for southern provinces with alerts', async () => {
-      setMockQueryResult('SELECT response_data FROM ai_cache', [])
+      setMockQueryResult('SELECT data FROM ai_cache', [])
       setMockQueryResult('SELECT * FROM province_safety', [])
       setMockQueryResult('INSERT INTO ai_cache', [])
 
@@ -230,7 +230,7 @@ describe('advisories function', () => {
         regionalAlerts: [],
         lastChecked: '2025-01-01T00:00:00.000Z',
       }
-      setMockQueryResult('SELECT response_data FROM ai_cache', [{ response_data: cachedResponse }])
+      setMockQueryResult('SELECT data FROM ai_cache', [{ data: cachedResponse }])
 
       const req = createMockRequest('GET', '/api/advisories', {
         headers: {},
@@ -244,7 +244,7 @@ describe('advisories function', () => {
     })
 
     it('should cache new responses', async () => {
-      setMockQueryResult('SELECT response_data FROM ai_cache', [])
+      setMockQueryResult('SELECT data FROM ai_cache', [])
       setMockQueryResult('INSERT INTO ai_cache', [])
 
       const req = createMockRequest('GET', '/api/advisories', {
@@ -258,7 +258,7 @@ describe('advisories function', () => {
     })
 
     it('should use province-specific cache key', async () => {
-      setMockQueryResult('SELECT response_data FROM ai_cache', [])
+      setMockQueryResult('SELECT data FROM ai_cache', [])
       setMockQueryResult('SELECT * FROM province_safety', [])
       setMockQueryResult('INSERT INTO ai_cache', [])
 
@@ -274,7 +274,7 @@ describe('advisories function', () => {
 
   describe('advisory calculations', () => {
     it('should calculate overall level from advisories', async () => {
-      setMockQueryResult('SELECT response_data FROM ai_cache', [])
+      setMockQueryResult('SELECT data FROM ai_cache', [])
       setMockQueryResult('INSERT INTO ai_cache', [])
 
       const req = createMockRequest('GET', '/api/advisories', {

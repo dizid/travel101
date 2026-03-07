@@ -58,16 +58,6 @@ describe('usage function', () => {
       expect(body.isPro).toBe(true)
     })
 
-    it('should grant Pro access in test mode without auth', async () => {
-      const req = createMockRequest('GET', '/api/usage', {
-        headers: { 'x-test-mode': 'test123' },
-      })
-      const response = await usageHandler(req, mockContext)
-      const body = await parseResponse<{ isPro: boolean }>(response)
-
-      expect(response.status).toBe(200)
-      expect(body.isPro).toBe(true)
-    })
   })
 
   describe('method validation', () => {

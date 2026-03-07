@@ -17,7 +17,11 @@ declare global {
 
 globalThis.Netlify = {
   env: {
-    get: (key: string) => mockEnvStore[key],
+    get: (key: string) => mockEnvStore[key] ?? process.env[key],
+    set: (key: string, value: string) => { mockEnvStore[key] = value },
+    delete: (key: string) => { delete mockEnvStore[key] },
+    toObject: () => ({ ...process.env, ...mockEnvStore }),
+    has: (key: string) => key in mockEnvStore || key in process.env,
   },
 }
 

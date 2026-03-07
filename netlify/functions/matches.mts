@@ -1,6 +1,6 @@
 import type { Context, Config } from '@netlify/functions'
 import { getDb } from './lib/db.mts'
-import { isTestMode } from './lib/usage.mts'
+import { requireAuth } from './lib/auth.mts'
 
 const json = (data: unknown, status = 200) =>
   new Response(JSON.stringify(data), {
@@ -8,8 +8,7 @@ const json = (data: unknown, status = 200) =>
     headers: { 'Content-Type': 'application/json' },
   })
 
-async function requirePro(db: ReturnType<typeof getDb>, userId: string, testMode = false) {
-  if (testMode) return // Test mode bypasses Pro check
+async function requirePro(db: ReturnType<typeof getDb>, userId: string) {
   const result = await db`SELECT is_pro FROM user_profiles WHERE user_id = ${userId}`
   if (result.length === 0 || !result[0].is_pro) {
     throw new Error('Pro subscription required')
@@ -18,14 +17,15 @@ async function requirePro(db: ReturnType<typeof getDb>, userId: string, testMode
 
 export default async (req: Request, context: Context) => {
   const db = await getDb()
-  const userId = req.headers.get('x-user-id')
-
-  if (!userId) {
-    return json({ error: 'Unauthorized' }, 401)
+  let userId: string
+  try {
+    userId = await requireAuth(req)
+  } catch (response) {
+    return response as Response
   }
 
   try {
-    await requirePro(db, userId, isTestMode(req))
+    await requirePro(db, userId)
 
     const url = new URL(req.url)
     const attractionSlug = url.searchParams.get('slug')

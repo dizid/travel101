@@ -156,8 +156,8 @@ describe('matching', () => {
       }
 
       const score = calculateMatchScore(prefs, categories)
-      // No match for the interest, so weight contributes 0
-      expect(score).toBe(0)
+      // No match for the interest, so totalWeight stays 0 → DEFAULT_SCORE (50)
+      expect(score).toBe(50)
     })
 
     it('should return 50 when totalWeight is 0', () => {

@@ -1,7 +1,7 @@
 import type { Context, Config } from '@netlify/functions'
 import { getDb } from './lib/db.mts'
 import { calculateMatchScore, getMatchReasons, type UserPrefs } from './lib/matching.mts'
-import { isTestMode } from './lib/usage.mts'
+import { optionalAuth } from './lib/auth.mts'
 
 interface Attraction {
   id: string
@@ -460,8 +460,8 @@ async function handleDetail(
     `
 
     // Redact Pro-only secret content for non-Pro users
-    const userId = req.headers.get('x-user-id')
-    let userIsPro = isTestMode(req)
+    const userId = await optionalAuth(req)
+    let userIsPro = false
     if (!userIsPro && userId) {
       const proCheck = await db`SELECT is_pro FROM user_profiles WHERE user_id = ${userId}`
       userIsPro = proCheck.length > 0 && proCheck[0].is_pro

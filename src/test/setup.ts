@@ -6,6 +6,17 @@ import { createPinia, setActivePinia } from 'pinia'
 // Global Mocks
 // ============================================
 
+// Mock Netlify global (used by serverless functions via Netlify.env.get)
+;(globalThis as any).Netlify = {
+  env: {
+    get: (key: string) => process.env[key],
+    set: (key: string, value: string) => { process.env[key] = value },
+    delete: (key: string) => { delete process.env[key] },
+    toObject: () => ({ ...process.env }),
+    has: (key: string) => key in process.env,
+  },
+}
+
 // Mock fetch API
 export const mockFetch = vi.fn()
 global.fetch = mockFetch

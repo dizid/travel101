@@ -18,11 +18,20 @@ vi.mock('@ant-design/icons-vue', () => ({
 const routes = [
   { path: '/', name: 'home', component: { template: '<div>Home</div>' } },
   { path: '/visa', name: 'visa', component: { template: '<div>Visa</div>' } },
+  { path: '/visa-countdown', name: 'visa-countdown', component: { template: '<div>Countdown</div>' } },
   { path: '/tdac', name: 'tdac', component: { template: '<div>TDAC</div>' } },
   { path: '/warnings', name: 'warnings', component: { template: '<div>Warnings</div>' } },
   { path: '/attractions', name: 'attractions', component: { template: '<div>Attractions</div>' } },
+  { path: '/festivals', name: 'festivals', component: { template: '<div>Festivals</div>' } },
+  { path: '/heritage', name: 'heritage', component: { template: '<div>Heritage</div>' } },
+  { path: '/guides', name: 'guides', component: { template: '<div>Guides</div>' } },
   { path: '/dashboard', name: 'dashboard', component: { template: '<div>Dashboard</div>' } },
   { path: '/saved', name: 'saved', component: { template: '<div>Saved</div>' } },
+  { path: '/profile', name: 'profile', component: { template: '<div>Profile</div>' } },
+  { path: '/about', name: 'about', component: { template: '<div>About</div>' } },
+  { path: '/onward-ticket', name: 'onward-ticket', component: { template: '<div>Onward</div>' } },
+  { path: '/phrasebook', name: 'phrasebook', component: { template: '<div>Phrasebook</div>' } },
+  { path: '/emergency', name: 'emergency', component: { template: '<div>Emergency</div>' } },
 ]
 
 const createTestRouter = () =>
@@ -89,10 +98,12 @@ describe('AppHeader', () => {
     it('has correct links for all navigation items', () => {
       const wrapper = mountHeader()
 
-      expect(wrapper.find('a[href="/visa"]').exists()).toBe(true)
-      expect(wrapper.find('a[href="/tdac"]').exists()).toBe(true)
-      expect(wrapper.find('a[href="/warnings"]').exists()).toBe(true)
+      // Primary nav links are always visible in desktop nav
       expect(wrapper.find('a[href="/attractions"]').exists()).toBe(true)
+      expect(wrapper.find('a[href="/festivals"]').exists()).toBe(true)
+      expect(wrapper.find('a[href="/heritage"]').exists()).toBe(true)
+      expect(wrapper.find('a[href="/guides"]').exists()).toBe(true)
+      // Plan dropdown items (/visa, /tdac, /warnings) only render when dropdown is open
     })
 
     it('has dashboard link', () => {
@@ -108,23 +119,25 @@ describe('AppHeader', () => {
 
   describe('active route highlighting', () => {
     it('highlights current route', async () => {
-      await router.push('/visa')
+      await router.push('/attractions')
       await router.isReady()
 
       const wrapper = mountHeader()
-      const visaLink = wrapper.find('a[href="/visa"]')
+      // /attractions is a primaryNav link, always visible in desktop nav
+      const attractionsLink = wrapper.find('a[href="/attractions"]')
 
-      expect(visaLink.classes()).toContain('bg-primary-50')
+      expect(attractionsLink.classes()).toContain('bg-primary-50')
     })
 
     it('does not highlight inactive routes', async () => {
-      await router.push('/visa')
+      await router.push('/attractions')
       await router.isReady()
 
       const wrapper = mountHeader()
-      const attractionsLink = wrapper.find('a[href="/attractions"]')
+      // /festivals is a different primaryNav link — should not be active
+      const festivalsLink = wrapper.find('a[href="/festivals"]')
 
-      expect(attractionsLink.classes()).not.toContain('bg-primary-50')
+      expect(festivalsLink.classes()).not.toContain('bg-primary-50')
     })
   })
 
@@ -148,7 +161,8 @@ describe('AppHeader', () => {
   describe('mobile menu', () => {
     it('has mobile menu toggle button', () => {
       const wrapper = mountHeader()
-      const menuButton = wrapper.find('button')
+      // The mobile menu toggle has md:hidden class to hide it on desktop
+      const menuButton = wrapper.find('button.md\\:hidden')
 
       expect(menuButton.exists()).toBe(true)
     })
@@ -156,23 +170,23 @@ describe('AppHeader', () => {
     it('mobile menu is closed by default', () => {
       const wrapper = mountHeader()
 
-      // Menu icon should be visible, not close icon
+      // Menu icon should be visible, not close icon (from mocked MenuOutlined)
       expect(wrapper.text()).toContain('☰')
     })
 
     it('opens mobile menu when toggle clicked', async () => {
       const wrapper = mountHeader()
-      const menuButton = wrapper.find('button')
+      const menuButton = wrapper.find('button.md\\:hidden')
 
       await menuButton.trigger('click')
 
-      // Close icon should now be visible
+      // Close icon should now be visible (from mocked CloseOutlined)
       expect(wrapper.text()).toContain('✕')
     })
 
     it('navigation links trigger close menu handler', async () => {
       const wrapper = mountHeader()
-      const menuButton = wrapper.find('button')
+      const menuButton = wrapper.find('button.md\\:hidden')
 
       // Open menu
       await menuButton.trigger('click')
@@ -191,7 +205,7 @@ describe('AppHeader', () => {
 
     it('closes mobile menu when clicking logo', async () => {
       const wrapper = mountHeader()
-      const menuButton = wrapper.find('button')
+      const menuButton = wrapper.find('button.md\\:hidden')
 
       // Open menu
       await menuButton.trigger('click')
@@ -201,7 +215,7 @@ describe('AppHeader', () => {
       await logoLink.trigger('click')
       await flushPromises()
 
-      // Menu should be closed
+      // Menu should be closed (CloseOutlined disappears, MenuOutlined shows again)
       expect(wrapper.text()).toContain('☰')
     })
   })
@@ -209,7 +223,7 @@ describe('AppHeader', () => {
   describe('mobile navigation content', () => {
     it('shows saved places in mobile menu', async () => {
       const wrapper = mountHeader()
-      const menuButton = wrapper.find('button')
+      const menuButton = wrapper.find('button.md\\:hidden')
 
       await menuButton.trigger('click')
 
@@ -218,7 +232,7 @@ describe('AppHeader', () => {
 
     it('shows dashboard in mobile menu', async () => {
       const wrapper = mountHeader()
-      const menuButton = wrapper.find('button')
+      const menuButton = wrapper.find('button.md\\:hidden')
 
       await menuButton.trigger('click')
 

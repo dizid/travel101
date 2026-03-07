@@ -88,7 +88,7 @@ describe('subscription function', () => {
       const data = await parseResponse(response)
 
       expect(response.status).toBe(401)
-      expect(data.error).toBe('Unauthorized')
+      expect(data.error).toBe('No authentication provided')
     })
   })
 

@@ -1,5 +1,6 @@
 import type { Context, Config } from '@netlify/functions'
 import { getDb } from './lib/db.mts'
+import { optionalAuth } from './lib/auth.mts'
 
 interface ScamReport {
   id: string
@@ -54,7 +55,7 @@ const SCAM_TYPES = [
 export default async (req: Request, context: Context) => {
   const db = await getDb()
   const url = new URL(req.url)
-  const userId = req.headers.get('x-user-id')
+  const userId = await optionalAuth(req)
 
   try {
     // GET /api/safety - Get scam reports and safety info

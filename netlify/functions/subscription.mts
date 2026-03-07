@@ -1,6 +1,7 @@
 import type { Context, Config } from '@netlify/functions'
 import Stripe from 'stripe'
 import { getDb } from './lib/db.mts'
+import { requireAuth } from './lib/auth.mts'
 
 function getStripe() {
   const secretKey = Netlify.env.get('STRIPE_SECRET_KEY')
@@ -12,13 +13,11 @@ function getStripe() {
 
 export default async (req: Request, context: Context) => {
   const db = await getDb()
-  const userId = req.headers.get('x-user-id')
-
-  if (!userId) {
-    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-      status: 401,
-      headers: { 'Content-Type': 'application/json' },
-    })
+  let userId: string
+  try {
+    userId = await requireAuth(req)
+  } catch (response) {
+    return response as Response
   }
 
   try {

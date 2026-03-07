@@ -31,11 +31,6 @@ export function useApi() {
         headers['x-user-id'] = userStore.authUserId
       }
 
-      // Pass test mode to backend for pro feature testing
-      if (userStore.testMode) {
-        headers['x-test-mode'] = 'test123'
-      }
-
       const response = await fetch(`${API_BASE}${endpoint}`, {
         method,
         headers,

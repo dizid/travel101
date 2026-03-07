@@ -5,7 +5,6 @@ import { setMockQueryResult, clearMockResults } from '../../__mocks__/db'
 
 import {
   FREE_LIMITS,
-  isTestMode,
   checkAndIncrementUsage,
   getUsageStatus,
   checkUsage,
@@ -28,27 +27,6 @@ describe('usage lib', () => {
     })
   })
 
-  describe('isTestMode', () => {
-    it('should return true when test mode header is set', () => {
-      const req = new Request('http://localhost/api/test', {
-        headers: { 'x-test-mode': 'test123' },
-      })
-      expect(isTestMode(req)).toBe(true)
-    })
-
-    it('should return false when test mode header is missing', () => {
-      const req = new Request('http://localhost/api/test')
-      expect(isTestMode(req)).toBe(false)
-    })
-
-    it('should return false when test mode header has wrong value', () => {
-      const req = new Request('http://localhost/api/test', {
-        headers: { 'x-test-mode': 'wrong' },
-      })
-      expect(isTestMode(req)).toBe(false)
-    })
-  })
-
   describe('checkAndIncrementUsage', () => {
     it('should allow Pro users with unlimited access', async () => {
       setMockQueryResult('SELECT is_pro FROM user_profiles', [{ is_pro: true }])
@@ -58,15 +36,6 @@ describe('usage lib', () => {
       expect(result.allowed).toBe(true)
       expect(result.isPro).toBe(true)
       expect(result.remaining).toBe(Infinity)
-    })
-
-    it('should allow test mode users with unlimited access', async () => {
-      setMockQueryResult('SELECT is_pro FROM user_profiles', [{ is_pro: false }])
-
-      const result = await checkAndIncrementUsage(mockSql, 'user-test', 'general_chat', true)
-
-      expect(result.allowed).toBe(true)
-      expect(result.isPro).toBe(true)
     })
 
     it('should allow free user within limit', async () => {
@@ -131,14 +100,6 @@ describe('usage lib', () => {
       expect(result.usage.general_chat.remaining).toBe(0)
       expect(result.usage.packing.used).toBe(0)
       expect(result.usage.packing.remaining).toBe(1)
-    })
-
-    it('should handle test mode as Pro', async () => {
-      setMockQueryResult('SELECT is_pro FROM user_profiles', [{ is_pro: false }])
-
-      const result = await getUsageStatus(mockSql, 'user-free', true)
-
-      expect(result.isPro).toBe(true)
     })
   })
 

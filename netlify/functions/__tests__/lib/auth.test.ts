@@ -11,7 +11,7 @@ vi.mock('jose', () => ({
 }))
 
 // Must import after mocking
-import { validateAuth, requireAuth, unauthorized } from '../../lib/auth.mts'
+import { validateAuth, requireAuth, optionalAuth, unauthorized } from '../../lib/auth.mts'
 
 describe('auth lib', () => {
   beforeEach(() => {
@@ -118,6 +118,26 @@ describe('auth lib', () => {
         const body = await response.json()
         expect(body.error).toBe('No authentication provided')
       }
+    })
+  })
+
+  describe('optionalAuth', () => {
+    it('should return userId when authenticated', async () => {
+      const req = new Request('http://localhost/api/test', {
+        headers: { 'x-user-id': 'user-opt-123' },
+      })
+
+      const userId = await optionalAuth(req)
+
+      expect(userId).toBe('user-opt-123')
+    })
+
+    it('should return null when not authenticated', async () => {
+      const req = new Request('http://localhost/api/test')
+
+      const userId = await optionalAuth(req)
+
+      expect(userId).toBeNull()
     })
   })
 

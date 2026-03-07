@@ -100,7 +100,7 @@ describe('sitemap function', () => {
       expect(xml).toContain('<loc>https://happyroam.travel/terms</loc>')
     })
 
-    it('should include all 10 static pages', async () => {
+    it('should include core static pages', async () => {
       setMockNeonResult('SELECT slug, updated_at', [])
 
       const request = createMockRequest({ method: 'GET', url: '/api/sitemap' })
@@ -115,7 +115,6 @@ describe('sitemap function', () => {
         '/tdac',
         '/warnings',
         '/itinerary',
-        '/profile',
         '/privacy',
         '/terms',
         '/contact',

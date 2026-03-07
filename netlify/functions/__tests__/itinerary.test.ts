@@ -33,7 +33,7 @@ describe('itinerary function', () => {
       const data = await parseResponse(response)
 
       expect(response.status).toBe(401)
-      expect(data.error).toBe('Unauthorized')
+      expect(data.error).toBe('No authentication provided')
     })
 
     it('should return 403 for non-Pro users', async () => {
@@ -374,7 +374,7 @@ describe('itinerary function', () => {
     })
 
     it('should update day', async () => {
-      setMockQueryResult('SELECT d.id, i.user_id', [{ id: 'day-1', user_id: 'user-123' }])
+      setMockQueryResult('SELECT d.id, d.itinerary_id', [{ id: 'day-1', itinerary_id: 'itin-1' }])
       setMockQueryResult('UPDATE itinerary_days SET', [
         { id: 'day-1', location: 'Chiang Mai' },
       ])
@@ -393,8 +393,8 @@ describe('itinerary function', () => {
     })
 
     it('should delete day and renumber remaining', async () => {
-      setMockQueryResult('SELECT d.id, d.itinerary_id, i.user_id', [
-        { id: 'day-2', itinerary_id: 'itin-1', user_id: 'user-123' },
+      setMockQueryResult('SELECT d.id, d.itinerary_id', [
+        { id: 'day-2', itinerary_id: 'itin-1' },
       ])
       setMockQueryResult('DELETE FROM itinerary_days', [])
       setMockQueryResult('WITH numbered AS', [])
@@ -414,7 +414,7 @@ describe('itinerary function', () => {
     })
 
     it('should return 404 when day not found', async () => {
-      setMockQueryResult('SELECT d.id, i.user_id', [])
+      setMockQueryResult('SELECT d.id, d.itinerary_id', [])
 
       const req = createMockRequest('PUT', '/api/itinerary?dayId=nonexistent&resource=day', {
         headers: { 'x-user-id': 'user-123' },
@@ -462,8 +462,8 @@ describe('itinerary function', () => {
     })
 
     it('should update activity', async () => {
-      setMockQueryResult('SELECT a.id, d.itinerary_id', [
-        { id: 'act-1', itinerary_id: 'itin-1' },
+      setMockQueryResult('SELECT a.id, a.day_id, d.itinerary_id', [
+        { id: 'act-1', day_id: 'day-1', itinerary_id: 'itin-1' },
       ])
       setMockQueryResult('UPDATE itinerary_activities SET', [
         { id: 'act-1', title: 'Updated Activity' },
@@ -483,8 +483,8 @@ describe('itinerary function', () => {
     })
 
     it('should reorder activity', async () => {
-      setMockQueryResult('SELECT a.id, d.itinerary_id', [
-        { id: 'act-1', itinerary_id: 'itin-1' },
+      setMockQueryResult('SELECT a.id, a.day_id, d.itinerary_id', [
+        { id: 'act-1', day_id: 'day-1', itinerary_id: 'itin-1' },
       ])
       setMockQueryResult('UPDATE itinerary_activities SET', [
         { id: 'act-1', sort_order: 0, day_id: 'day-2' },
@@ -523,7 +523,7 @@ describe('itinerary function', () => {
     })
 
     it('should return 404 when activity not found', async () => {
-      setMockQueryResult('SELECT a.id, d.itinerary_id', [])
+      setMockQueryResult('SELECT a.id, a.day_id, d.itinerary_id', [])
 
       const req = createMockRequest('PUT', '/api/itinerary?activityId=nonexistent&resource=activity', {
         headers: { 'x-user-id': 'user-123' },

@@ -63,25 +63,22 @@ describe('useMatcher', () => {
         expect(score).toBe(95)
       })
 
-      it('should dilute score when other prefs add weight without matching categories', () => {
-        // Multiple prefs where only one matches - score gets diluted
+      it('should not dilute score when non-matching prefs produce no category hit', () => {
+        // Multiple prefs where only one matches - weight is only added when score > 0
         // mockTempleAttraction has: culture: 0.98, history: 0.95, photography: 0.85, authentic: 0.9
         // It does NOT have nightlife or luxury
         userStore.profile.prefs = {
           interests: ['culture'], // matches temple (0.98)
-          travelStyle: ['nightlife'], // doesn't match temple
-          budget: 'luxury', // doesn't match temple
+          travelStyle: ['nightlife'], // doesn't match temple → score=0 → weight NOT added
+          budget: 'luxury', // luxury not in temple categories → budgetScore=0 → weight NOT added
         } as any
         const { calculateLocalScore } = useMatcher()
 
         const score = calculateLocalScore(mockTempleAttraction)
 
-        // Culture scores 98 (weight 3), but other prefs add weight without contributing
-        // totalWeight = 3 + 2.5 + 2 = 7.5
-        // totalScore = 0.98 * 3 = 2.94
-        // Final = (2.94 / 7.5) * 100 = 39.2
-        expect(score).toBeGreaterThan(30)
-        expect(score).toBeLessThan(50)
+        // Only culture adds weight: totalWeight=3, totalScore=0.98*3=2.94
+        // Final = (2.94 / 3) * 100 = 98
+        expect(score).toBe(98)
       })
 
       it('should map temples interest to culture category', () => {
@@ -126,11 +123,11 @@ describe('useMatcher', () => {
         userStore.profile.prefs = { interests: ['wellness'] } as any
         const { calculateLocalScore } = useMatcher()
 
-        // Beach attraction doesn't have wellness category
+        // Beach attraction doesn't have wellness category — score=0 so addScore
+        // never runs, totalWeight stays 0, algorithm returns DEFAULT_SCORE (50)
         const score = calculateLocalScore(mockBeachAttraction)
 
-        // No match: score = 0/3 * 100 = 0
-        expect(score).toBe(0)
+        expect(score).toBe(50)
       })
     })
 
@@ -195,22 +192,22 @@ describe('useMatcher', () => {
         }
         const score = calculateLocalScore(budgetAttraction)
 
-        // Score = (0*2.0 - 0.2*2.0) / 2.0 * 100 = -0.4/2 * 100 = -20
-        expect(score).toBeLessThan(0)
+        // luxury: 0 → budgetScore = 0 → addScore never fires, totalWeight = 0
+        // → algorithm returns DEFAULT_SCORE (50)
+        expect(score).toBe(50)
       })
 
       it('should not penalize mid-budget travelers', () => {
         userStore.profile.prefs = { budget: 'mid' } as any
         const { calculateLocalScore } = useMatcher()
 
-        // Mid-budget doesn't get penalized
+        // 'mid' isn't a category on any attraction — budgetScore = 0 → addScore
+        // never fires, totalWeight = 0 → algorithm returns DEFAULT_SCORE (50)
         const scoreAtLuxury = calculateLocalScore(mockLuxuryAttraction)
         const scoreAtBudget = calculateLocalScore(mockNomadAttraction)
 
-        // No penalty, but also no match since there's no 'mid' category
-        // Both return 0 since 'mid' isn't in categories
-        expect(scoreAtLuxury).toBe(0)
-        expect(scoreAtBudget).toBe(0)
+        expect(scoreAtLuxury).toBe(50)
+        expect(scoreAtBudget).toBe(50)
       })
     })
 
@@ -241,11 +238,11 @@ describe('useMatcher', () => {
         userStore.profile.prefs = { groupType: 'solo' } as any
         const { calculateLocalScore } = useMatcher()
 
-        // Solo doesn't map to any category
+        // 'solo' has no GROUP_CATEGORY_MAP entry — addScore never fires,
+        // totalWeight = 0 → algorithm returns DEFAULT_SCORE (50)
         const score = calculateLocalScore(mockBeachAttraction)
 
-        // Weight added but no score: 0/1.5 * 100 = 0
-        expect(score).toBe(0)
+        expect(score).toBe(50)
       })
     })
 
@@ -267,8 +264,10 @@ describe('useMatcher', () => {
 
         const score = calculateLocalScore(mockNomadAttraction)
 
-        // Holiday doesn't get nomad bonus: 0/1.5 * 100 = 0
-        expect(score).toBe(0)
+        // Holiday maps to ['relaxation','beach','party','nightlife','romantic','island']
+        // None present on mockNomadAttraction → tripCount = 0 → no weight added
+        // totalWeight = 0 → algorithm returns DEFAULT_SCORE (50)
+        expect(score).toBe(50)
       })
     })
 
@@ -282,14 +281,14 @@ describe('useMatcher', () => {
         // Temple has: culture: 0.98, history: 0.95, photography: 0.85, authentic: 0.9
         const score = calculateLocalScore(mockTempleAttraction)
 
-        // temples→culture (0.98*3) + food (0*3) + nature (0*3) = 2.94
-        // adventure (0*2.5) + culture (0.98*2.5) = 2.45
-        // budget (0*2 with penalty since no luxury) = 0
-        // solo (0) = 0
-        // holiday (0) = 0
-        // Total: 5.39 / (9 + 5 + 2 + 1.5 + 1.5) = 5.39 / 19 = 0.284 -> 28
-        expect(score).toBeGreaterThan(20)
-        expect(score).toBeLessThan(40)
+        // temples→culture (0.98*3, w=3) | food (0→skip) | nature (0→skip)
+        // adventure (0→skip) | culture style (0.98*2.5, w=2.5)
+        // budget='budget': temple has no 'budget' category → budgetScore=0 → skip
+        // solo: no GROUP_CATEGORY_MAP entry → skip
+        // holiday: temple has no holiday categories → tripCount=0 → skip
+        // totalScore=2.94+2.45=5.39, totalWeight=5.5
+        // Final = round(5.39/5.5*100) = 98
+        expect(score).toBe(98)
       })
 
       it('should calculate weighted score for luxury couple at beach resort', () => {
@@ -298,17 +297,17 @@ describe('useMatcher', () => {
 
         // luxuryCouplePrefs: interests: ['beach', 'wellness', 'food'], travelStyle: ['relaxation']
         // budget: 'luxury', groupType: 'couple', tripType: 'holiday'
-        // Luxury has: beach 0.9, luxury 0.95, wellness 0.85, romantic 0.9, relaxation 0.85
+        // Luxury has: beach 0.9, luxury 0.95, wellness 0.85, romantic 0.9, relaxation 0.85, budget 0.1
         const score = calculateLocalScore(mockLuxuryAttraction)
 
-        // Interests: beach(0.9*3) + wellness(0.85*3) + food(0*3) = 5.25
-        // Style: relaxation(0.85*2.5) = 2.125
-        // Budget: luxury(0.95*2) = 1.9
-        // Group: couple→romantic(0.9*1.5) = 1.35
-        // Trip: holiday(0) = 0
-        // Total: 10.625 / (9 + 2.5 + 2 + 1.5 + 1.5) = 10.625 / 16.5 = 0.644 -> 64
-        expect(score).toBeGreaterThan(55)
-        expect(score).toBeLessThan(75)
+        // Interests: beach(0.9*3,w=3) + wellness(0.85*3,w=3) + food(0→skip)
+        // Style: relaxation(0.85*2.5,w=2.5)
+        // Budget: luxury(0.95*2,w=2) — budget:0.1 < 0.7 threshold, no penalty
+        // Group: couple→romantic(0.9*1.5,w=1.5)
+        // Trip holiday: relaxation(0.85)+beach(0.9)+romantic(0.9)=2.65, avg=0.883, contrib=0.883*1.5,w=1.5
+        // totalScore≈11.95, totalWeight=13.5
+        // Final = round(11.95/13.5*100) = 89
+        expect(score).toBe(89)
       })
 
       it('should calculate weighted score for digital nomad at Chiang Mai', () => {
@@ -320,14 +319,14 @@ describe('useMatcher', () => {
         // Nomad has: nomad 0.95, culture 0.85, food 0.9, budget 0.8, authentic 0.85, nature 0.7
         const score = calculateLocalScore(mockNomadAttraction)
 
-        // Interests: food(0.9*3) + nature(0.7*3) = 4.8
-        // Style: culture(0.85*2.5) = 2.125
-        // Budget: mid(0) = 0
-        // Group: solo(0) = 0
-        // Trip: nomad(0.95*1.5) = 1.425
-        // Total: 8.35 / (6 + 2.5 + 2 + 1.5 + 1.5) = 8.35 / 13.5 = 0.619 -> 62
-        expect(score).toBeGreaterThan(55)
-        expect(score).toBeLessThan(70)
+        // Interests: food(0.9*3,w=3) + nature(0.7*3,w=3)
+        // Style: culture(0.85*2.5,w=2.5)
+        // Budget: 'mid' not in categories → budgetScore=0 → skip
+        // Group: solo → no GROUP_CATEGORY_MAP entry → skip
+        // Trip: digital_nomad checks ['nomad'] → 0.95*1.5, w=1.5
+        // totalScore=2.7+2.1+2.125+1.425=8.35, totalWeight=10
+        // Final = round(8.35/10*100) = 84
+        expect(score).toBe(84)
       })
 
       it('should calculate weighted score for family at family-friendly place', () => {
@@ -339,14 +338,14 @@ describe('useMatcher', () => {
         // Family has: beach 0.85, family 0.9, relaxation 0.8, budget 0.6, authentic 0.7
         const score = calculateLocalScore(mockFamilyAttraction)
 
-        // Interests: beach(0.85*3) + nature(0*3) = 2.55
-        // Style: relaxation(0.8*2.5) + adventure(0*2.5) = 2.0
-        // Budget: mid(0) = 0
-        // Group: family(0.9*1.5) = 1.35
-        // Trip: holiday(0) = 0
-        // Total: 5.9 / (6 + 5 + 2 + 1.5 + 1.5) = 5.9 / 16 = 0.369 -> 37
-        expect(score).toBeGreaterThan(30)
-        expect(score).toBeLessThan(50)
+        // Interests: beach(0.85*3,w=3) + nature(0→skip)
+        // Style: relaxation(0.8*2.5,w=2.5) + adventure(0→skip)
+        // Budget: 'mid' not in categories → budgetScore=0 → skip
+        // Group: family→family(0.9*1.5,w=1.5)
+        // Trip holiday: relaxation(0.8)+beach(0.85)=1.65, avg=0.825, contrib=0.825*1.5,w=1.5
+        // totalScore≈7.1375, totalWeight=8.5
+        // Final = round(7.1375/8.5*100) = 84
+        expect(score).toBe(84)
       })
     })
   })

@@ -153,7 +153,7 @@ async function handleStatus(userId: string | null): Promise<Response> {
 
   const db = getDb()
 
-  // Check Pro status from DB directly (don't trust x-test-mode for cost-sensitive features)
+  // Check Pro status from DB
   const userResult = await db`
     SELECT is_pro FROM user_profiles WHERE user_id = ${userId}
   `
@@ -331,7 +331,7 @@ async function handleBook(body: BookBody, userId: string): Promise<Response> {
 
   const db = getDb()
 
-  // Check Pro status from DB directly (don't trust x-test-mode for cost-sensitive features)
+  // Check Pro status from DB
   const userResult = await db`
     SELECT is_pro FROM user_profiles WHERE user_id = ${userId}
   `

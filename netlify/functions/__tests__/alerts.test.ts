@@ -29,7 +29,7 @@ describe('alerts function', () => {
       const data = await parseResponse(response)
 
       expect(response.status).toBe(401)
-      expect(data.error).toBe('Unauthorized')
+      expect(data.error).toBe('No authentication provided')
     })
 
     it('should return 403 for non-Pro users', async () => {

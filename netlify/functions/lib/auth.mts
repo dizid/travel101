@@ -115,6 +115,15 @@ export async function requireAuth(req: Request): Promise<string> {
 }
 
 /**
+ * Optional auth - returns userId if authenticated, null otherwise.
+ * Use for endpoints that work for both authenticated and anonymous users.
+ */
+export async function optionalAuth(req: Request): Promise<string | null> {
+  const auth = await validateAuth(req)
+  return auth.authenticated ? auth.userId : null
+}
+
+/**
  * Helper to create 401 Unauthorized response
  */
 export function unauthorized(message = 'Unauthorized'): Response {
