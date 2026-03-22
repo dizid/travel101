@@ -116,28 +116,29 @@ export default async (req: Request, context: Context) => {
     return json({ error: 'Method not allowed' }, 405)
   }
 
-  const db = await getDb()
   const url = new URL(req.url)
   const pathParts = url.pathname.replace('/api/heritage', '').split('/').filter(Boolean)
 
   try {
+    const db = getDb()
+
     // GET /api/heritage - List heritage sites
     if (pathParts.length === 0) {
-      return handleList(db, url)
+      return await handleList(db, url)
     }
 
     // GET /api/heritage/eras - List available eras
     if (pathParts[0] === 'eras') {
-      return handleEras(db)
+      return await handleEras(db)
     }
 
     // GET /api/heritage/regions - List available regions/provinces
     if (pathParts[0] === 'regions') {
-      return handleRegions(db)
+      return await handleRegions(db)
     }
 
     // GET /api/heritage/:slug - Single heritage site detail
-    return handleDetail(db, pathParts[0])
+    return await handleDetail(db, pathParts[0])
   } catch (error) {
     console.error('Heritage function error:', error)
     return json({ error: 'Internal server error' }, 500)

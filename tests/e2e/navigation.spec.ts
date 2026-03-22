@@ -4,7 +4,7 @@ test.describe('Navigation', () => {
   test('header is visible on all pages', async ({ page }) => {
     await page.goto('/')
     await expect(page.locator('header')).toBeVisible()
-    await expect(page.getByText('HappyRoam')).toBeVisible()
+    await expect(page.locator('header').getByText('HappyRoam').first()).toBeVisible()
   })
 
   test('logo links to home', async ({ page }) => {
@@ -32,11 +32,12 @@ test.describe('Navigation', () => {
     const planBtn = page.locator('[data-plan-dropdown] button')
     await planBtn.click()
 
-    // Dropdown should show plan items
-    await expect(page.getByText('Visa Guide')).toBeVisible()
-    await expect(page.getByText('TDAC Form')).toBeVisible()
-    await expect(page.getByText('Onward Ticket')).toBeVisible()
-    await expect(page.getByText('Good to Know')).toBeVisible()
+    // Dropdown should show plan items (scope to dropdown container to avoid footer duplicates)
+    const dropdown = page.locator('[data-plan-dropdown]')
+    await expect(dropdown.getByText('Visa Guide')).toBeVisible()
+    await expect(dropdown.getByText('TDAC Form')).toBeVisible()
+    await expect(dropdown.getByText('Onward Ticket')).toBeVisible()
+    await expect(dropdown.getByText('Good to Know')).toBeVisible()
   })
 
   test('clicking Plan dropdown item navigates', async ({ page }) => {
@@ -45,28 +46,31 @@ test.describe('Navigation', () => {
     // Open Plan dropdown
     await page.locator('[data-plan-dropdown] button').click()
 
-    // Click Visa Guide
-    await page.getByRole('link', { name: /visa guide/i }).click()
+    // Click Visa Guide (scoped to dropdown to avoid footer duplicates)
+    await page.locator('[data-plan-dropdown]').getByRole('link', { name: /visa guide/i }).click()
     await expect(page).toHaveURL('/visa')
   })
 
   test('nav links navigate to correct pages', async ({ page }) => {
-    await page.goto('/')
+    const nav = page.locator('header nav')
 
     // Places
-    const nav = page.locator('header nav')
+    await page.goto('/')
     await nav.getByRole('link', { name: 'Places' }).click()
     await expect(page).toHaveURL('/attractions')
 
     // Festivals
+    await page.goto('/')
     await nav.getByRole('link', { name: 'Festivals' }).click()
     await expect(page).toHaveURL('/festivals')
 
     // Heritage
+    await page.goto('/')
     await nav.getByRole('link', { name: 'Heritage' }).click()
     await expect(page).toHaveURL('/heritage')
 
     // Guides
+    await page.goto('/')
     await nav.getByRole('link', { name: 'Guides' }).click()
     await expect(page).toHaveURL('/guides')
   })
@@ -102,16 +106,17 @@ test.describe('Mobile Navigation', () => {
     const menuBtn = page.locator('header button').last()
     await menuBtn.click()
 
-    // Mobile menu should show all sections
-    await expect(page.getByText('Discover')).toBeVisible()
-    await expect(page.getByText('Plan Your Trip')).toBeVisible()
-    await expect(page.getByText('My Account')).toBeVisible()
+    // Mobile menu should show all sections (scope to header to avoid footer duplicates)
+    const header = page.locator('header')
+    await expect(header.getByText('Discover')).toBeVisible()
+    await expect(header.getByText('Plan Your Trip')).toBeVisible()
+    await expect(header.getByText('My Account')).toBeVisible()
 
     // Close menu
     await menuBtn.click()
 
     // Menu should disappear
-    await expect(page.getByText('Discover').first()).not.toBeVisible({ timeout: 3000 })
+    await expect(header.getByText('Discover').first()).not.toBeVisible({ timeout: 3000 })
   })
 
   test('mobile menu shows all nav items', async ({ page }) => {
@@ -120,19 +125,22 @@ test.describe('Mobile Navigation', () => {
     // Open mobile menu
     await page.locator('header button').last().click()
 
+    // Scope to header to avoid footer/other page duplicates
+    const header = page.locator('header')
+
     // Discover section
-    await expect(page.getByRole('link', { name: /places/i })).toBeVisible()
-    await expect(page.getByRole('link', { name: /festivals/i })).toBeVisible()
-    await expect(page.getByRole('link', { name: /heritage/i })).toBeVisible()
-    await expect(page.getByRole('link', { name: /guides/i })).toBeVisible()
+    await expect(header.getByRole('link', { name: /places/i }).first()).toBeVisible()
+    await expect(header.getByRole('link', { name: /festivals/i }).first()).toBeVisible()
+    await expect(header.getByRole('link', { name: /heritage/i }).first()).toBeVisible()
+    await expect(header.getByRole('link', { name: /guides/i }).first()).toBeVisible()
 
     // Plan section
-    await expect(page.getByRole('link', { name: /visa guide/i })).toBeVisible()
-    await expect(page.getByRole('link', { name: /tdac form/i })).toBeVisible()
+    await expect(header.getByRole('link', { name: /visa guide/i }).first()).toBeVisible()
+    await expect(header.getByRole('link', { name: /tdac form/i })).toBeVisible()
 
     // Account section
-    await expect(page.getByRole('link', { name: /my dashboard/i })).toBeVisible()
-    await expect(page.getByRole('link', { name: /saved places/i })).toBeVisible()
+    await expect(header.getByRole('link', { name: /my dashboard/i })).toBeVisible()
+    await expect(header.getByRole('link', { name: /saved places/i })).toBeVisible()
   })
 
   test('mobile menu closes on navigation', async ({ page }) => {
@@ -141,8 +149,8 @@ test.describe('Mobile Navigation', () => {
     // Open menu
     await page.locator('header button').last().click()
 
-    // Click a link
-    await page.getByRole('link', { name: /festivals/i }).click()
+    // Click a link (scope to header to avoid footer duplicates)
+    await page.locator('header').getByRole('link', { name: /festivals/i }).first().click()
 
     await expect(page).toHaveURL('/festivals')
     // Menu should auto-close (via @click="closeMobileMenu")

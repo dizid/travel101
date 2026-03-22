@@ -8,16 +8,16 @@ test.describe('Heritage Sites', () => {
   test('displays heritage page with hero', async ({ page }) => {
     await expect(page).toHaveTitle(/Heritage/i)
 
-    const h1 = page.getByRole('heading', { level: 1 })
+    const h1 = page.locator('main').getByRole('heading', { level: 1 })
     await expect(h1).toBeVisible()
     await expect(h1).toContainText('Heritage')
   })
 
   test('shows filter tabs', async ({ page }) => {
-    await expect(page.getByText('All Sites')).toBeVisible()
-    await expect(page.getByText('UNESCO')).toBeVisible()
-    await expect(page.getByText('Temples')).toBeVisible()
-    await expect(page.getByText('Museums')).toBeVisible()
+    await expect(page.getByRole('button', { name: /all sites/i })).toBeVisible()
+    await expect(page.getByRole('button', { name: /unesco/i })).toBeVisible()
+    await expect(page.getByRole('button', { name: /temples/i })).toBeVisible()
+    await expect(page.getByRole('button', { name: /museums/i })).toBeVisible()
   })
 
   test('loads heritage site cards', async ({ page }) => {
