@@ -1,6 +1,4 @@
 import type { Context } from '@netlify/functions'
-import { Duffel } from '@duffel/api'
-import Stripe from 'stripe'
 import { requireAuth, validateAuth } from './lib/auth.mts'
 import { getDb } from './lib/db.mts'
 import { jsonResponse, errorResponse, badRequest, serverError, methodNotAllowed } from './lib/responses.mts'
@@ -11,20 +9,22 @@ const SERVICE_FEE_CENTS = 1200
 // Pro users get 2 free bookings per month
 const PRO_MONTHLY_LIMIT = 2
 
-// Lazy-initialized clients
-function getDuffel() {
+// Lazy-initialized clients — dynamic imports to avoid bundling issues
+async function getDuffel() {
   const token = Netlify.env.get('DUFFEL_API_TOKEN')
   if (!token) {
     throw new Error('DUFFEL_API_TOKEN not configured')
   }
+  const { Duffel } = await import('@duffel/api')
   return new Duffel({ token })
 }
 
-function getStripe() {
+async function getStripe() {
   const secretKey = Netlify.env.get('STRIPE_SECRET_KEY')
   if (!secretKey) {
     throw new Error('STRIPE_SECRET_KEY not configured')
   }
+  const Stripe = (await import('stripe')).default
   return new Stripe(secretKey, { apiVersion: '2024-12-18.acacia' })
 }
 
@@ -122,7 +122,7 @@ export default async (req: Request, context: Context) => {
         return badRequest('Invalid action. Must be: search, status, create-payment, or book')
     }
   } catch (error) {
-    console.error('Onward ticket error:', error)
+    console.error(`Onward ticket error (action: ${body.action}):`, error)
     return serverError('Failed to process onward ticket request')
   }
 }
@@ -215,7 +215,7 @@ async function handleSearch(body: SearchBody): Promise<Response> {
   }
 
   // Search via Duffel
-  const duffel = getDuffel()
+  const duffel = await getDuffel()
 
   const offerRequest = await duffel.offerRequests.create({
     slices: [{
@@ -290,7 +290,7 @@ async function handleSearch(body: SearchBody): Promise<Response> {
  * Create a Stripe PaymentIntent for non-Pro users ($12 service fee).
  */
 async function handleCreatePayment(userId: string): Promise<Response> {
-  const stripe = getStripe()
+  const stripe = await getStripe()
 
   const paymentIntent = await stripe.paymentIntents.create({
     amount: SERVICE_FEE_CENTS,
@@ -391,7 +391,7 @@ async function handleBook(body: BookBody, userId: string): Promise<Response> {
     })
   }
 
-  const stripe = getStripe()
+  const stripe = await getStripe()
 
   const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId)
   if (paymentIntent.status !== 'succeeded') {
@@ -413,7 +413,7 @@ async function createDuffelBooking(
   paymentIntentId: string | null,
   bookingType: 'pro' | 'paid',
 ): Promise<Response> {
-  const duffel = getDuffel()
+  const duffel = await getDuffel()
 
   // Get the offer to find the passenger ID
   const offerResponse = await duffel.offers.get(offerId)
@@ -446,7 +446,7 @@ async function createDuffelBooking(
     // Refund Stripe payment if this was a paid booking
     if (bookingType === 'paid' && paymentIntentId) {
       try {
-        const stripe = getStripe()
+        const stripe = await getStripe()
         await stripe.refunds.create({ payment_intent: paymentIntentId })
       } catch (refundError) {
         console.error('Stripe refund also failed:', refundError)

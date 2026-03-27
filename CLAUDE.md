@@ -293,3 +293,11 @@ URL                       # Base URL for callbacks
 - Use parameterized SQL queries (tagged template syntax) for all database operations
 - Follow existing Thai-inspired theming (gold, royal blue, teal, coral palette)
 - Use the Neon and Stripe MCP servers for database/payment operations
+
+## Deployment
+
+- **Netlify site**: `travel303` / `happyroam.travel`
+- **Netlify site ID**: `147e20e5-e01a-46aa-9846-41ab51af4de2`
+- **GitHub repo**: `dizid/travel101`
+- **Neon project**: `hidden-darkness-69201067` (eu-west-2), database: `neondb`
+- **Deploy**: Always use `netlify deploy --build` or Netlify MCP `deploy-site` — never drag-and-drop (no functions get deployed)
