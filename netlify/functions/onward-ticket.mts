@@ -1,4 +1,5 @@
 import type { Context } from '@netlify/functions'
+import Stripe from 'stripe'
 import { requireAuth, validateAuth } from './lib/auth.mts'
 import { getDb } from './lib/db.mts'
 import { jsonResponse, errorResponse, badRequest, serverError, methodNotAllowed } from './lib/responses.mts'
@@ -9,23 +10,47 @@ const SERVICE_FEE_CENTS = 1200
 // Pro users get 2 free bookings per month
 const PRO_MONTHLY_LIMIT = 2
 
-// Lazy-initialized clients — dynamic imports to avoid bundling issues
-async function getDuffel() {
-  const token = Netlify.env.get('DUFFEL_API_TOKEN')
-  if (!token) {
-    throw new Error('DUFFEL_API_TOKEN not configured')
-  }
-  const { Duffel } = await import('@duffel/api')
-  return new Duffel({ token })
-}
+// Duffel REST API base URL
+const DUFFEL_API_URL = 'https://api.duffel.com'
 
-async function getStripe() {
+// Stripe uses static import (proven to bundle correctly in Netlify)
+function getStripe() {
   const secretKey = Netlify.env.get('STRIPE_SECRET_KEY')
   if (!secretKey) {
     throw new Error('STRIPE_SECRET_KEY not configured')
   }
-  const Stripe = (await import('stripe')).default
   return new Stripe(secretKey, { apiVersion: '2024-12-18.acacia' })
+}
+
+// Duffel uses direct fetch (SDK doesn't bundle in Netlify)
+function getDuffelToken(): string {
+  const token = Netlify.env.get('DUFFEL_API_TOKEN')
+  if (!token) {
+    throw new Error('DUFFEL_API_TOKEN not configured')
+  }
+  return token
+}
+
+async function duffelFetch(path: string, options: { method?: string; body?: unknown } = {}) {
+  const token = getDuffelToken()
+  const res = await fetch(`${DUFFEL_API_URL}${path}`, {
+    method: options.method || 'GET',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Duffel-Version': 'v2',
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+    },
+    ...(options.body ? { body: JSON.stringify({ data: options.body }) } : {}),
+  })
+
+  if (!res.ok) {
+    const errorBody = await res.text()
+    console.error(`Duffel API error (${res.status}):`, errorBody)
+    throw new Error(`Duffel API returned ${res.status}: ${errorBody}`)
+  }
+
+  return res.json()
 }
 
 // Simplified offer shape returned to the client
@@ -179,7 +204,7 @@ async function handleStatus(userId: string | null): Promise<Response> {
 }
 
 /**
- * Search for holdable (pay-later) flight offers via Duffel.
+ * Search for holdable (pay-later) flight offers via Duffel REST API.
  * Results are cached in ai_cache for 15 minutes.
  */
 async function handleSearch(body: SearchBody): Promise<Response> {
@@ -214,55 +239,57 @@ async function handleSearch(body: SearchBody): Promise<Response> {
     return jsonResponse(cached[0].response_data)
   }
 
-  // Search via Duffel
-  const duffel = await getDuffel()
-
-  const offerRequest = await duffel.offerRequests.create({
-    slices: [{
-      origin,
-      destination,
-      departure_date: date,
-    }],
-    passengers: [{ type: 'adult' }],
-    return_offers: false,
+  // Search via Duffel REST API
+  // Step 1: Create offer request
+  const offerRequestRes = await duffelFetch('/air/offer_requests', {
+    method: 'POST',
+    body: {
+      slices: [{
+        origin,
+        destination,
+        departure_date: date,
+      }],
+      passengers: [{ type: 'adult' }],
+      return_offers: false,
+    },
   })
 
-  // List offers sorted by price
-  const offersResponse = await duffel.offers.list({
-    offer_request_id: offerRequest.data.id,
-    sort: 'total_amount',
-    limit: 20,
-  })
+  const offerRequestId = offerRequestRes.data.id
+
+  // Step 2: List offers sorted by price
+  const offersRes = await duffelFetch(
+    `/air/offers?offer_request_id=${offerRequestId}&sort=total_amount&limit=20`
+  )
 
   // Filter to only holdable offers (no instant payment required)
-  const holdableOffers = offersResponse.data.filter(
-    (offer) => offer.payment_requirements.requires_instant_payment === false
+  const holdableOffers = (offersRes.data || []).filter(
+    (offer: any) => offer.payment_requirements?.requires_instant_payment === false
   )
 
   // Simplify offer data for the client
-  const offers: SimplifiedOffer[] = holdableOffers.map((offer) => {
-    const firstSlice = offer.slices[0]
+  const offers: SimplifiedOffer[] = holdableOffers.map((offer: any) => {
+    const firstSlice = offer.slices?.[0]
     const segments = firstSlice?.segments || []
     const firstSegment = segments[0]
     const lastSegment = segments[segments.length - 1]
 
     return {
       id: offer.id,
-      airline: offer.owner.name,
-      airlineCode: offer.owner.iata_code,
+      airline: offer.owner?.name || 'Unknown',
+      airlineCode: offer.owner?.iata_code || null,
       price: offer.total_amount,
       currency: offer.total_currency,
       departureTime: firstSegment?.departing_at || '',
       arrivalTime: lastSegment?.arriving_at || '',
       duration: firstSlice?.duration || null,
       stops: segments.length - 1,
-      segments: segments.map((seg) => ({
-        origin: seg.origin.iata_code || seg.origin.iata_city_code || '',
-        destination: seg.destination.iata_code || seg.destination.iata_city_code || '',
+      segments: segments.map((seg: any) => ({
+        origin: seg.origin?.iata_code || seg.origin?.iata_city_code || '',
+        destination: seg.destination?.iata_code || seg.destination?.iata_city_code || '',
         departureTime: seg.departing_at,
         arrivalTime: seg.arriving_at,
-        airline: seg.operating_carrier.name,
-        flightNumber: seg.marketing_carrier_flight_number,
+        airline: seg.operating_carrier?.name || '',
+        flightNumber: seg.marketing_carrier_flight_number || '',
         duration: seg.duration,
       })),
     }
@@ -290,7 +317,7 @@ async function handleSearch(body: SearchBody): Promise<Response> {
  * Create a Stripe PaymentIntent for non-Pro users ($12 service fee).
  */
 async function handleCreatePayment(userId: string): Promise<Response> {
-  const stripe = await getStripe()
+  const stripe = getStripe()
 
   const paymentIntent = await stripe.paymentIntents.create({
     amount: SERVICE_FEE_CENTS,
@@ -391,7 +418,7 @@ async function handleBook(body: BookBody, userId: string): Promise<Response> {
     })
   }
 
-  const stripe = await getStripe()
+  const stripe = getStripe()
 
   const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId)
   if (paymentIntent.status !== 'succeeded') {
@@ -413,40 +440,42 @@ async function createDuffelBooking(
   paymentIntentId: string | null,
   bookingType: 'pro' | 'paid',
 ): Promise<Response> {
-  const duffel = await getDuffel()
-
   // Get the offer to find the passenger ID
-  const offerResponse = await duffel.offers.get(offerId)
-  const offerPassengerId = offerResponse.data.passengers[0]?.id
+  const offerRes = await duffelFetch(`/air/offers/${offerId}`)
+  const offerPassengerId = offerRes.data?.passengers?.[0]?.id
   if (!offerPassengerId) {
     return errorResponse('Invalid offer: no passenger found', 400)
   }
 
   // Create hold order via Duffel
-  let order
+  let order: any
   try {
-    order = await duffel.orders.create({
-      type: 'pay_later',
-      selected_offers: [offerId],
-      passengers: [{
-        id: offerPassengerId,
-        given_name: passenger.given_name,
-        family_name: passenger.family_name,
-        born_on: passenger.born_on,
-        gender: passenger.gender,
-        email: passenger.email,
-        phone_number: passenger.phone,
-        title: passenger.gender === 'm' ? 'mr' : 'ms',
-        type: 'adult',
-      }],
+    const orderRes = await duffelFetch('/air/orders', {
+      method: 'POST',
+      body: {
+        type: 'pay_later',
+        selected_offers: [offerId],
+        passengers: [{
+          id: offerPassengerId,
+          given_name: passenger.given_name,
+          family_name: passenger.family_name,
+          born_on: passenger.born_on,
+          gender: passenger.gender,
+          email: passenger.email,
+          phone_number: passenger.phone,
+          title: passenger.gender === 'm' ? 'mr' : 'ms',
+          type: 'adult',
+        }],
+      },
     })
+    order = orderRes
   } catch (duffelError) {
     console.error('Duffel order creation failed:', duffelError)
 
     // Refund Stripe payment if this was a paid booking
     if (bookingType === 'paid' && paymentIntentId) {
       try {
-        const stripe = await getStripe()
+        const stripe = getStripe()
         await stripe.refunds.create({ payment_intent: paymentIntentId })
       } catch (refundError) {
         console.error('Stripe refund also failed:', refundError)
@@ -458,10 +487,10 @@ async function createDuffelBooking(
   }
 
   // Extract flight details from the order
-  const slices = order.data.slices
+  const slices = order.data?.slices || []
   const firstSlice = slices[0]
-  const firstSegment = firstSlice?.segments[0]
-  const lastSegment = firstSlice?.segments[firstSlice.segments.length - 1]
+  const firstSegment = firstSlice?.segments?.[0]
+  const lastSegment = firstSlice?.segments?.[firstSlice.segments.length - 1]
   const departureTime = firstSegment?.departing_at || ''
   const arrivalTime = lastSegment?.arriving_at || ''
   const originCode = firstSegment?.origin?.iata_code || ''
@@ -487,7 +516,7 @@ async function createDuffelBooking(
         ${destinationCode},
         ${departureTime},
         ${arrivalTime},
-        ${order.data.payment_status.payment_required_by || ''},
+        ${order.data.payment_status?.payment_required_by || ''},
         ${passengerName},
         ${passenger.email},
         ${amountCharged},
@@ -514,7 +543,7 @@ async function createDuffelBooking(
     destination: destinationCode,
     departureTime,
     arrivalTime,
-    expiresAt: order.data.payment_status.payment_required_by || null,
+    expiresAt: order.data.payment_status?.payment_required_by || null,
     passengerName,
   })
 }
