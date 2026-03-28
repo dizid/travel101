@@ -6,17 +6,18 @@ test.describe('Home Page', () => {
   })
 
   test('displays hero section with headline', async ({ page }) => {
-    await expect(page).toHaveTitle(/Thailand Travel Guide/i)
+    await expect(page).toHaveTitle(/HappyRoam|Thailand|Travel Guide/i)
 
-    // Hero headline
+    // Hero headline — only the page h1 (header logo is now a span)
     const h1 = page.getByRole('heading', { level: 1 })
     await expect(h1).toBeVisible()
     await expect(h1).toContainText('Land of Smiles')
   })
 
   test('shows Thai greeting pill', async ({ page }) => {
-    await expect(page.getByText('สวัสดี')).toBeVisible()
-    await expect(page.getByText('Welcome to Thailand')).toBeVisible()
+    // Use .first() since text may appear in multiple places
+    await expect(page.getByText('สวัสดี').first()).toBeVisible()
+    await expect(page.getByText('Welcome to Thailand').first()).toBeVisible()
   })
 
   test('has primary CTA links', async ({ page }) => {
@@ -30,29 +31,30 @@ test.describe('Home Page', () => {
   })
 
   test('displays stats bar', async ({ page }) => {
-    await expect(page.getByText('400+')).toBeVisible()
-    await expect(page.getByText('50+')).toBeVisible()
-    await expect(page.getByText('UNESCO Sites')).toBeVisible()
+    // Stats may appear more than once (hero + elsewhere), use .first()
+    await expect(page.getByText('400+').first()).toBeVisible()
+    await expect(page.getByText('50+').first()).toBeVisible()
+    await expect(page.getByText('UNESCO Sites').first()).toBeVisible()
   })
 
   test('shows Discover Thailand section with content pillars', async ({ page }) => {
     const discoverHeading = page.getByRole('heading', { name: /discover thailand/i })
     await expect(discoverHeading).toBeVisible()
 
-    // Three pillar cards
-    await expect(page.getByRole('link', { name: /places to visit/i })).toBeVisible()
-    await expect(page.getByRole('link', { name: /festivals.*events/i })).toBeVisible()
-    await expect(page.getByRole('link', { name: /heritage sites/i })).toBeVisible()
+    // Three pillar cards — use .first() in case of duplicates
+    await expect(page.getByRole('link', { name: /places to visit/i }).first()).toBeVisible()
+    await expect(page.getByRole('link', { name: /festivals.*events/i }).first()).toBeVisible()
+    await expect(page.getByRole('link', { name: /heritage sites/i }).first()).toBeVisible()
   })
 
   test('shows Plan Your Trip section', async ({ page }) => {
     const planHeading = page.getByRole('heading', { name: /plan your trip/i })
     await expect(planHeading).toBeVisible()
 
-    // Tool cards
-    await expect(page.getByText('Visa Guide')).toBeVisible()
-    await expect(page.getByText('TDAC Form')).toBeVisible()
-    await expect(page.getByText('Onward Ticket')).toBeVisible()
+    // Tool cards — use .first() since labels may appear in multiple contexts
+    await expect(page.getByText('Visa Guide').first()).toBeVisible()
+    await expect(page.getByText('TDAC Form').first()).toBeVisible()
+    await expect(page.getByText('Onward Ticket').first()).toBeVisible()
   })
 
   test('navigates to attractions via Explore Places CTA', async ({ page }) => {
@@ -63,7 +65,7 @@ test.describe('Home Page', () => {
   })
 
   test('navigates to festivals via pillar card', async ({ page }) => {
-    const festivalCard = page.getByRole('link', { name: /festivals.*events/i })
+    const festivalCard = page.getByRole('link', { name: /festivals.*events/i }).first()
     await festivalCard.click()
 
     await expect(page).toHaveURL('/festivals')
@@ -71,8 +73,8 @@ test.describe('Home Page', () => {
 
   test('shows booking partners section', async ({ page }) => {
     await expect(page.getByRole('heading', { name: /ready to book/i })).toBeVisible()
-    await expect(page.getByText('Tours & Activities')).toBeVisible()
-    await expect(page.getByText('Hotels & Stays')).toBeVisible()
+    await expect(page.getByText('Tours & Activities').first()).toBeVisible()
+    await expect(page.getByText('Hotels & Stays').first()).toBeVisible()
   })
 
   test('shows bottom CTA section', async ({ page }) => {

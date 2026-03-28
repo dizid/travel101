@@ -98,9 +98,9 @@ onUnmounted(() => {
             <span class="text-xl">🌴</span>
           </div>
           <div class="hidden sm:block">
-            <h1 class="text-lg font-display font-bold text-gray-900">
+            <span class="text-lg font-display font-bold text-gray-900">
               HappyRoam
-            </h1>
+            </span>
             <p class="text-xs text-primary-600 font-medium -mt-0.5">
               Thailand
             </p>
