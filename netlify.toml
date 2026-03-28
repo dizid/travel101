@@ -1,5 +1,7 @@
 [build]
-  command = "npm run build"
+  # Build locally with `npm run build`, deploy with `netlify deploy --dir=dist --prod`
+  # This avoids Netlify build minutes and SSG complexities in CI
+  command = ""
   publish = "dist"
   functions = "netlify/functions"
 

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed } from 'vue'
 import { useUserStore } from '@stores/userStore'
 import { RouterLink } from 'vue-router'
 import {
@@ -13,20 +13,17 @@ import {
   SearchOutlined,
 } from '@ant-design/icons-vue'
 import BreadcrumbNav from '@components/ui/BreadcrumbNav.vue'
-import { generateBreadcrumbSchema, injectStructuredData } from '@/utils/seo'
+import { useBreadcrumbs, useRouteSeo } from '@/composables/useSeo'
 
 const userStore = useUserStore()
 const isPro = computed(() => userStore.isPro)
 
-onMounted(() => {
-  injectStructuredData(
-    'breadcrumb-schema',
-    generateBreadcrumbSchema([
-      { name: 'Home', url: '/' },
-      { name: 'Medical', url: '/medical' },
-    ])
-  )
-})
+// SEO
+useRouteSeo('medical')
+useBreadcrumbs([
+  { name: 'Home', url: '/' },
+  { name: 'Medical', url: '/medical' },
+])
 
 const selectedCategory = ref('all')
 const searchQuery = ref('')

@@ -15,7 +15,7 @@ import {
   EnvironmentOutlined,
 } from '@ant-design/icons-vue'
 import BreadcrumbNav from '@components/ui/BreadcrumbNav.vue'
-import { generateBreadcrumbSchema, injectStructuredData } from '@/utils/seo'
+import { useBreadcrumbs, useRouteSeo } from '@/composables/useSeo'
 
 const {
   loading,
@@ -28,6 +28,13 @@ const {
   highSeverityReports,
   getSafetyLabel,
 } = useSafety()
+
+// SEO
+useRouteSeo('safety')
+useBreadcrumbs([
+  { name: 'Home', url: '/' },
+  { name: 'Safety Guide', url: '/safety' },
+])
 
 const selectedProvince = ref('')
 const selectedType = ref('')
@@ -188,13 +195,6 @@ watch([selectedProvince, selectedType], () => {
 })
 
 onMounted(() => {
-  injectStructuredData(
-    'breadcrumb-schema',
-    generateBreadcrumbSchema([
-      { name: 'Home', url: '/' },
-      { name: 'Safety', url: '/safety' },
-    ])
-  )
   fetchSafetyData()
 })
 </script>

@@ -1,24 +1,21 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed } from 'vue'
 import { useUserStore } from '@stores/userStore'
 import { PhoneOutlined } from '@ant-design/icons-vue'
 import BreadcrumbNav from '@components/ui/BreadcrumbNav.vue'
-import { generateBreadcrumbSchema, injectStructuredData } from '@/utils/seo'
+import { useBreadcrumbs, useRouteSeo } from '@/composables/useSeo'
 
 const userStore = useUserStore()
 
+// SEO
+useRouteSeo('emergency')
+useBreadcrumbs([
+  { name: 'Home', url: '/' },
+  { name: 'Emergency Contacts', url: '/emergency' },
+])
+
 // Derive embassy contact based on the user's saved nationality
 const userNationality = computed(() => userStore.profile.prefs.nationality || '')
-
-onMounted(() => {
-  injectStructuredData(
-    'breadcrumb-schema',
-    generateBreadcrumbSchema([
-      { name: 'Home', url: '/' },
-      { name: 'Emergency Contacts', url: '/emergency' },
-    ])
-  )
-})
 
 // Main emergency numbers — displayed prominently at the top
 const emergencyNumbers = [

@@ -83,7 +83,7 @@ export const useUserStore = defineStore('user', () => {
     }
     isAuthenticated.value = false
     activities.value = []
-    localStorage.removeItem('user-profile')
+    if (typeof window !== 'undefined') localStorage.removeItem('user-profile')
   }
 
   function setAuthUser(userId: string, email?: string, displayName?: string) {
@@ -105,10 +105,12 @@ export const useUserStore = defineStore('user', () => {
 
   // Local storage persistence
   function saveToLocalStorage() {
+    if (typeof window === 'undefined') return
     localStorage.setItem('user-profile', JSON.stringify(profile.value))
   }
 
   function loadFromLocalStorage() {
+    if (typeof window === 'undefined') return
     const saved = localStorage.getItem('user-profile')
     if (saved) {
       try {
@@ -144,8 +146,10 @@ export const useUserStore = defineStore('user', () => {
     return profile.value.savedPlaces?.includes(slug) || false
   }
 
-  // Initialize from localStorage
-  loadFromLocalStorage()
+  // Initialize from localStorage (client-only)
+  if (typeof window !== 'undefined') {
+    loadFromLocalStorage()
+  }
 
   return {
     // State

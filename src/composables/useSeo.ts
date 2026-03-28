@@ -3,8 +3,8 @@
  * Uses @unhead/vue for SSR + client-side compatibility.
  */
 
-import { computed, toValue } from 'vue'
-import type { Ref, MaybeRefOrGetter } from 'vue'
+import { computed } from 'vue'
+import type { Ref } from 'vue'
 import { useHead } from '@unhead/vue'
 import {
   getPageMeta,

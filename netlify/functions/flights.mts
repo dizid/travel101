@@ -194,14 +194,14 @@ export default async (req: Request, context: Context) => {
     // Check cache (1 hour TTL for flight searches)
     const cacheKey = `flights_${origin}_${destination}_${departureDate}_${returnDate || 'oneway'}_${adults}_${cabinClass}`
     const cached = await db`
-      SELECT response_data FROM ai_cache
+      SELECT data FROM ai_cache
       WHERE cache_key = ${cacheKey}
       AND created_at > NOW() - INTERVAL '1 hour'
       LIMIT 1
     `
 
     if (cached.length > 0) {
-      return new Response(JSON.stringify(cached[0].response_data), {
+      return new Response(JSON.stringify(cached[0].data), {
         headers: { 'Content-Type': 'application/json' },
       })
     }
@@ -290,10 +290,10 @@ export default async (req: Request, context: Context) => {
 
     // Cache the response
     await db`
-      INSERT INTO ai_cache (cache_key, response_data)
+      INSERT INTO ai_cache (cache_key, data)
       VALUES (${cacheKey}, ${JSON.stringify(response)})
       ON CONFLICT (cache_key) DO UPDATE SET
-        response_data = EXCLUDED.response_data,
+        data = EXCLUDED.data,
         created_at = NOW()
     `
 

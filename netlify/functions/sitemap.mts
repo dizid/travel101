@@ -18,17 +18,18 @@ export default async function handler(_req: Request, _context: Context) {
     ORDER BY updated_at DESC
   `
 
-  // Get all heritage sites
+  // Get all heritage sites (stored in attractions table with place_type = 'heritage')
   const heritageSites = await sql`
     SELECT slug, updated_at
-    FROM heritage_sites
+    FROM attractions
+    WHERE place_type = 'heritage'
     ORDER BY updated_at DESC
   `
 
   // Get all festivals
   const festivals = await sql`
     SELECT slug, updated_at
-    FROM festivals
+    FROM thai_festivals
     ORDER BY updated_at DESC
   `
 

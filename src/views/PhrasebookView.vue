@@ -3,12 +3,18 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { phrases, CATEGORY_CONFIG } from '@/data/phrases'
 import type { ThaiPhrase, PhraseCategory } from '@/data/phrases'
 import BreadcrumbNav from '@components/ui/BreadcrumbNav.vue'
-import {
-  generateBreadcrumbSchema,
-  injectStructuredData,
-  removeStructuredData,
-  updateMetaTags,
-} from '@/utils/seo'
+import { usePageHead, useStructuredData, generateBreadcrumbSchema } from '@/utils/seo'
+
+// SEO
+usePageHead({
+  title: 'Thai Phrasebook — 210+ Essential Phrases',
+  description: 'Learn 210+ essential Thai phrases for travel. Greetings, ordering food, bargaining, directions, and emergencies — with Thai script and phonetic pronunciation.',
+  url: '/phrasebook',
+})
+useStructuredData('breadcrumb-schema', generateBreadcrumbSchema([
+  { name: 'Home', url: '/' },
+  { name: 'Thai Phrasebook', url: '/phrasebook' },
+]))
 
 // ------------------------------------------------------------------
 // State
@@ -113,25 +119,10 @@ function selectCategory(key: PhraseCategory | 'all'): void {
 // Lifecycle
 // ------------------------------------------------------------------
 onMounted(() => {
-  updateMetaTags({
-    title: 'Thai Phrasebook — 210+ Essential Phrases',
-    description: 'Learn 210+ essential Thai phrases for travel. Greetings, ordering food, bargaining, directions, and emergencies — with Thai script and phonetic pronunciation.',
-    url: '/phrasebook',
-  })
-
-  injectStructuredData(
-    'breadcrumb-schema',
-    generateBreadcrumbSchema([
-      { name: 'Home', url: '/' },
-      { name: 'Thai Phrasebook', url: '/phrasebook' },
-    ])
-  )
-
   window.addEventListener('keydown', onKeydown)
 })
 
 onUnmounted(() => {
-  removeStructuredData('breadcrumb-schema')
   window.removeEventListener('keydown', onKeydown)
   document.body.style.overflow = ''
 })

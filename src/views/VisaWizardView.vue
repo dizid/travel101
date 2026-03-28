@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useUserStore } from '@stores/userStore'
 import { useCountryStore } from '@stores/countryStore'
 import type { VisaWizardState, ChecklistItem, VisaRecommendation } from '@/types'
@@ -18,10 +18,17 @@ import {
   InfoCircleOutlined,
 } from '@ant-design/icons-vue'
 import BreadcrumbNav from '@components/ui/BreadcrumbNav.vue'
-import { generateBreadcrumbSchema, injectStructuredData } from '@/utils/seo'
+import { useBreadcrumbs, useRouteSeo } from '@/composables/useSeo'
 
 const userStore = useUserStore()
 const countryStore = useCountryStore()
+
+// SEO
+useRouteSeo('visa')
+useBreadcrumbs([
+  { name: 'Home', url: '/' },
+  { name: 'Visa Guide', url: '/visa' },
+])
 
 // Wizard state
 const wizardState = ref<VisaWizardState>({
@@ -124,7 +131,7 @@ const visaAlternatives = computed(() => visaResult.value.alternatives || [])
 
 // Persist checked items to localStorage
 const checkedItems = ref<Set<string>>(
-  new Set(JSON.parse(localStorage.getItem('visa-checklist') || '[]'))
+  new Set(typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('visa-checklist') || '[]') : [])
 )
 
 // Generate checklist based on visa type
@@ -281,15 +288,6 @@ watch(
   }
 )
 
-onMounted(() => {
-  injectStructuredData(
-    'breadcrumb-schema',
-    generateBreadcrumbSchema([
-      { name: 'Home', url: '/' },
-      { name: 'Visa Guide', url: '/visa' },
-    ])
-  )
-})
 </script>
 
 <template>

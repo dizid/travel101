@@ -64,6 +64,7 @@ function addDays(dateStr: string, days: number): string {
 export function useVisaCountdown() {
   // Load persisted entry from localStorage
   function loadEntry(): VisaEntry | null {
+    if (typeof window === 'undefined') return null
     try {
       const raw = localStorage.getItem(STORAGE_KEY)
       if (!raw) return null

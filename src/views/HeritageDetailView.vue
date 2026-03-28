@@ -4,8 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useApi } from '@/composables/useApi'
 import { useWeather } from '@/composables/useWeather'
 import { useFestivals } from '@/composables/useFestivals'
-import { useLandmarkSchema, useBreadcrumbs } from '@/composables/useSeo'
-import { updateMetaTags } from '@/utils/seo'
+import { useLandmarkSchema, useBreadcrumbs, usePageMeta } from '@/composables/useSeo'
 import type { LandmarkSchema } from '@/utils/seo'
 import type { HeritageDetail, HeritageImage, HeritageEvent, HeritageMetadata, UpcomingFestival } from '@/types'
 import HeritageGallery from '@/components/features/heritage/HeritageGallery.vue'
@@ -64,17 +63,17 @@ useBreadcrumbs([
   { name: 'Heritage', url: '/heritage' },
 ])
 
-// SEO: Update meta tags when site loads
-watch(() => site.value, (s) => {
-  if (s) {
-    updateMetaTags({
-      title: `${s.name} - ${s.province}`,
-      description: (s.description || '').slice(0, 160),
-      url: `/heritage/${s.slug}`,
-      type: 'place',
-    })
+// SEO: Reactive meta tags — updates automatically when site loads
+usePageMeta(computed(() => {
+  const s = site.value
+  if (!s) return { title: 'Heritage Site', description: 'Thailand heritage site guide', url: '/heritage' }
+  return {
+    title: `${s.name} - ${s.province}`,
+    description: (s.description || '').slice(0, 160),
+    url: `/heritage/${s.slug}`,
+    type: 'place' as const,
   }
-}, { immediate: true })
+}))
 
 // Computed
 const metadata = computed<HeritageMetadata>(() => site.value?.heritageMetadata || {})

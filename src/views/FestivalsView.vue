@@ -17,7 +17,7 @@ import {
   CloseOutlined,
 } from '@ant-design/icons-vue'
 import BreadcrumbNav from '@/components/ui/BreadcrumbNav.vue'
-import { generateBreadcrumbSchema, injectStructuredData } from '@/utils/seo'
+import { useBreadcrumbs, useRouteSeo } from '@/composables/useSeo'
 
 const {
   loading,
@@ -35,6 +35,13 @@ const {
 const userStore = useUserStore()
 const { hasLocation, userLatitude, userLongitude, locationLoading, locationError, requestLocation } = useGeolocation()
 const showUpgradeModal = ref(false)
+
+// SEO
+useRouteSeo('festivals')
+useBreadcrumbs([
+  { name: 'Home', url: '/' },
+  { name: 'Festivals', url: '/festivals' },
+])
 
 // State
 const festivals = ref<Festival[]>([])
@@ -197,15 +204,6 @@ watch([queryParams, activeTab], () => {
 }, { deep: true })
 
 onMounted(() => {
-  // Inject breadcrumb schema for SEO
-  injectStructuredData(
-    'breadcrumb-schema',
-    generateBreadcrumbSchema([
-      { name: 'Home', url: '/' },
-      { name: 'Festivals', url: '/festivals' },
-    ])
-  )
-
   fetchFestivals()
   fetchFilterOptions()
   // Also fetch upcoming for the banner

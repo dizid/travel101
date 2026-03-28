@@ -2,8 +2,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter, RouterLink } from 'vue-router'
 import { useFestivals } from '@/composables/useFestivals'
-import { useEventSchema, useBreadcrumbs } from '@/composables/useSeo'
-import { updateMetaTags } from '@/utils/seo'
+import { useEventSchema, useBreadcrumbs, usePageMeta } from '@/composables/useSeo'
 import type { UpcomingFestival } from '@/types'
 import type { EventSchema } from '@/utils/seo'
 import AffiliateCard from '@/components/common/AffiliateCard.vue'
@@ -65,17 +64,17 @@ useBreadcrumbs([
   { name: 'Festivals', url: '/festivals' },
 ])
 
-// SEO: Update meta tags when festival loads
-watch(festival, (f) => {
-  if (f) {
-    updateMetaTags({
-      title: f.name,
-      description: (f.description || `Discover the ${f.name} festival in Thailand`).slice(0, 160),
-      url: `/festivals/${f.slug}`,
-      type: 'article',
-    })
+// SEO: Reactive meta tags — updates automatically when festival loads
+usePageMeta(computed(() => {
+  const f = festival.value
+  if (!f) return { title: 'Festival', description: 'Thai festival guide', url: '/festivals' }
+  return {
+    title: f.name,
+    description: (f.description || `Discover the ${f.name} festival in Thailand`).slice(0, 160),
+    url: `/festivals/${f.slug}`,
+    type: 'article' as const,
   }
-}, { immediate: true })
+}))
 
 // Current tab for content sections
 type ContentTab = 'overview' | 'activities' | 'tips' | 'locations'

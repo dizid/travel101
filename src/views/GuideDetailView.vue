@@ -84,11 +84,6 @@ const categoryConfig = computed(() =>
   guide.value ? getCategoryConfig(guide.value.category) : null
 )
 
-// Word count estimate from markdown content
-const wordCount = computed(() => {
-  if (!guide.value?.content) return 0
-  return guide.value.content.split(/\s+/).length
-})
 
 async function loadGuide() {
   const result = await fetchBySlug(slug.value)

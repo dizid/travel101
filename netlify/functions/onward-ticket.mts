@@ -229,14 +229,14 @@ async function handleSearch(body: SearchBody): Promise<Response> {
   const cacheKey = `onward_${origin}_${destination}_${date}`
 
   const cached = await db`
-    SELECT response_data FROM ai_cache
+    SELECT data FROM ai_cache
     WHERE cache_key = ${cacheKey}
     AND created_at > NOW() - INTERVAL '15 minutes'
     LIMIT 1
   `
 
   if (cached.length > 0) {
-    return jsonResponse(cached[0].response_data)
+    return jsonResponse(cached[0].data)
   }
 
   // Search via Duffel REST API
@@ -300,10 +300,10 @@ async function handleSearch(body: SearchBody): Promise<Response> {
   // Cache the results
   try {
     await db`
-      INSERT INTO ai_cache (cache_key, response_data)
+      INSERT INTO ai_cache (cache_key, data)
       VALUES (${cacheKey}, ${JSON.stringify(result)})
       ON CONFLICT (cache_key) DO UPDATE SET
-        response_data = EXCLUDED.response_data,
+        data = EXCLUDED.data,
         created_at = NOW()
     `
   } catch (cacheError) {

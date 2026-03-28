@@ -11,9 +11,16 @@ import {
   HistoryOutlined,
 } from '@ant-design/icons-vue'
 import BreadcrumbNav from '@/components/ui/BreadcrumbNav.vue'
-import { generateBreadcrumbSchema, injectStructuredData } from '@/utils/seo'
+import { useBreadcrumbs, useRouteSeo } from '@/composables/useSeo'
 
 const { get } = useApi()
+
+// SEO
+useRouteSeo('heritage')
+useBreadcrumbs([
+  { name: 'Home', url: '/' },
+  { name: 'Heritage', url: '/heritage' },
+])
 
 // State
 const sites = ref<(HeritageSite & { primaryImage?: HeritageImage; imageCount?: number; eventCount?: number })[]>([])
@@ -141,15 +148,6 @@ watch([queryParams], () => {
 }, { deep: true })
 
 onMounted(() => {
-  // Inject breadcrumb schema for SEO
-  injectStructuredData(
-    'breadcrumb-schema',
-    generateBreadcrumbSchema([
-      { name: 'Home', url: '/' },
-      { name: 'Heritage', url: '/heritage' },
-    ])
-  )
-
   fetchSites()
   fetchFilterOptions()
 })

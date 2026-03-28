@@ -17,12 +17,12 @@ const props = defineProps<{
 const isOpen = ref(false)
 const copied = ref(false)
 
-const shareUrl = computed(() => props.url || window.location.href)
+const shareUrl = computed(() => props.url || (typeof window !== 'undefined' ? window.location.href : ''))
 const shareText = computed(() => props.description || props.title)
 const hashtagString = computed(() => props.hashtags?.join(',') || 'Thailand,Travel')
 
 // Check if native share is available
-const canNativeShare = computed(() => typeof navigator.share === 'function')
+const canNativeShare = computed(() => typeof navigator !== 'undefined' && typeof navigator.share === 'function')
 
 // Share URLs for different platforms
 const platforms = computed(() => [

@@ -1,8 +1,15 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed } from 'vue'
 import { useVisaCountdown, type VisaType } from '@composables/useVisaCountdown'
 import BreadcrumbNav from '@components/ui/BreadcrumbNav.vue'
-import { generateBreadcrumbSchema, injectStructuredData, removeStructuredData } from '@/utils/seo'
+import { useBreadcrumbs, useRouteSeo } from '@/composables/useSeo'
+
+// SEO
+useRouteSeo('visaCountdown')
+useBreadcrumbs([
+  { name: 'Home', url: '/' },
+  { name: 'Visa Countdown', url: '/visa-countdown' },
+])
 
 const {
   visaEntry,
@@ -181,21 +188,6 @@ function handleReset(): void {
   formVisaType.value = 'visa-exemption'
   formCustomDays.value = 30
 }
-
-// --- SEO ---
-onMounted(() => {
-  injectStructuredData(
-    'visa-countdown-breadcrumb',
-    generateBreadcrumbSchema([
-      { name: 'Home', url: '/' },
-      { name: 'Visa Countdown', url: '/visa-countdown' },
-    ])
-  )
-})
-
-onUnmounted(() => {
-  removeStructuredData('visa-countdown-breadcrumb')
-})
 
 const breadcrumbs = [
   { name: 'Home', url: '/' },

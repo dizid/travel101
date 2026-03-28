@@ -6,9 +6,16 @@ import BreadcrumbNav from '@/components/ui/BreadcrumbNav.vue'
 import SkeletonLoader from '@/components/ui/SkeletonLoader.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import { useGuides } from '@/composables/useGuides'
-import { updateMetaTags, getPageMeta, generateBreadcrumbSchema, injectStructuredData } from '@/utils/seo'
+import { useBreadcrumbs, useRouteSeo } from '@/composables/useSeo'
 
 const { guides, loading, error, fetchAll, fetchByCategory, searchGuides, getCategoryConfig } = useGuides()
+
+// SEO
+useRouteSeo('guides')
+useBreadcrumbs([
+  { name: 'Home', url: '/' },
+  { name: 'Travel Guides', url: '/guides' },
+])
 
 const activeCategory = ref<string>('')
 const searchQuery = ref('')
@@ -56,14 +63,6 @@ watch(searchQuery, (val) => {
 })
 
 onMounted(() => {
-  const meta = getPageMeta('guides' as any)
-  if (meta) updateMetaTags({ ...meta, url: '/guides' })
-
-  injectStructuredData('breadcrumb-schema', generateBreadcrumbSchema(
-    breadcrumbs.filter(b => b.url).map(b => ({ name: b.name, url: b.url! }))
-      .concat([{ name: 'Travel Guides', url: '/guides' }])
-  ))
-
   loadGuides()
 })
 </script>

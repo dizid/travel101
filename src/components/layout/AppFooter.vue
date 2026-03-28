@@ -61,36 +61,7 @@ const footerLinks = {
             สวัสดี • Sawasdee
           </p>
 
-          <!-- Social links -->
-          <div class="flex items-center gap-3 mt-4">
-            <a
-              href="https://twitter.com/happyroam"
-              target="_blank"
-              rel="noopener"
-              class="text-gray-400 hover:text-primary-400 transition-colors text-lg leading-none"
-              title="Twitter"
-            >
-              𝕏
-            </a>
-            <a
-              href="https://facebook.com/happyroam"
-              target="_blank"
-              rel="noopener"
-              class="text-gray-400 hover:text-primary-400 transition-colors font-bold text-base leading-none"
-              title="Facebook"
-            >
-              f
-            </a>
-            <a
-              href="https://instagram.com/happyroam"
-              target="_blank"
-              rel="noopener"
-              class="text-gray-400 hover:text-primary-400 transition-colors text-base leading-none"
-              title="Instagram"
-            >
-              📷
-            </a>
-          </div>
+          <!-- Social links — add back when real accounts exist -->
         </div>
 
         <!-- Guides -->

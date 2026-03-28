@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref } from 'vue'
 import { useUserStore } from '@stores/userStore'
 import {
   CheckCircleFilled,
@@ -11,19 +11,16 @@ import {
   LinkOutlined,
 } from '@ant-design/icons-vue'
 import BreadcrumbNav from '@components/ui/BreadcrumbNav.vue'
-import { generateBreadcrumbSchema, injectStructuredData } from '@/utils/seo'
+import { useBreadcrumbs, useRouteSeo } from '@/composables/useSeo'
 
 const userStore = useUserStore()
 
-onMounted(() => {
-  injectStructuredData(
-    'breadcrumb-schema',
-    generateBreadcrumbSchema([
-      { name: 'Home', url: '/' },
-      { name: 'TDAC Guide', url: '/tdac' },
-    ])
-  )
-})
+// SEO
+useRouteSeo('tdac')
+useBreadcrumbs([
+  { name: 'Home', url: '/' },
+  { name: 'TDAC Guide', url: '/tdac' },
+])
 
 const sections = [
   { id: 'personal', label: 'Personal Info', icon: '👤' },

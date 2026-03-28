@@ -156,7 +156,7 @@ describe('flights function', () => {
         cheapest: 500,
         fastest: 600,
       }
-      setMockQueryResult('SELECT response_data FROM ai_cache', [{ response_data: cachedResponse }])
+      setMockQueryResult('SELECT data FROM ai_cache', [{ data: cachedResponse }])
 
       const req = createMockRequest('POST', '/api/flights', {
         headers: {},
@@ -176,7 +176,7 @@ describe('flights function', () => {
     })
 
     it('should generate mock flights when no API key is configured', async () => {
-      setMockQueryResult('SELECT response_data FROM ai_cache', [])
+      setMockQueryResult('SELECT data FROM ai_cache', [])
       setMockQueryResult('INSERT INTO ai_cache', [])
 
       const req = createMockRequest('POST', '/api/flights', {
@@ -201,7 +201,7 @@ describe('flights function', () => {
 
     it('should use Kiwi API when key is configured', async () => {
       setMockEnv('KIWI_API_KEY', 'test-kiwi-key')
-      setMockQueryResult('SELECT response_data FROM ai_cache', [])
+      setMockQueryResult('SELECT data FROM ai_cache', [])
       setMockQueryResult('INSERT INTO ai_cache', [])
       mockFetch.mockResolvedValueOnce(createMockResponse(mockKiwiApiResponse))
 
@@ -231,7 +231,7 @@ describe('flights function', () => {
 
     it('should fall back to mock data when Kiwi API fails', async () => {
       setMockEnv('KIWI_API_KEY', 'test-kiwi-key')
-      setMockQueryResult('SELECT response_data FROM ai_cache', [])
+      setMockQueryResult('SELECT data FROM ai_cache', [])
       setMockQueryResult('INSERT INTO ai_cache', [])
       mockFetch.mockResolvedValueOnce({
         ok: false,
@@ -256,7 +256,7 @@ describe('flights function', () => {
     })
 
     it('should cache search results', async () => {
-      setMockQueryResult('SELECT response_data FROM ai_cache', [])
+      setMockQueryResult('SELECT data FROM ai_cache', [])
       setMockQueryResult('INSERT INTO ai_cache', [])
 
       const req = createMockRequest('POST', '/api/flights', {
@@ -275,7 +275,7 @@ describe('flights function', () => {
     })
 
     it('should return search params in response', async () => {
-      setMockQueryResult('SELECT response_data FROM ai_cache', [])
+      setMockQueryResult('SELECT data FROM ai_cache', [])
       setMockQueryResult('INSERT INTO ai_cache', [])
 
       const searchParams = {
@@ -300,7 +300,7 @@ describe('flights function', () => {
     })
 
     it('should include airport info for known airports', async () => {
-      setMockQueryResult('SELECT response_data FROM ai_cache', [])
+      setMockQueryResult('SELECT data FROM ai_cache', [])
       setMockQueryResult('INSERT INTO ai_cache', [])
 
       const req = createMockRequest('POST', '/api/flights', {
@@ -321,7 +321,7 @@ describe('flights function', () => {
     })
 
     it('should handle return flights', async () => {
-      setMockQueryResult('SELECT response_data FROM ai_cache', [])
+      setMockQueryResult('SELECT data FROM ai_cache', [])
       setMockQueryResult('INSERT INTO ai_cache', [])
 
       const req = createMockRequest('POST', '/api/flights', {
