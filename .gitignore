@@ -48,3 +48,6 @@ roadmap.md
 # Generated config files
 vite.config.d.ts
 vite.config.js
+.vite-ssg-temp/
+scripts/*.js
+scripts/*.d.ts

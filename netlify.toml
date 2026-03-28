@@ -1,7 +1,6 @@
 [build]
-  # Build locally with `npm run build`, deploy with `netlify deploy --dir=dist --prod`
-  # This avoids Netlify build minutes and SSG complexities in CI
-  command = ""
+  # Build happens in GitHub Actions, not Netlify (saves build minutes)
+  command = "echo 'Build handled by GitHub Actions'"
   publish = "dist"
   functions = "netlify/functions"
 
