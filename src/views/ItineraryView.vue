@@ -9,6 +9,9 @@ import ItineraryGenerateModal from '@/components/features/ItineraryGenerateModal
 import ItineraryActivityModal from '@/components/features/ItineraryActivityModal.vue'
 import ItineraryCostAnalytics from '@/components/features/ItineraryCostAnalytics.vue'
 import ProGate from '@components/ui/ProGate.vue'
+import AffiliateButton from '@/components/common/AffiliateButton.vue'
+import AffiliateCard from '@/components/common/AffiliateCard.vue'
+import { getContextualAffiliate } from '@/utils/affiliates'
 import type { ItineraryActivity } from '@/composables/useItinerary'
 import {
   CalendarOutlined,
@@ -55,6 +58,11 @@ const {
   getTotalBudget,
   getLocations,
 } = useItinerary()
+
+// Cache contextual affiliate lookup per activity to avoid triple calls in template
+function getActivityAffiliate(activity: ItineraryActivity, location: string) {
+  return getContextualAffiliate(activity.activityType || 'attraction', activity.title, location)
+}
 
 // UI state
 const view = ref<'list' | 'detail' | 'create'>('list')
@@ -731,6 +739,20 @@ async function handleDeleteActivity(activityId: string) {
                       💰 ฿{{ activity.estimatedCostThb }}
                     </span>
                   </div>
+                  <!-- Contextual booking link based on activity type -->
+                  <div
+                    v-if="getActivityAffiliate(activity, day.location)"
+                    class="mt-2"
+                    @click.stop
+                  >
+                    <AffiliateButton
+                      :partner="getActivityAffiliate(activity, day.location)!.partner"
+                      :destination="day.location"
+                      :attraction-name="activity.title"
+                      variant="minimal"
+                      :label="getActivityAffiliate(activity, day.location)!.label"
+                    />
+                  </div>
                 </div>
                 <button
                   @click.stop="handleDeleteActivity(activity.id)"
@@ -760,6 +782,14 @@ async function handleDeleteActivity(activityId: string) {
             Add another day
           </button>
         </div>
+
+        <!-- Booking card at the bottom of itinerary detail -->
+        <AffiliateCard
+          context="itinerary"
+          :destination="getLocations(currentItinerary)[0] || 'Thailand'"
+          title="Book Your Trip"
+          :show-availability="true"
+        />
       </div>
       </ProGate>
     </div>

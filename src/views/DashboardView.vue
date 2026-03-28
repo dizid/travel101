@@ -349,6 +349,7 @@ const profileCompleteness = computed(() => {
             context="dashboard"
             destination="Thailand"
             compact
+            :show-availability="true"
           />
 
           <!-- Weather Widget -->

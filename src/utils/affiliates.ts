@@ -96,9 +96,11 @@ const affiliateConfigs: Record<AffiliatePartner, AffiliateConfig> = {
   },
   nordvpn: {
     baseUrl: 'https://refer-nordvpn.com',
-    buildUrl: () => {
-      // NordVPN Refer a Friend link (not a traditional affiliate program)
-      return 'https://refer-nordvpn.com/xxDLCBJrkfs'
+    buildUrl: (_destination, _attractionName, affiliateId) => {
+      if (affiliateId) {
+        return `https://refer-nordvpn.com/${affiliateId}`
+      }
+      return 'https://nordvpn.com'
     },
   },
 }
@@ -249,6 +251,35 @@ export const travelEssentials = [
     color: 'bg-indigo-500',
   },
 ]
+
+/**
+ * Get contextual affiliate CTA based on activity type
+ */
+export function getContextualAffiliate(
+  activityType: string,
+  name: string,
+  destination: string
+): { partner: AffiliatePartner; label: string; url: string } | null {
+  const typeMap: Record<string, { partner: AffiliatePartner; labelPrefix: string }> = {
+    attraction: { partner: 'klook', labelPrefix: 'Book' },
+    sightseeing: { partner: 'klook', labelPrefix: 'Book' },
+    activity: { partner: 'klook', labelPrefix: 'Book' },
+    tour: { partner: 'getyourguide', labelPrefix: 'Book' },
+    accommodation: { partner: 'agoda', labelPrefix: 'Find hotels for' },
+    hotel: { partner: 'agoda', labelPrefix: 'Find hotels for' },
+    transport: { partner: '12go', labelPrefix: 'Book transport to' },
+    food: { partner: 'klook', labelPrefix: 'Food tours in' },
+    shopping: { partner: 'klook', labelPrefix: 'Tours near' },
+    nightlife: { partner: 'klook', labelPrefix: 'Nightlife in' },
+  }
+
+  const match = typeMap[activityType.toLowerCase()]
+  if (!match) return null
+
+  const url = generateAffiliateUrl(match.partner, destination, name)
+  const label = `${match.labelPrefix} ${name}`
+  return { partner: match.partner, label, url }
+}
 
 /**
  * Get affiliate links for a specific context

@@ -1,6 +1,13 @@
 /**
- * SEO utilities for dynamic meta tags and structured data
+ * SEO utilities for meta tags and structured data
+ *
+ * Schema generators are pure functions (no DOM).
+ * Meta tag management uses @unhead/vue for SSR + client compatibility.
  */
+
+import { useHead } from '@unhead/vue'
+import type { MaybeRefOrGetter } from 'vue'
+import { computed, toValue } from 'vue'
 
 export interface PageMeta {
   title: string
@@ -22,43 +29,99 @@ export interface AttractionSchema {
 }
 
 const BASE_URL = 'https://happyroam.travel'
-const DEFAULT_IMAGE = `${BASE_URL}/og-image.svg`
+const DEFAULT_IMAGE = `${BASE_URL}/og-image.png`
 const SITE_NAME = 'HappyRoam Thailand'
 
 /**
- * Update document meta tags dynamically
+ * Apply page meta tags via @unhead/vue (SSR-safe).
+ * Call inside a component's setup() or <script setup>.
+ */
+export function usePageHead(meta: MaybeRefOrGetter<PageMeta | null>) {
+  const headConfig = computed(() => {
+    const m = toValue(meta)
+    if (!m) return {}
+
+    const { title, description, image = DEFAULT_IMAGE, url, type = 'website' } = m
+    const fullTitle = `${title} | ${SITE_NAME}`
+    const fullUrl = url ? `${BASE_URL}${url}` : BASE_URL
+
+    return {
+      title: fullTitle,
+      meta: [
+        { name: 'description', content: description },
+        // Open Graph
+        { property: 'og:title', content: fullTitle },
+        { property: 'og:description', content: description },
+        { property: 'og:image', content: image },
+        { property: 'og:url', content: fullUrl },
+        { property: 'og:type', content: type },
+        { property: 'og:site_name', content: SITE_NAME },
+        // Twitter Card
+        { name: 'twitter:card', content: 'summary_large_image' },
+        { name: 'twitter:title', content: fullTitle },
+        { name: 'twitter:description', content: description },
+        { name: 'twitter:image', content: image },
+      ],
+      link: [
+        { rel: 'canonical', href: fullUrl },
+      ],
+    }
+  })
+
+  useHead(headConfig)
+}
+
+/**
+ * Inject JSON-LD structured data via @unhead/vue (SSR-safe).
+ * Call inside a component's setup() or <script setup>.
+ */
+export function useStructuredData(id: string, schema: MaybeRefOrGetter<string | null>) {
+  const headConfig = computed(() => {
+    const s = toValue(schema)
+    if (!s) return {}
+    return {
+      script: [
+        { id, type: 'application/ld+json', innerHTML: s },
+      ],
+    }
+  })
+
+  useHead(headConfig)
+}
+
+// ============================================================
+// Legacy API — kept for backward compatibility during migration.
+// These use DOM directly and only run client-side.
+// Prefer usePageHead() and useStructuredData() in new code.
+// ============================================================
+
+/**
+ * Update document meta tags dynamically (client-side only).
+ * @deprecated Use usePageHead() instead for SSR support.
  */
 export function updateMetaTags(meta: PageMeta): void {
+  if (typeof document === 'undefined') return
   const { title, description, image = DEFAULT_IMAGE, url, type = 'website' } = meta
   const fullTitle = `${title} | ${SITE_NAME}`
   const fullUrl = url ? `${BASE_URL}${url}` : BASE_URL
 
-  // Basic meta
   document.title = fullTitle
   setMetaTag('description', description)
-
-  // Open Graph
   setMetaTag('og:title', fullTitle, 'property')
   setMetaTag('og:description', description, 'property')
   setMetaTag('og:image', image, 'property')
   setMetaTag('og:url', fullUrl, 'property')
   setMetaTag('og:type', type, 'property')
   setMetaTag('og:site_name', SITE_NAME, 'property')
-
-  // Twitter Card
   setMetaTag('twitter:card', 'summary_large_image')
   setMetaTag('twitter:title', fullTitle)
   setMetaTag('twitter:description', description)
   setMetaTag('twitter:image', image)
-
-  // Canonical
   setCanonical(fullUrl)
 }
 
-/**
- * Set or update a meta tag
- */
 function setMetaTag(name: string, content: string, attr: 'name' | 'property' = 'name'): void {
+  if (typeof document === 'undefined') return
   let tag = document.querySelector(`meta[${attr}="${name}"]`) as HTMLMetaElement | null
   if (!tag) {
     tag = document.createElement('meta')
@@ -68,10 +131,8 @@ function setMetaTag(name: string, content: string, attr: 'name' | 'property' = '
   tag.content = content
 }
 
-/**
- * Set canonical URL
- */
 function setCanonical(url: string): void {
+  if (typeof document === 'undefined') return
   let link = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null
   if (!link) {
     link = document.createElement('link')
@@ -82,8 +143,37 @@ function setCanonical(url: string): void {
 }
 
 /**
- * Generate JSON-LD structured data for an attraction
+ * Inject JSON-LD into page (client-side only).
+ * @deprecated Use useStructuredData() instead for SSR support.
  */
+export function injectStructuredData(id: string, schema: string): void {
+  if (typeof document === 'undefined') return
+  let script = document.getElementById(id) as HTMLScriptElement | null
+  if (!script) {
+    script = document.createElement('script')
+    script.id = id
+    script.type = 'application/ld+json'
+    document.head.appendChild(script)
+  }
+  script.textContent = schema
+}
+
+/**
+ * Remove structured data from page (client-side only).
+ * @deprecated Cleanup is automatic with useStructuredData().
+ */
+export function removeStructuredData(id: string): void {
+  if (typeof document === 'undefined') return
+  const script = document.getElementById(id)
+  if (script) {
+    script.remove()
+  }
+}
+
+// ============================================================
+// Schema generators — pure functions, no DOM, SSR-safe
+// ============================================================
+
 export function generateAttractionSchema(attraction: AttractionSchema): string {
   const schema = {
     '@context': 'https://schema.org',
@@ -108,9 +198,6 @@ export function generateAttractionSchema(attraction: AttractionSchema): string {
   return JSON.stringify(schema)
 }
 
-/**
- * Generate JSON-LD for the organization
- */
 export function generateOrganizationSchema(): string {
   const schema = {
     '@context': 'https://schema.org',
@@ -119,19 +206,12 @@ export function generateOrganizationSchema(): string {
     url: BASE_URL,
     logo: `${BASE_URL}/logo.png`,
     description: 'Your personalized Thailand travel guide with AI-powered recommendations',
-    sameAs: [
-      'https://twitter.com/happyroam',
-      'https://facebook.com/happyroam',
-      'https://instagram.com/happyroam',
-    ],
+    // Social links removed — add back when real accounts exist
   }
 
   return JSON.stringify(schema)
 }
 
-/**
- * Generate JSON-LD for breadcrumbs
- */
 export function generateBreadcrumbSchema(items: { name: string; url: string }[]): string {
   const schema = {
     '@context': 'https://schema.org',
@@ -147,9 +227,6 @@ export function generateBreadcrumbSchema(items: { name: string; url: string }[])
   return JSON.stringify(schema)
 }
 
-/**
- * Generate JSON-LD for a festival/event
- */
 export interface EventSchema {
   name: string
   description: string
@@ -191,9 +268,6 @@ export function generateEventSchema(event: EventSchema): string {
   return JSON.stringify(schema)
 }
 
-/**
- * Generate JSON-LD for a heritage/landmark site
- */
 export interface LandmarkSchema {
   name: string
   description: string
@@ -231,9 +305,6 @@ export function generateLandmarkSchema(landmark: LandmarkSchema): string {
   return JSON.stringify(schema)
 }
 
-/**
- * Generate JSON-LD for an FAQ page
- */
 export interface FAQItem {
   question: string
   answer: string
@@ -255,9 +326,6 @@ export function generateFAQSchema(items: FAQItem[]): string {
   return JSON.stringify(schema)
 }
 
-/**
- * Generate JSON-LD for an Article (travel guides)
- */
 export interface ArticleSchema {
   title: string
   description: string
@@ -302,9 +370,6 @@ export function generateArticleSchema(article: ArticleSchema): string {
   return JSON.stringify(schema)
 }
 
-/**
- * Generate JSON-LD WebSite schema with SearchAction for sitelinks search box
- */
 export function generateWebSiteSchema(): string {
   const schema = {
     '@context': 'https://schema.org',
@@ -324,9 +389,6 @@ export function generateWebSiteSchema(): string {
   return JSON.stringify(schema)
 }
 
-/**
- * Generate JSON-LD HowTo schema (e.g. visa guide, 90-day reporting)
- */
 export interface HowToStep {
   name: string
   text: string
@@ -346,30 +408,6 @@ export function generateHowToSchema(name: string, description: string, steps: Ho
     })),
   }
   return JSON.stringify(schema)
-}
-
-/**
- * Inject JSON-LD into page
- */
-export function injectStructuredData(id: string, schema: string): void {
-  let script = document.getElementById(id) as HTMLScriptElement | null
-  if (!script) {
-    script = document.createElement('script')
-    script.id = id
-    script.type = 'application/ld+json'
-    document.head.appendChild(script)
-  }
-  script.textContent = schema
-}
-
-/**
- * Remove structured data from page
- */
-export function removeStructuredData(id: string): void {
-  const script = document.getElementById(id)
-  if (script) {
-    script.remove()
-  }
 }
 
 /**
@@ -498,9 +536,6 @@ export const pageMeta: Record<string, PageMeta> = {
   },
 }
 
-/**
- * Get meta for a specific page
- */
 export function getPageMeta(page: keyof typeof pageMeta): PageMeta {
   return pageMeta[page] || pageMeta.home
 }

@@ -24,8 +24,8 @@ onMounted(() => {
     partners.value.forEach(partner => {
       availability.value[partner] = {
         available: true,
-        deals: Math.floor(Math.random() * 20) + 5,
-        minPrice: partner === 'agoda' ? '฿850' : partner === 'klook' ? '฿299' : undefined,
+        deals: 0,
+        minPrice: undefined,
       }
     })
   }

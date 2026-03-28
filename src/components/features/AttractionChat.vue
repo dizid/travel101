@@ -2,6 +2,7 @@
 import { ref, computed, watch, nextTick } from 'vue'
 import { useAI } from '@/composables/useAI'
 import { useUserStore } from '@/stores/userStore'
+import { generateAffiliateUrl } from '@/utils/affiliates'
 import {
   CloseOutlined,
   SendOutlined,
@@ -13,6 +14,7 @@ const props = defineProps<{
   isOpen: boolean
   attractionSlug: string
   attractionName: string
+  attractionProvince?: string
 }>()
 
 const emit = defineEmits<{
@@ -21,6 +23,71 @@ const emit = defineEmits<{
 
 const userStore = useUserStore()
 const { askAboutAttraction, getAttractionHistory, loading, clearAttractionHistory } = useAI()
+
+// Map of bold partner names the AI may produce to their affiliate URLs.
+// Computed so URLs update reactively if prop changes.
+const partnerMap = computed(() => {
+  const destination = props.attractionProvince || 'Thailand'
+  const attraction = props.attractionName
+  return [
+    {
+      pattern: /\*\*Klook\*\*/g,
+      label: 'Klook',
+      url: generateAffiliateUrl('klook', destination, attraction),
+    },
+    {
+      pattern: /\*\*GetYourGuide\*\*/g,
+      label: 'GetYourGuide',
+      url: generateAffiliateUrl('getyourguide', destination, attraction),
+    },
+    {
+      pattern: /\*\*Agoda\*\*/g,
+      label: 'Agoda',
+      url: generateAffiliateUrl('agoda', destination),
+    },
+    {
+      pattern: /\*\*12Go Asia\*\*/g,
+      label: '12Go Asia',
+      url: generateAffiliateUrl('12go', destination),
+    },
+    {
+      pattern: /\*\*12Go\*\*/g,
+      label: '12Go',
+      url: generateAffiliateUrl('12go', destination),
+    },
+    {
+      pattern: /\*\*SafetyWing\*\*/g,
+      label: 'SafetyWing',
+      url: generateAffiliateUrl('safetywing', destination),
+    },
+  ]
+})
+
+/**
+ * Convert AI response text to safe HTML:
+ * 1. Escape all HTML entities to prevent XSS
+ * 2. Replace **PartnerName** patterns with clickable affiliate links
+ * 3. Convert newlines to <br> for whitespace preservation
+ */
+function renderAIMessage(text: string): string {
+  // Step 1: escape HTML — must happen before any link injection
+  const escaped = text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+
+  // Step 2: replace **PartnerName** patterns with affiliate anchor tags
+  let result = escaped
+  for (const { pattern, label, url } of partnerMap.value) {
+    const safeUrl = encodeURI(url)
+    const link = `<a href="${safeUrl}" target="_blank" rel="nofollow noopener noreferrer" class="text-blue-600 underline font-semibold hover:text-blue-800">${label}</a>`
+    result = result.replace(pattern, link)
+  }
+
+  // Step 3: preserve line breaks
+  return result.replace(/\n/g, '<br>')
+}
 
 const inputMessage = ref('')
 const messagesContainer = ref<HTMLElement | null>(null)
@@ -192,14 +259,15 @@ watch(() => props.isOpen, (isOpen) => {
               </div>
             </div>
 
-            <!-- Assistant message -->
+            <!-- Assistant message: rendered as HTML so partner names become clickable links.
+                 Content is HTML-escaped in renderAIMessage before links are injected — XSS safe. -->
             <div v-else class="flex justify-start">
               <div class="flex items-end gap-2 max-w-[85%]">
                 <div class="w-6 h-6 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0">
                   <RobotOutlined class="text-primary-600 text-xs" />
                 </div>
                 <div class="bg-gray-100 rounded-2xl rounded-bl-sm px-4 py-2">
-                  <p class="text-sm text-gray-800 whitespace-pre-wrap">{{ message.content }}</p>
+                  <p class="text-sm text-gray-800" v-html="renderAIMessage(message.content)" />
                 </div>
               </div>
             </div>

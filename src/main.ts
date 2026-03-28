@@ -1,7 +1,7 @@
-import { createApp } from 'vue'
+import { ViteSSG } from 'vite-ssg'
 import { createPinia } from 'pinia'
 import App from './App.vue'
-import router from './router'
+import routes from './router/routes'
 
 // Styles
 import './styles/main.css'
@@ -32,39 +32,52 @@ import {
   notification,
 } from 'ant-design-vue'
 
-const app = createApp(App)
+export const createApp = ViteSSG(
+  App,
+  // Vue Router options
+  {
+    routes,
+    scrollBehavior(to, _from, savedPosition) {
+      if (savedPosition) {
+        return savedPosition
+      }
+      if (to.hash) {
+        return { el: to.hash, behavior: 'smooth' }
+      }
+      return { top: 0, behavior: 'smooth' }
+    },
+  },
+  // Custom setup function
+  ({ app, isClient }) => {
+    // Pinia store
+    app.use(createPinia())
 
-// Pinia store
-const pinia = createPinia()
-app.use(pinia)
+    // Ant Design components
+    app.use(Button)
+    app.use(Card)
+    app.use(Steps)
+    app.use(Form)
+    app.use(Input)
+    app.use(Select)
+    app.use(Checkbox)
+    app.use(Radio)
+    app.use(Slider)
+    app.use(Progress)
+    app.use(Tag)
+    app.use(Badge)
+    app.use(Alert)
+    app.use(Modal)
+    app.use(Drawer)
+    app.use(Dropdown)
+    app.use(Menu)
+    app.use(Tooltip)
+    app.use(Spin)
+    app.use(Skeleton)
 
-// Router
-app.use(router)
-
-// Ant Design components
-app.use(Button)
-app.use(Card)
-app.use(Steps)
-app.use(Form)
-app.use(Input)
-app.use(Select)
-app.use(Checkbox)
-app.use(Radio)
-app.use(Slider)
-app.use(Progress)
-app.use(Tag)
-app.use(Badge)
-app.use(Alert)
-app.use(Modal)
-app.use(Drawer)
-app.use(Dropdown)
-app.use(Menu)
-app.use(Tooltip)
-app.use(Spin)
-app.use(Skeleton)
-
-// Global properties
-app.config.globalProperties.$message = message
-app.config.globalProperties.$notification = notification
-
-app.mount('#app')
+    // Client-only: message/notification use DOM
+    if (isClient) {
+      app.config.globalProperties.$message = message
+      app.config.globalProperties.$notification = notification
+    }
+  },
+)

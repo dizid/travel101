@@ -13,13 +13,20 @@ import type { AttractionCategory, UpcomingFestival } from '@/types'
 import { SearchOutlined, StarFilled, LoadingOutlined, EnvironmentOutlined } from '@ant-design/icons-vue'
 import BreadcrumbNav from '@components/ui/BreadcrumbNav.vue'
 import SkeletonLoader from '@components/ui/SkeletonLoader.vue'
-import { generateBreadcrumbSchema, injectStructuredData } from '@/utils/seo'
+import { useBreadcrumbs, useRouteSeo } from '@/composables/useSeo'
 
 const route = useRoute()
 const router = useRouter()
 const countryStore = useCountryStore()
 const userStore = useUserStore()
 const { calculateLocalScore, getMatchReason, sortedByMatch, hasProfile } = useMatcher()
+
+// SEO
+useRouteSeo('attractions')
+useBreadcrumbs([
+  { name: 'Home', url: '/' },
+  { name: 'Places', url: '/attractions' },
+])
 
 const searchQuery = ref('')
 const activeCategory = ref<AttractionCategory | 'all' | 'hidden'>('all')
@@ -46,15 +53,6 @@ const upcomingFestivals = ref<UpcomingFestival[]>([])
 
 // Fetch attractions on mount
 onMounted(async () => {
-  // Inject breadcrumb schema for SEO
-  injectStructuredData(
-    'breadcrumb-schema',
-    generateBreadcrumbSchema([
-      { name: 'Home', url: '/' },
-      { name: 'Places', url: '/attractions' },
-    ])
-  )
-
   if (!countryStore.attractionsLoaded) {
     await countryStore.fetchAttractions({ personalized: hasProfile.value })
   }
@@ -437,6 +435,18 @@ async function setCategory(cat: typeof activeCategory.value) {
               :match-score="calculateLocalScore(attraction)"
               :match-reason="getMatchReason(attraction)"
             />
+            <!-- Mobile affiliate card: spans full grid width, hidden on desktop (sidebar handles it) -->
+            <div
+              v-if="filteredAttractions.length >= 6"
+              class="col-span-full lg:hidden"
+            >
+              <AffiliateCard
+                context="destination"
+                destination="Thailand"
+                title="Book Your Thailand Trip"
+                :show-availability="true"
+              />
+            </div>
           </div>
         </div>
 
@@ -447,6 +457,7 @@ async function setCategory(cat: typeof activeCategory.value) {
               context="destination"
               destination="Thailand"
               title="Book Your Thailand Trip"
+              :show-availability="true"
             />
 
             <!-- Quick stats -->

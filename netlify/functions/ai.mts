@@ -60,7 +60,14 @@ Key facts about Thailand visas (VERIFIED January 2025):
 - Overstay: 500 THB/day, max 20,000 THB, potential entry bans
 - TDAC: Required for all arrivals since May 2025
 
-Always provide accurate information and suggest proper long-term visas instead of visa runs.`
+Always provide accurate information and suggest proper long-term visas instead of visa runs.
+
+When recommending specific activities, tours, accommodation, or transport, naturally mention our booking partners where relevant:
+- Tours & activities: **Klook** or **GetYourGuide**
+- Hotels & accommodation: **Agoda**
+- Transport (buses, trains, ferries): **12Go Asia**
+- Travel insurance: **SafetyWing**
+Keep mentions natural and helpful — only include when genuinely useful to the traveler's question. Do not add a booking section to every response.`
 
 export default async (req: Request, context: Context) => {
   const userId = await optionalAuth(req)

@@ -274,7 +274,14 @@ ${attraction.about || attraction.description}
 Category: ${attraction.category}
 Best for: ${formatCategories(attraction.categories)}${userContext}
 
-Answer questions with specific, actionable advice for this destination. Be concise but helpful. If you don't know something specific about this place, say so honestly rather than making up details. Focus on practical tips that would help someone visiting.`
+Answer questions with specific, actionable advice for this destination. Be concise but helpful. If you don't know something specific about this place, say so honestly rather than making up details. Focus on practical tips that would help someone visiting.
+
+When relevant to the user's question, naturally mention our booking partners:
+- Tours & activities: **Klook** or **GetYourGuide**
+- Hotels & accommodation: **Agoda**
+- Transport (buses, trains, ferries): **12Go Asia**
+- Travel insurance: **SafetyWing**
+Only mention partners when it genuinely helps answer the question — do not add a booking section to every response.`
 
   const messages = [
     ...conversationHistory.map((msg) => ({

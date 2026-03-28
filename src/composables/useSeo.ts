@@ -1,17 +1,18 @@
 /**
- * Composable for managing SEO meta tags and structured data
+ * Composable for managing SEO meta tags and structured data.
+ * Uses @unhead/vue for SSR + client-side compatibility.
  */
 
-import { onMounted, onUnmounted, watch } from 'vue'
-import type { Ref } from 'vue'
+import { computed, toValue } from 'vue'
+import type { Ref, MaybeRefOrGetter } from 'vue'
+import { useHead } from '@unhead/vue'
 import {
-  updateMetaTags,
+  getPageMeta,
   generateAttractionSchema,
   generateEventSchema,
   generateLandmarkSchema,
   generateBreadcrumbSchema,
-  injectStructuredData,
-  removeStructuredData,
+  usePageHead,
   type PageMeta,
   type AttractionSchema,
   type EventSchema,
@@ -19,113 +20,93 @@ import {
 } from '@/utils/seo'
 
 /**
- * Set page meta tags reactively
+ * Set page meta tags reactively (SSR-safe).
+ * For static meta, pass an object. For reactive, pass a Ref.
  */
 export function usePageMeta(meta: PageMeta | Ref<PageMeta>) {
-  const applyMeta = () => {
-    const metaValue = 'value' in meta ? meta.value : meta
-    updateMetaTags(metaValue)
-  }
+  usePageHead(meta)
+}
 
-  onMounted(() => {
-    applyMeta()
-  })
-
-  if ('value' in meta) {
-    watch(meta, applyMeta, { deep: true })
+/**
+ * Apply SEO meta from route's seoKey config.
+ * Call in views that have a static seoKey in route meta.
+ */
+export function useRouteSeo(seoKey: string, urlOverride?: string) {
+  const meta = getPageMeta(seoKey as any)
+  if (urlOverride) {
+    usePageHead({ ...meta, url: urlOverride })
+  } else {
+    usePageHead(meta)
   }
 }
 
 /**
- * Add attraction structured data to page
+ * Add attraction structured data to page (SSR-safe)
  */
 export function useAttractionSchema(attraction: Ref<AttractionSchema | null>) {
-  const SCHEMA_ID = 'attraction-schema'
+  const schema = computed(() => {
+    if (!attraction.value) return null
+    return generateAttractionSchema(attraction.value)
+  })
 
-  const applySchema = () => {
-    if (attraction.value) {
-      const schema = generateAttractionSchema(attraction.value)
-      injectStructuredData(SCHEMA_ID, schema)
+  useHead(computed(() => {
+    const s = schema.value
+    if (!s) return {}
+    return {
+      script: [{ id: 'attraction-schema', type: 'application/ld+json', innerHTML: s }],
     }
-  }
-
-  onMounted(() => {
-    applySchema()
-  })
-
-  watch(attraction, applySchema, { deep: true })
-
-  onUnmounted(() => {
-    removeStructuredData(SCHEMA_ID)
-  })
+  }))
 }
 
 /**
- * Add breadcrumb structured data to page
+ * Add breadcrumb structured data to page (SSR-safe)
  */
 export function useBreadcrumbs(items: { name: string; url: string }[]) {
-  const SCHEMA_ID = 'breadcrumb-schema'
+  const schema = generateBreadcrumbSchema(items)
 
-  onMounted(() => {
-    const schema = generateBreadcrumbSchema(items)
-    injectStructuredData(SCHEMA_ID, schema)
-  })
-
-  onUnmounted(() => {
-    removeStructuredData(SCHEMA_ID)
+  useHead({
+    script: [{ id: 'breadcrumb-schema', type: 'application/ld+json', innerHTML: schema }],
   })
 }
 
 /**
- * Add event structured data to page (for festivals)
+ * Add event structured data to page (SSR-safe, for festivals)
  */
 export function useEventSchema(event: Ref<EventSchema | null>) {
-  const SCHEMA_ID = 'event-schema'
+  const schema = computed(() => {
+    if (!event.value) return null
+    return generateEventSchema(event.value)
+  })
 
-  const applySchema = () => {
-    if (event.value) {
-      const schema = generateEventSchema(event.value)
-      injectStructuredData(SCHEMA_ID, schema)
+  useHead(computed(() => {
+    const s = schema.value
+    if (!s) return {}
+    return {
+      script: [{ id: 'event-schema', type: 'application/ld+json', innerHTML: s }],
     }
-  }
-
-  onMounted(() => {
-    applySchema()
-  })
-
-  watch(event, applySchema, { deep: true })
-
-  onUnmounted(() => {
-    removeStructuredData(SCHEMA_ID)
-  })
+  }))
 }
 
 /**
- * Add landmark structured data to page (for heritage sites)
+ * Add landmark structured data to page (SSR-safe, for heritage sites)
  */
 export function useLandmarkSchema(landmark: Ref<LandmarkSchema | null>) {
-  const SCHEMA_ID = 'landmark-schema'
+  const schema = computed(() => {
+    if (!landmark.value) return null
+    return generateLandmarkSchema(landmark.value)
+  })
 
-  const applySchema = () => {
-    if (landmark.value) {
-      const schema = generateLandmarkSchema(landmark.value)
-      injectStructuredData(SCHEMA_ID, schema)
+  useHead(computed(() => {
+    const s = schema.value
+    if (!s) return {}
+    return {
+      script: [{ id: 'landmark-schema', type: 'application/ld+json', innerHTML: s }],
     }
-  }
-
-  onMounted(() => {
-    applySchema()
-  })
-
-  watch(landmark, applySchema, { deep: true })
-
-  onUnmounted(() => {
-    removeStructuredData(SCHEMA_ID)
-  })
+  }))
 }
 
 /**
- * Set dynamic attraction page meta
+ * Set dynamic attraction page meta (SSR-safe)
  */
 export function useAttractionMeta(attraction: Ref<{
   name: string
@@ -134,19 +115,17 @@ export function useAttractionMeta(attraction: Ref<{
   province: string
   image_url?: string
 } | null>) {
-  watch(
-    attraction,
-    (attr) => {
-      if (attr) {
-        updateMetaTags({
-          title: `${attr.name} - ${attr.province}`,
-          description: attr.description.slice(0, 160),
-          url: `/attractions/${attr.slug}`,
-          image: attr.image_url,
-          type: 'place',
-        })
-      }
-    },
-    { immediate: true }
-  )
+  const meta = computed<PageMeta | null>(() => {
+    const attr = attraction.value
+    if (!attr) return null
+    return {
+      title: `${attr.name} - ${attr.province}`,
+      description: attr.description.slice(0, 160),
+      url: `/attractions/${attr.slug}`,
+      image: attr.image_url,
+      type: 'place',
+    }
+  })
+
+  usePageHead(meta)
 }

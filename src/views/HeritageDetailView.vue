@@ -345,6 +345,23 @@ onMounted(() => {
                   <h3 class="text-lg font-semibold text-gray-900 mb-3">Religious Significance</h3>
                   <p class="text-gray-600">{{ metadata.religiousSignificance }}</p>
                 </div>
+
+                <!-- Hotel booking CTA — mobile only (desktop sidebar has "Stay Nearby" card) -->
+                <!-- Heritage visitors plan accommodation around specific sites — capture that intent -->
+                <div class="lg:hidden pt-4 border-t border-amber-200">
+                  <div class="flex items-start gap-3 p-3 rounded-xl border border-amber-200 bg-amber-50">
+                    <div class="flex-1 min-w-0">
+                      <p class="text-sm font-medium text-gray-800 mb-2">Stay near {{ site.name }}</p>
+                      <AffiliateButton
+                        partner="agoda"
+                        :destination="site.province"
+                        :label="`Find Hotels near ${site.name}`"
+                        variant="secondary"
+                      />
+                      <p class="text-xs text-gray-400 mt-2">Affiliate link</p>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               <!-- History Tab -->

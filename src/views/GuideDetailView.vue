@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
   ClockCircleOutlined,
@@ -13,11 +13,10 @@ import NewsletterSignup from '@/components/ui/NewsletterSignup.vue'
 import { useGuides, type Guide } from '@/composables/useGuides'
 import { renderMarkdown, extractTOC } from '@/utils/markdown'
 import {
-  updateMetaTags,
   generateBreadcrumbSchema,
   generateArticleSchema,
-  injectStructuredData,
-  removeStructuredData,
+  usePageHead,
+  useStructuredData,
 } from '@/utils/seo'
 
 const route = useRoute()
@@ -27,6 +26,41 @@ const { fetchBySlug, fetchAll, getCategoryConfig, formatDate, loading, error } =
 const guide = ref<Guide | null>(null)
 const relatedGuides = ref<Guide[]>([])
 const showTOC = ref(false)
+
+// SEO — reactive, updates automatically when guide loads
+usePageHead(computed(() => {
+  if (!guide.value) return null
+  return {
+    title: guide.value.title,
+    description: guide.value.excerpt || guide.value.subtitle || '',
+    image: guide.value.imageUrl || undefined,
+    url: `/guides/${guide.value.slug}`,
+    type: 'article' as const,
+  }
+}))
+
+useStructuredData('article-schema', computed(() => {
+  if (!guide.value) return null
+  return generateArticleSchema({
+    title: guide.value.title,
+    description: guide.value.excerpt || guide.value.subtitle || '',
+    image: guide.value.imageUrl || undefined,
+    slug: guide.value.slug,
+    author: guide.value.author,
+    publishedAt: guide.value.publishedAt,
+    updatedAt: guide.value.updatedAt,
+    wordCount: guide.value.content ? guide.value.content.split(/\s+/).length : 0,
+  })
+}))
+
+useStructuredData('breadcrumb-schema', computed(() => {
+  if (!guide.value) return null
+  return generateBreadcrumbSchema([
+    { name: 'Home', url: '/' },
+    { name: 'Guides', url: '/guides' },
+    { name: guide.value.title, url: `/guides/${guide.value.slug}` },
+  ])
+}))
 
 const slug = computed(() => route.params.slug as string)
 
@@ -64,35 +98,6 @@ async function loadGuide() {
   }
   guide.value = result
 
-  // Update SEO
-  updateMetaTags({
-    title: result.title,
-    description: result.excerpt || result.subtitle || '',
-    image: result.imageUrl || undefined,
-    url: `/guides/${result.slug}`,
-    type: 'article',
-  })
-
-  // Inject structured data
-  if (typeof generateArticleSchema === 'function') {
-    injectStructuredData('article-schema', generateArticleSchema({
-      title: result.title,
-      description: result.excerpt || result.subtitle || '',
-      image: result.imageUrl || undefined,
-      slug: result.slug,
-      author: result.author,
-      publishedAt: result.publishedAt,
-      updatedAt: result.updatedAt,
-      wordCount: wordCount.value,
-    }))
-  }
-
-  injectStructuredData('breadcrumb-schema', generateBreadcrumbSchema([
-    { name: 'Home', url: '/' },
-    { name: 'Guides', url: '/guides' },
-    { name: result.title, url: `/guides/${result.slug}` },
-  ]))
-
   // Load related guides (same category, excluding current)
   const allGuides = await fetchAll()
   relatedGuides.value = allGuides
@@ -117,11 +122,6 @@ function scrollToSection(id: string) {
 onMounted(() => loadGuide())
 
 watch(slug, () => loadGuide())
-
-onUnmounted(() => {
-  removeStructuredData('article-schema')
-  removeStructuredData('breadcrumb-schema')
-})
 </script>
 
 <template>

@@ -557,6 +557,24 @@ onMounted(() => {
                 <p>No location information available yet.</p>
               </div>
             </div>
+
+            <!-- Booking CTA — mobile only (desktop has sidebar version) -->
+            <div class="mt-8 lg:hidden">
+              <!-- Urgency nudge when festival is coming up in the next 60 days -->
+              <p
+                v-if="festival.daysUntil !== undefined && festival.daysUntil > 0 && festival.daysUntil <= 60"
+                class="text-sm font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-4 py-2 mb-3"
+              >
+                Festival starts in {{ festival.daysUntil }} day{{ festival.daysUntil === 1 ? '' : 's' }} — book activities now!
+              </p>
+              <AffiliateCard
+                context="activities"
+                :destination="festival.provinces?.[0] || 'Thailand'"
+                :attraction-name="festival.name"
+                :title="`Book Tours for ${festival.name}`"
+                :show-availability="true"
+              />
+            </div>
           </div>
 
           <!-- Sidebar -->
@@ -614,6 +632,7 @@ onMounted(() => {
               :destination="festival.provinces?.[0] || 'Thailand'"
               :attraction-name="festival.name"
               compact
+              :show-availability="true"
             />
           </div>
         </div>

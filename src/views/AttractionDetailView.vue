@@ -29,7 +29,8 @@ import {
   BulbOutlined,
 } from '@ant-design/icons-vue'
 import type { TipType, SecretType, RecommendationType } from '@/types'
-import { generateAffiliateUrl, trackAffiliateClick, generateHeritageHotelUrl, generateTransportUrl } from '@/utils/affiliates'
+// Affiliate links handled by AffiliateButton component
+import AffiliateButton from '@/components/common/AffiliateButton.vue'
 import { useAttractionMeta, useAttractionSchema, useBreadcrumbs } from '@/composables/useSeo'
 import { useFavorites } from '@/composables/useFavorites'
 import ShareButton from '@/components/ui/ShareButton.vue'
@@ -301,41 +302,7 @@ const displayCategories = computed(() => {
   return categories.slice(0, 6)
 })
 
-// Affiliate links
-const klookUrl = computed(() => {
-  if (!attraction.value) return '#'
-  return generateAffiliateUrl('klook', attraction.value.province || 'Thailand', attraction.value.name)
-})
-
-const getYourGuideUrl = computed(() => {
-  if (!attraction.value) return '#'
-  return generateAffiliateUrl('getyourguide', attraction.value.province || 'Thailand', attraction.value.name)
-})
-
-const viatorUrl = computed(() => {
-  if (!attraction.value) return '#'
-  return generateAffiliateUrl('viator', attraction.value.province || 'Thailand', attraction.value.name)
-})
-
-const agodaUrl = computed(() => {
-  if (!attraction.value) return '#'
-  return generateAffiliateUrl('agoda', attraction.value.province || 'Thailand')
-})
-
-const heritageHotelUrl = computed(() => {
-  if (!attraction.value) return '#'
-  return generateHeritageHotelUrl(attraction.value.name, attraction.value.province || 'Thailand')
-})
-
-const transportUrl = computed(() => {
-  if (!attraction.value) return '#'
-  return generateTransportUrl('Bangkok', attraction.value.province || 'Thailand')
-})
-
-function handleAffiliateClick(partner: 'klook' | 'agoda' | '12go' | 'getyourguide' | 'viator', url: string) {
-  trackAffiliateClick(partner, attraction.value?.province || 'Thailand', attraction.value?.slug)
-  window.open(url, '_blank', 'noopener,noreferrer')
-}
+// Affiliate URLs are now handled by AffiliateButton component
 
 // Google Maps URL for location
 const googleMapsUrl = computed(() => {
@@ -530,6 +497,34 @@ const gradientClass = computed(() => {
                 {{ categoryLabels[cat]?.icon || '' }} {{ categoryLabels[cat]?.label || cat.replace(/_/g, ' ') }}
               </span>
             </div>
+          </div>
+
+          <!-- Inline booking strip — visible on all screens, especially mobile where sidebar is below the fold -->
+          <div v-if="attraction.placeType !== 'heritage'" class="mt-6 p-4 rounded-xl border border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50">
+            <p class="text-sm font-medium text-gray-700 mb-3">Book {{ attraction.name }} experiences</p>
+            <div class="flex flex-wrap gap-2">
+              <AffiliateButton
+                partner="klook"
+                :destination="attraction.province || 'Thailand'"
+                :attraction-name="attraction.name"
+                :label="`Tours on Klook`"
+                variant="secondary"
+              />
+              <AffiliateButton
+                partner="getyourguide"
+                :destination="attraction.province || 'Thailand'"
+                :attraction-name="attraction.name"
+                :label="`GetYourGuide`"
+                variant="secondary"
+              />
+              <AffiliateButton
+                partner="agoda"
+                :destination="attraction.province || 'Thailand'"
+                :label="`Hotels nearby`"
+                variant="secondary"
+              />
+            </div>
+            <p class="text-xs text-gray-400 mt-2">Affiliate links</p>
           </div>
 
           <!-- Rich Content Tabs -->
@@ -767,6 +762,7 @@ const gradientClass = computed(() => {
         <!-- Sidebar -->
         <div class="space-y-6">
           <!-- Heritage Hotel booking card (for heritage places) -->
+          <!-- Heritage hotel booking -->
           <div v-if="attraction.placeType === 'heritage'" class="card-thai border-2 border-amber-200 bg-amber-50">
             <div class="flex items-center gap-2 mb-3">
               <span class="text-xl">🏛️</span>
@@ -775,12 +771,13 @@ const gradientClass = computed(() => {
             <p class="text-sm text-gray-600 mb-4">
               Experience history at {{ attraction.name }}.
             </p>
-            <button
-              @click="handleAffiliateClick('agoda', heritageHotelUrl)"
-              class="w-full justify-center bg-amber-600 hover:bg-amber-700 text-white font-medium py-2.5 px-4 rounded-lg transition-colors"
-            >
-              Check Availability on Agoda
-            </button>
+            <AffiliateButton
+              partner="agoda"
+              :destination="attraction.province || 'Thailand'"
+              :attraction-name="attraction.name"
+              :label="`Check Availability for ${attraction.name}`"
+              class="w-full"
+            />
             <p class="text-xs text-gray-500 mt-2 text-center">Best rates guaranteed</p>
           </div>
 
@@ -788,27 +785,30 @@ const gradientClass = computed(() => {
           <div v-if="attraction.placeType !== 'heritage'" class="card-thai">
             <h3 class="font-semibold text-gray-900 mb-4">Book Activities</h3>
             <p class="text-sm text-gray-600 mb-4">
-              Find tours and experiences in {{ attraction.name }}.
+              Find tours and experiences at {{ attraction.name }}.
             </p>
             <div class="space-y-2">
-              <button
-                @click="handleAffiliateClick('klook', klookUrl)"
-                class="btn-thai w-full justify-center"
-              >
-                View on Klook
-              </button>
-              <button
-                @click="handleAffiliateClick('getyourguide', getYourGuideUrl)"
-                class="w-full justify-center bg-[#FF5533] hover:bg-[#E64A2E] text-white font-medium py-2.5 px-4 rounded-lg transition-colors"
-              >
-                View on GetYourGuide
-              </button>
-              <button
-                @click="handleAffiliateClick('viator', viatorUrl)"
-                class="w-full justify-center bg-teal-600 hover:bg-teal-700 text-white font-medium py-2.5 px-4 rounded-lg transition-colors"
-              >
-                View on Viator
-              </button>
+              <AffiliateButton
+                partner="klook"
+                :destination="attraction.province || 'Thailand'"
+                :attraction-name="attraction.name"
+                :label="`Book ${attraction.name} on Klook`"
+                class="w-full"
+              />
+              <AffiliateButton
+                partner="getyourguide"
+                :destination="attraction.province || 'Thailand'"
+                :attraction-name="attraction.name"
+                :label="`${attraction.name} on GetYourGuide`"
+                class="w-full"
+              />
+              <AffiliateButton
+                partner="viator"
+                :destination="attraction.province || 'Thailand'"
+                :attraction-name="attraction.name"
+                :label="`${attraction.name} on Viator`"
+                class="w-full"
+              />
             </div>
             <p class="text-xs text-gray-400 mt-2 text-center">Affiliate links</p>
           </div>
@@ -819,27 +819,27 @@ const gradientClass = computed(() => {
             <p class="text-sm text-gray-600 mb-4">
               {{ attraction.placeType === 'heritage' ? 'Other places to stay in' : 'Best places to stay in' }} {{ attraction.province }}.
             </p>
-            <button
-              @click="handleAffiliateClick('agoda', agodaUrl)"
-              class="btn-accent w-full justify-center"
-            >
-              View on Agoda
-            </button>
+            <AffiliateButton
+              partner="agoda"
+              :destination="attraction.province || 'Thailand'"
+              :label="`Hotels in ${attraction.province}`"
+              class="w-full"
+            />
             <p class="text-xs text-gray-400 mt-2 text-center">Affiliate link</p>
           </div>
 
-          <!-- Transport card (for all places) -->
+          <!-- Transport card -->
           <div class="card-thai">
             <h3 class="font-semibold text-gray-900 mb-4">Get There</h3>
             <p class="text-sm text-gray-600 mb-4">
               Buses, trains & ferries to {{ attraction.province }}.
             </p>
-            <button
-              @click="handleAffiliateClick('12go', transportUrl)"
-              class="w-full justify-center bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 px-4 rounded-lg transition-colors"
-            >
-              Book on 12Go Asia
-            </button>
+            <AffiliateButton
+              partner="12go"
+              :destination="attraction.province || 'Thailand'"
+              :label="`Transport to ${attraction.province}`"
+              class="w-full"
+            />
             <p class="text-xs text-gray-400 mt-2 text-center">Affiliate link</p>
           </div>
 
@@ -917,6 +917,7 @@ const gradientClass = computed(() => {
       :is-open="isChatOpen"
       :attraction-slug="attraction.slug || (route.params.id as string)"
       :attraction-name="attraction.name"
+      :attraction-province="attraction.province"
       @close="closeChat"
     />
 

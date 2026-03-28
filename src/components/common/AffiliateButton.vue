@@ -7,6 +7,7 @@ const props = defineProps<{
   destination: string
   attractionName?: string
   variant?: 'primary' | 'secondary' | 'minimal'
+  label?: string
 }>()
 
 const partnerConfig: Record<AffiliatePartner, { label: string; icon: string; color: string; hoverColor: string }> = {
@@ -85,6 +86,6 @@ function trackClick() {
     class="inline-flex items-center justify-center gap-2 transition-colors"
   >
     <span v-if="variant !== 'minimal'">{{ config.icon }}</span>
-    <span>{{ config.label }}</span>
+    <span>{{ label || config.label }}</span>
   </a>
 </template>
