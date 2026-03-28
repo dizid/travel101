@@ -26,11 +26,11 @@ export default async function handler(_req: Request, _context: Context) {
     ORDER BY updated_at DESC
   `
 
-  // Get all festivals
+  // Get all festivals (thai_festivals uses created_at, not updated_at)
   const festivals = await sql`
-    SELECT slug, updated_at
+    SELECT slug, created_at as updated_at
     FROM thai_festivals
-    ORDER BY updated_at DESC
+    ORDER BY created_at DESC
   `
 
   // Get all published travel guides
