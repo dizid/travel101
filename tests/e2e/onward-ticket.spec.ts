@@ -1,5 +1,19 @@
 import { test, expect } from '@playwright/test'
 
+// Helper: pick a date in an Ant DatePicker via the calendar popup
+async function pickDate(page: import('@playwright/test').Page, pickerIndex: number, isoDate: string) {
+  await page.locator('.onward-datepicker').nth(pickerIndex).click()
+  await page.locator('.ant-picker-dropdown').first().waitFor({ state: 'visible' })
+  // Navigate forward months until the target date cell is visible
+  const cell = page.locator(`.ant-picker-cell[title="${isoDate}"]`)
+  for (let i = 0; i < 6; i++) {
+    if (await cell.isVisible().catch(() => false)) break
+    await page.locator('.ant-picker-header-next-btn').first().click()
+    await page.waitForTimeout(200)
+  }
+  await cell.click()
+}
+
 // Helper: mock the onward-ticket status API for non-Pro user
 async function mockStatusNonPro(page: import('@playwright/test').Page) {
   await page.route('**/api/onward-ticket', async (route) => {
@@ -157,20 +171,19 @@ test.describe('Onward Ticket Page', () => {
   })
 
   test('has departure date picker', async ({ page }) => {
-    const dateInput = page.locator('input[type="date"]')
-    await expect(dateInput).toBeVisible()
+    const datePicker = page.locator('.onward-datepicker').first()
+    await expect(datePicker).toBeVisible()
   })
 
   test('search button enables with date filled', async ({ page }) => {
     const searchBtn = page.getByRole('button', { name: /search flights/i })
     await expect(searchBtn).toBeVisible()
 
-    // Fill in a date
-    const dateInput = page.locator('input[type="date"]')
+    // Pick a date via the calendar popup
     const tomorrow = new Date()
     tomorrow.setDate(tomorrow.getDate() + 2)
     const dateStr = tomorrow.toISOString().split('T')[0]
-    await dateInput.fill(dateStr)
+    await pickDate(page, 0, dateStr)
 
     await expect(searchBtn).toBeEnabled()
   })
@@ -206,8 +219,7 @@ test.describe('Onward Ticket - Flight Search', () => {
     await page.goto('/onward-ticket')
 
     // Fill date and search
-    const dateInput = page.locator('input[type="date"]')
-    await dateInput.fill('2026-04-15')
+    await pickDate(page, 0, '2026-04-15')
     await page.getByRole('button', { name: /search flights/i }).click()
 
     // Wait for results
@@ -216,13 +228,14 @@ test.describe('Onward Ticket - Flight Search', () => {
     await expect(page.getByText('Thai Airways')).toBeVisible()
     await expect(page.getByText('$35.00')).toBeVisible()
     await expect(page.getByText('$85.00')).toBeVisible()
+    await expect(page.getByText('You pay $12.00').first()).toBeVisible()
   })
 
   test('clicking a flight result moves to step 2', async ({ page }) => {
     await mockStatusAndSearch(page)
     await page.goto('/onward-ticket')
 
-    await page.locator('input[type="date"]').fill('2026-04-15')
+    await pickDate(page, 0, '2026-04-15')
     await page.getByRole('button', { name: /search flights/i }).click()
     await expect(page.getByText('AirAsia')).toBeVisible({ timeout: 10000 })
     await page.getByText('AirAsia').click()
@@ -234,7 +247,7 @@ test.describe('Onward Ticket - Flight Search', () => {
     await mockStatusAndSearch(page)
     await page.goto('/onward-ticket')
 
-    await page.locator('input[type="date"]').fill('2026-04-15')
+    await pickDate(page, 0, '2026-04-15')
     await page.getByRole('button', { name: /search flights/i }).click()
     await expect(page.getByText('AirAsia')).toBeVisible({ timeout: 10000 })
     await page.getByText('AirAsia').click()
@@ -252,12 +265,13 @@ test.describe('Onward Ticket - Flight Search', () => {
     await mockStatusAndSearch(page)
     await page.goto('/onward-ticket')
 
-    await page.locator('input[type="date"]').fill('2026-04-15')
+    await pickDate(page, 0, '2026-04-15')
     await page.getByRole('button', { name: /search flights/i }).click()
     await expect(page.getByText('AirAsia')).toBeVisible({ timeout: 10000 })
     await page.getByText('AirAsia').click()
 
-    await expect(page.getByText('Service Fee: $12.00')).toBeVisible()
+    await expect(page.getByText('Total Cost')).toBeVisible()
+    await expect(page.getByText('$12.00')).toBeVisible()
     await expect(page.getByText('Continue to Payment')).toBeVisible()
   })
 
@@ -265,7 +279,7 @@ test.describe('Onward Ticket - Flight Search', () => {
     await mockStatusAndSearch(page)
     await page.goto('/onward-ticket')
 
-    await page.locator('input[type="date"]').fill('2026-04-15')
+    await pickDate(page, 0, '2026-04-15')
     await page.getByRole('button', { name: /search flights/i }).click()
     await expect(page.getByText('AirAsia')).toBeVisible({ timeout: 10000 })
     await page.getByText('AirAsia').click()
@@ -298,7 +312,7 @@ test.describe('Onward Ticket - Flight Search', () => {
     })
 
     await page.goto('/onward-ticket')
-    await page.locator('input[type="date"]').fill('2026-04-15')
+    await pickDate(page, 0, '2026-04-15')
     await page.getByRole('button', { name: /search flights/i }).click()
 
     // Page should not crash — search form remains visible
@@ -330,7 +344,7 @@ test.describe('Onward Ticket - Flight Search', () => {
     })
 
     await page.goto('/onward-ticket')
-    await page.locator('input[type="date"]').fill('2026-04-15')
+    await pickDate(page, 0, '2026-04-15')
     await page.getByRole('button', { name: /search flights/i }).click()
 
     await page.waitForTimeout(2000)

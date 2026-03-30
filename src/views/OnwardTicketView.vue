@@ -6,6 +6,8 @@ import { THAI_AIRPORTS, POPULAR_DESTINATIONS, SERVICE_FEE_CENTS } from '@/data/e
 import { loadStripe } from '@stripe/stripe-js'
 import type { Stripe, StripeElements } from '@stripe/stripe-js'
 import UpgradeModal from '@/components/ui/UpgradeModal.vue'
+import dayjs from 'dayjs'
+import type { Dayjs } from 'dayjs'
 import {
   SearchOutlined,
   CheckCircleFilled,
@@ -62,17 +64,33 @@ const proBookingsRemaining = computed(() => {
 })
 const proLimitReached = computed(() => isPro.value && proBookingsRemaining.value === 0)
 
-const minDate = computed(() => {
-  const d = new Date()
-  d.setDate(d.getDate() + 1)
-  return d.toISOString().split('T')[0]
+const serviceFee = computed(() => (SERVICE_FEE_CENTS / 100).toFixed(2))
+
+// Bridge dayjs <-> YYYY-MM-DD strings for Ant DatePicker
+const departureDateDayjs = computed({
+  get: () => departureDate.value ? dayjs(departureDate.value) : null,
+  set: (val: Dayjs | null) => {
+    departureDate.value = val ? val.format('YYYY-MM-DD') : ''
+  },
 })
 
-const maxDate = computed(() => {
-  const d = new Date()
-  d.setDate(d.getDate() + 90)
-  return d.toISOString().split('T')[0]
+const dobDayjs = computed({
+  get: () => passenger.value.born_on ? dayjs(passenger.value.born_on) : null,
+  set: (val: Dayjs | null) => {
+    passenger.value.born_on = val ? val.format('YYYY-MM-DD') : ''
+  },
 })
+
+function disabledDepartureDate(current: Dayjs): boolean {
+  if (!current) return false
+  const today = dayjs().startOf('day')
+  return current.isBefore(today.add(1, 'day')) || current.isAfter(today.add(90, 'day'))
+}
+
+function disabledDobDate(current: Dayjs): boolean {
+  if (!current) return false
+  return current.isAfter(dayjs())
+}
 
 const effectiveDestination = computed(() =>
   destination.value === 'other' ? customDestination.value.toUpperCase() : destination.value
@@ -165,6 +183,7 @@ onUnmounted(() => {
 })
 
 function goToStep3() {
+  if (!passenger.value.born_on) return
   step.value = 3
 }
 
@@ -389,12 +408,16 @@ function downloadPdf() {
             <!-- Date -->
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">Departure date</label>
-              <input
-                type="date"
-                v-model="departureDate"
-                :min="minDate"
-                :max="maxDate"
-                class="w-full px-4 py-3 border border-gray-300 rounded-xl bg-white text-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              <a-date-picker
+                v-model:value="departureDateDayjs"
+                :disabled-date="disabledDepartureDate"
+                format="MMM D, YYYY"
+                placeholder="Select departure date"
+                :input-read-only="true"
+                size="large"
+                class="w-full onward-datepicker"
+                :popup-class-name="'onward-datepicker-popup'"
+                :get-popup-container="(trigger: HTMLElement) => trigger.parentElement!"
               />
             </div>
 
@@ -431,7 +454,12 @@ function downloadPdf() {
                 <span class="font-bold text-gray-900">{{ offer.airline }}</span>
                 <span class="text-sm text-gray-500 ml-2">{{ offer.airlineCode }}</span>
               </div>
-              <div class="text-lg font-bold text-primary-600">${{ offer.price }}</div>
+              <div class="text-right">
+                <div class="inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-sm font-bold">
+                  You pay ${{ serviceFee }}
+                </div>
+                <div class="text-xs text-gray-400 mt-1">Flight value: ${{ offer.price }}</div>
+              </div>
             </div>
             <div class="text-sm mt-1 text-gray-600">
               {{ formatTime(offer.departureTime) }} &rarr; {{ formatTime(offer.arrivalTime) }}
@@ -467,7 +495,11 @@ function downloadPdf() {
                 {{ selectedOffer.duration }}
               </p>
             </div>
-            <div class="text-xl font-bold text-primary-600">${{ selectedOffer.price }}</div>
+            <div class="text-right">
+              <p class="text-xs text-gray-500">You pay</p>
+              <p class="text-xl font-bold text-green-600">${{ serviceFee }}</p>
+              <p class="text-xs text-gray-400">Flight ref: ${{ selectedOffer.price }}</p>
+            </div>
           </div>
         </div>
 
@@ -508,11 +540,17 @@ function downloadPdf() {
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">Date of Birth</label>
-                <input
-                  type="date"
-                  v-model="passenger.born_on"
-                  required
-                  class="w-full px-4 py-3 border border-gray-300 rounded-xl bg-white text-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                <a-date-picker
+                  v-model:value="dobDayjs"
+                  :disabled-date="disabledDobDate"
+                  format="MMM D, YYYY"
+                  placeholder="Select date of birth"
+                  :input-read-only="true"
+                  size="large"
+                  class="w-full onward-datepicker"
+                  :popup-class-name="'onward-datepicker-popup'"
+                  :default-picker-value="dayjs().subtract(30, 'year')"
+                  :get-popup-container="(trigger: HTMLElement) => trigger.parentElement!"
                 />
               </div>
               <div>
@@ -564,14 +602,17 @@ function downloadPdf() {
               <h4 class="font-bold text-gray-900">Monthly Pro limit reached</h4>
               <p class="text-sm text-gray-600 mt-1">
                 You've used your {{ proStatus?.monthlyLimit }} free bookings this month.
-                You can still book for ${{ (SERVICE_FEE_CENTS / 100).toFixed(2) }} per ticket.
+                You can still book for ${{ serviceFee }} per ticket.
               </p>
             </div>
-            <div v-else class="card-thai p-4 bg-amber-50 border-amber-200">
-              <h4 class="font-bold text-gray-900">Service Fee: ${{ (SERVICE_FEE_CENTS / 100).toFixed(2) }}</h4>
-              <p class="text-sm text-gray-600 mt-1">
-                Includes a real airline reservation with verifiable PNR code, valid for 48+ hours.
-                Perfect for Thai immigration and airline check-in.
+            <div v-else class="card-thai p-4 bg-green-50 border-green-200">
+              <div class="flex items-center justify-between mb-1">
+                <h4 class="font-bold text-gray-900">Total Cost</h4>
+                <span class="text-lg font-bold text-green-600">${{ serviceFee }}</span>
+              </div>
+              <p class="text-sm text-gray-600">
+                This is all you pay. We reserve a real airline ticket on your behalf —
+                you never pay the full flight price. Includes verifiable PNR code, valid 48+ hours.
               </p>
             </div>
 
@@ -612,7 +653,7 @@ function downloadPdf() {
         <div v-if="(!isPro || proLimitReached) && !booking" class="card-thai p-6 md:p-8">
           <h2 class="text-xl font-semibold text-gray-900 mb-2">Complete Payment</h2>
           <p class="text-gray-500 mb-6">
-            Pay ${{ (SERVICE_FEE_CENTS / 100).toFixed(2) }} service fee to reserve your flight.
+            Pay ${{ serviceFee }} service fee to reserve your flight.
           </p>
 
           <!-- Selected flight summary -->
@@ -626,7 +667,7 @@ function downloadPdf() {
               </div>
               <div class="text-right">
                 <p class="text-xs text-gray-500">Service Fee</p>
-                <p class="text-lg font-bold text-primary-600">${{ (SERVICE_FEE_CENTS / 100).toFixed(2) }}</p>
+                <p class="text-lg font-bold text-green-600">${{ serviceFee }}</p>
               </div>
             </div>
           </div>
@@ -659,7 +700,7 @@ function downloadPdf() {
               :class="{ 'opacity-50 cursor-not-allowed': !stripeReady }"
             >
               <LoadingOutlined v-if="paying" class="animate-spin" />
-              {{ paying ? 'Processing...' : `Pay $${(SERVICE_FEE_CENTS / 100).toFixed(2)} & Reserve Flight` }}
+              {{ paying ? 'Processing...' : `Pay $${serviceFee} & Reserve Flight` }}
             </button>
           </div>
         </div>
@@ -714,3 +755,36 @@ function downloadPdf() {
     />
   </div>
 </template>
+
+<style>
+/* Ant DatePicker — Thai gold theme (unscoped: popup renders in portal) */
+.onward-datepicker.ant-picker {
+  border-radius: 0.75rem;
+  padding: 0.625rem 1rem;
+  border-color: #d1d5db;
+  height: auto;
+}
+.onward-datepicker.ant-picker:hover {
+  border-color: #f59e0b;
+}
+.onward-datepicker.ant-picker-focused {
+  border-color: #f59e0b;
+  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2);
+}
+.onward-datepicker-popup .ant-picker-cell-selected .ant-picker-cell-inner {
+  background: #f59e0b !important;
+}
+.onward-datepicker-popup .ant-picker-cell-today .ant-picker-cell-inner::before {
+  border-color: #f59e0b !important;
+}
+.onward-datepicker-popup .ant-picker-header-view button:hover {
+  color: #d97706;
+}
+.onward-datepicker-popup .ant-picker-today-btn {
+  color: #d97706;
+}
+.onward-datepicker-popup .ant-picker-panel-container {
+  border-radius: 0.75rem;
+  box-shadow: 0 10px 40px rgba(245, 158, 11, 0.15);
+}
+</style>

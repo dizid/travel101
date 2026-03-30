@@ -28,6 +28,7 @@ import {
   Tooltip,
   Spin,
   Skeleton,
+  DatePicker,
   message,
   notification,
 } from 'ant-design-vue'
@@ -73,6 +74,7 @@ export const createApp = ViteSSG(
     app.use(Tooltip)
     app.use(Spin)
     app.use(Skeleton)
+    app.use(DatePicker)
 
     // Client-only: message/notification use DOM
     if (isClient) {
