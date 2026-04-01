@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onServerPrefetch, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useCountryStore } from '@stores/countryStore'
 import { useUserStore } from '@stores/userStore'
@@ -51,12 +51,19 @@ function handleEditClick() {
 const { fetchUpcoming, getFestivalEmoji, formatFestivalDate } = useFestivals()
 const upcomingFestivals = ref<UpcomingFestival[]>([])
 
-// Fetch attractions on mount
+// SSG: pre-fetch attractions so list renders with real content
+onServerPrefetch(async () => {
+  if (!countryStore.attractionsLoaded) {
+    await countryStore.fetchAttractions()
+  }
+})
+
+// Client: fetch attractions on mount
 onMounted(async () => {
   if (!countryStore.attractionsLoaded) {
     await countryStore.fetchAttractions({ personalized: hasProfile.value })
   }
-  // Fetch upcoming festivals for sidebar
+  // Fetch upcoming festivals for sidebar (client-only)
   fetchUpcoming(60).then(festivals => {
     upcomingFestivals.value = festivals.slice(0, 3)
   })

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onServerPrefetch, watch } from 'vue'
 import { useRoute, useRouter, RouterLink } from 'vue-router'
 import { useFestivals } from '@/composables/useFestivals'
 import { useEventSchema, useBreadcrumbs, usePageMeta } from '@/composables/useSeo'
@@ -94,7 +94,10 @@ async function loadFestival() {
     return
   }
 
-  const data = await fetchBySlug(slug)
+  const [data, allGuides] = await Promise.all([
+    fetchBySlug(slug),
+    fetchAllGuides(),
+  ])
   if (!data) {
     router.push('/festivals')
     return
@@ -102,11 +105,9 @@ async function loadFestival() {
 
   festival.value = data
 
-  // Load related guides (culture and practical guides are most relevant to festivals)
-  const allGuides = await fetchAllGuides()
+  // Related guides: culture/food first, then practical
   relatedGuides.value = allGuides
     .sort((a, b) => {
-      // Prioritize culture/food guides for festivals, then practical
       const priority: Record<string, number> = { culture: 3, food: 2, practical: 1, destination: 0, budget: 0 }
       return (priority[b.category] || 0) - (priority[a.category] || 0)
     })
@@ -162,12 +163,16 @@ const typeDisplay = computed(() => {
 })
 
 // Watch for route changes
+// SSG: pre-fetch data so HTML renders with real content
+onServerPrefetch(() => loadFestival())
+
 watch(() => route.params.slug, () => {
   loadFestival()
 })
 
 onMounted(() => {
-  loadFestival()
+  // Skip re-fetch if SSG already populated the data
+  if (!festival.value) loadFestival()
 })
 </script>
 

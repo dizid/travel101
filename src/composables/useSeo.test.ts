@@ -1,24 +1,14 @@
-import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest'
-import { ref, nextTick, defineComponent } from 'vue'
-import { mount, flushPromises } from '@vue/test-utils'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { ref, nextTick, defineComponent, computed } from 'vue'
+import { mount } from '@vue/test-utils'
 import { usePageMeta, useAttractionMeta, useAttractionSchema, useBreadcrumbs } from './useSeo'
 
-// Mock the seo utils
-vi.mock('@/utils/seo', () => ({
-  updateMetaTags: vi.fn(),
-  generateAttractionSchema: vi.fn((data) => ({ '@type': 'TouristAttraction', ...data })),
-  generateBreadcrumbSchema: vi.fn((items) => ({ '@type': 'BreadcrumbList', items })),
-  injectStructuredData: vi.fn(),
-  removeStructuredData: vi.fn(),
-}))
+// Track useHead() calls
+const useHeadMock = vi.fn()
 
-import {
-  updateMetaTags,
-  generateAttractionSchema,
-  generateBreadcrumbSchema,
-  injectStructuredData,
-  removeStructuredData,
-} from '@/utils/seo'
+vi.mock('@unhead/vue', () => ({
+  useHead: (...args: unknown[]) => useHeadMock(...args),
+}))
 
 // Helper to mount a composable in a component context
 function mountComposable<T>(composableFn: () => T): { result: T; unmount: () => void } {
@@ -35,17 +25,21 @@ function mountComposable<T>(composableFn: () => T): { result: T; unmount: () => 
   return { result: result!, unmount: () => wrapper.unmount() }
 }
 
+// Extract the resolved value from a computed ref passed to useHead
+function resolveHeadConfig(callIndex = 0) {
+  const arg = useHeadMock.mock.calls[callIndex]?.[0]
+  if (!arg) return null
+  // useHead receives a computed ref — resolve its .value
+  return arg.value !== undefined ? arg.value : arg
+}
+
 describe('useSeo', () => {
   beforeEach(() => {
     vi.clearAllMocks()
   })
 
-  afterEach(() => {
-    vi.clearAllMocks()
-  })
-
   describe('usePageMeta', () => {
-    it('should call updateMetaTags with static meta object on mount', () => {
+    it('should call useHead with title and meta tags for static meta', () => {
       const meta = {
         title: 'Test Page',
         description: 'Test description',
@@ -54,10 +48,22 @@ describe('useSeo', () => {
 
       mountComposable(() => usePageMeta(meta))
 
-      expect(updateMetaTags).toHaveBeenCalledWith(meta)
+      expect(useHeadMock).toHaveBeenCalled()
+      const config = resolveHeadConfig()
+      expect(config.title).toContain('Test Page')
+      expect(config.meta).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ name: 'description', content: 'Test description' }),
+        ])
+      )
+      expect(config.link).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ rel: 'canonical', href: expect.stringContaining('/test') }),
+        ])
+      )
     })
 
-    it('should handle ref meta and watch for changes', async () => {
+    it('should handle ref meta and react to changes', async () => {
       const meta = ref({
         title: 'Initial Title',
         description: 'Initial description',
@@ -65,13 +71,12 @@ describe('useSeo', () => {
 
       mountComposable(() => usePageMeta(meta))
 
-      // Initial call on mount
-      expect(updateMetaTags).toHaveBeenCalledWith({
-        title: 'Initial Title',
-        description: 'Initial description',
-      })
+      // useHead is called with a computed — the computed reacts to changes
+      expect(useHeadMock).toHaveBeenCalled()
+      const config = resolveHeadConfig()
+      expect(config.title).toContain('Initial Title')
 
-      // Update the ref
+      // Update the ref — computed will re-evaluate
       meta.value = {
         title: 'Updated Title',
         description: 'Updated description',
@@ -79,15 +84,14 @@ describe('useSeo', () => {
 
       await nextTick()
 
-      expect(updateMetaTags).toHaveBeenCalledWith({
-        title: 'Updated Title',
-        description: 'Updated description',
-      })
+      // The same computed ref now resolves to updated values
+      const updated = resolveHeadConfig()
+      expect(updated.title).toContain('Updated Title')
     })
   })
 
   describe('useAttractionMeta', () => {
-    it('should update meta tags when attraction is provided', () => {
+    it('should set meta tags when attraction is provided', () => {
       const attraction = ref({
         name: 'Grand Palace',
         description: 'The Grand Palace is a complex of buildings at the heart of Bangkok.',
@@ -98,13 +102,15 @@ describe('useSeo', () => {
 
       mountComposable(() => useAttractionMeta(attraction))
 
-      expect(updateMetaTags).toHaveBeenCalledWith({
-        title: 'Grand Palace - Bangkok',
-        description: expect.stringContaining('Grand Palace'),
-        url: '/attractions/grand-palace',
-        image: 'https://example.com/grand-palace.jpg',
-        type: 'place',
-      })
+      expect(useHeadMock).toHaveBeenCalled()
+      const config = resolveHeadConfig()
+      expect(config.title).toContain('Grand Palace')
+      expect(config.title).toContain('Bangkok')
+      expect(config.meta).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ name: 'description', content: expect.stringContaining('Grand Palace') }),
+        ])
+      )
     })
 
     it('should truncate description to 160 characters', () => {
@@ -118,19 +124,23 @@ describe('useSeo', () => {
 
       mountComposable(() => useAttractionMeta(attraction))
 
-      const call = (updateMetaTags as ReturnType<typeof vi.fn>).mock.calls[0][0]
-      expect(call.description).toHaveLength(160)
+      const config = resolveHeadConfig()
+      const descMeta = config.meta.find((m: any) => m.name === 'description')
+      expect(descMeta.content).toHaveLength(160)
     })
 
-    it('should not update meta when attraction is null', () => {
+    it('should produce empty config when attraction is null', () => {
       const attraction = ref(null)
 
       mountComposable(() => useAttractionMeta(attraction))
 
-      expect(updateMetaTags).not.toHaveBeenCalled()
+      expect(useHeadMock).toHaveBeenCalled()
+      const config = resolveHeadConfig()
+      // null attraction → empty config (no title, no meta)
+      expect(config).toEqual({})
     })
 
-    it('should update meta when attraction changes', async () => {
+    it('should react when attraction changes', async () => {
       const attraction = ref<{
         name: string
         description: string
@@ -145,7 +155,8 @@ describe('useSeo', () => {
 
       mountComposable(() => useAttractionMeta(attraction))
 
-      expect(updateMetaTags).toHaveBeenCalledTimes(1)
+      const initialConfig = resolveHeadConfig()
+      expect(initialConfig.title).toContain('First')
 
       attraction.value = {
         name: 'Second',
@@ -156,72 +167,55 @@ describe('useSeo', () => {
 
       await nextTick()
 
-      expect(updateMetaTags).toHaveBeenCalledTimes(2)
-      expect(updateMetaTags).toHaveBeenLastCalledWith(
-        expect.objectContaining({
-          title: 'Second - Chiang Mai',
-        })
-      )
+      const updatedConfig = resolveHeadConfig()
+      expect(updatedConfig.title).toContain('Second')
+      expect(updatedConfig.title).toContain('Chiang Mai')
     })
   })
 
   describe('useAttractionSchema', () => {
-    it('should inject structured data when attraction is provided', () => {
+    it('should inject JSON-LD script when attraction is provided', () => {
       const attraction = ref({
         name: 'Wat Pho',
         description: 'Temple of the Reclining Buddha',
+        address: 'Bangkok',
+        province: 'Bangkok',
+        slug: 'wat-pho',
       })
 
       mountComposable(() => useAttractionSchema(attraction))
 
-      expect(generateAttractionSchema).toHaveBeenCalledWith({
-        name: 'Wat Pho',
-        description: 'Temple of the Reclining Buddha',
+      // useHead called twice: once from useAttractionSchema, once internally
+      const scriptCall = useHeadMock.mock.calls.find((call: any) => {
+        const val = call[0]?.value !== undefined ? call[0].value : call[0]
+        return val?.script?.some((s: any) => s.id === 'attraction-schema')
       })
-      expect(injectStructuredData).toHaveBeenCalledWith(
-        'attraction-schema',
-        expect.objectContaining({ '@type': 'TouristAttraction' })
-      )
+
+      expect(scriptCall).toBeTruthy()
+      const config = scriptCall[0].value !== undefined ? scriptCall[0].value : scriptCall[0]
+      const script = config.script[0]
+      expect(script.type).toBe('application/ld+json')
+      const schema = JSON.parse(script.innerHTML)
+      expect(schema['@type']).toBe('TouristAttraction')
+      expect(schema.name).toBe('Wat Pho')
     })
 
-    it('should not inject schema when attraction is null', () => {
+    it('should produce empty config when attraction is null', () => {
       const attraction = ref(null)
 
       mountComposable(() => useAttractionSchema(attraction))
 
-      expect(injectStructuredData).not.toHaveBeenCalled()
-    })
-
-    it('should update schema when attraction changes', async () => {
-      const attraction = ref<{ name: string } | null>({
-        name: 'First Attraction',
+      // useHead called but config should have no script
+      const scriptCall = useHeadMock.mock.calls.find((call: any) => {
+        const val = call[0]?.value !== undefined ? call[0].value : call[0]
+        return val?.script?.length > 0
       })
-
-      mountComposable(() => useAttractionSchema(attraction))
-
-      attraction.value = { name: 'Second Attraction' }
-
-      await nextTick()
-
-      expect(generateAttractionSchema).toHaveBeenCalledTimes(2)
-      expect(generateAttractionSchema).toHaveBeenLastCalledWith({
-        name: 'Second Attraction',
-      })
-    })
-
-    it('should remove schema on unmount', () => {
-      const attraction = ref({ name: 'Test' })
-
-      const { unmount } = mountComposable(() => useAttractionSchema(attraction))
-
-      unmount()
-
-      expect(removeStructuredData).toHaveBeenCalledWith('attraction-schema')
+      expect(scriptCall).toBeFalsy()
     })
   })
 
   describe('useBreadcrumbs', () => {
-    it('should inject breadcrumb structured data', () => {
+    it('should inject breadcrumb JSON-LD', () => {
       const items = [
         { name: 'Home', url: '/' },
         { name: 'Attractions', url: '/attractions' },
@@ -230,26 +224,27 @@ describe('useSeo', () => {
 
       mountComposable(() => useBreadcrumbs(items))
 
-      expect(generateBreadcrumbSchema).toHaveBeenCalledWith(items)
-      expect(injectStructuredData).toHaveBeenCalledWith(
-        'breadcrumb-schema',
-        expect.objectContaining({ '@type': 'BreadcrumbList' })
-      )
+      const scriptCall = useHeadMock.mock.calls.find((call: any) => {
+        const val = call[0]?.value !== undefined ? call[0].value : call[0]
+        return val?.script?.some((s: any) => s.id === 'breadcrumb-schema')
+      })
+
+      expect(scriptCall).toBeTruthy()
+      const config = scriptCall[0].value !== undefined ? scriptCall[0].value : scriptCall[0]
+      const schema = JSON.parse(config.script[0].innerHTML)
+      expect(schema['@type']).toBe('BreadcrumbList')
+      expect(schema.itemListElement).toHaveLength(3)
     })
 
     it('should handle empty breadcrumbs', () => {
       mountComposable(() => useBreadcrumbs([]))
 
-      expect(generateBreadcrumbSchema).toHaveBeenCalledWith([])
-      expect(injectStructuredData).toHaveBeenCalled()
-    })
+      const scriptCall = useHeadMock.mock.calls.find((call: any) => {
+        const val = call[0]?.value !== undefined ? call[0].value : call[0]
+        return val?.script?.some((s: any) => s.id === 'breadcrumb-schema')
+      })
 
-    it('should remove breadcrumbs on unmount', () => {
-      const { unmount } = mountComposable(() => useBreadcrumbs([{ name: 'Home', url: '/' }]))
-
-      unmount()
-
-      expect(removeStructuredData).toHaveBeenCalledWith('breadcrumb-schema')
+      expect(scriptCall).toBeTruthy()
     })
   })
 })

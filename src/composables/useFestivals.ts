@@ -80,8 +80,16 @@ export function useFestivals() {
     return festivals
   }
 
-  // Fetch all festivals
+  // Fetch all festivals (or pre-fetched data during SSG)
   async function fetchAll(): Promise<Festival[]> {
+    // During SSG: read from pre-fetched data
+    if (import.meta.env.SSR) {
+      const { getSSGFestivalList } = await import('@/lib/ssg-data')
+      const list = getSSGFestivalList() as Festival[]
+      allFestivals.value = list
+      return list
+    }
+
     const festivals = await fetchApi<Festival[]>(
       '/api/festivals',
       { errorMessage: 'Failed to fetch festivals', extractKey: 'festivals', defaultValue: [] }
@@ -90,8 +98,16 @@ export function useFestivals() {
     return festivals
   }
 
-  // Fetch festivals with filters
+  // Fetch festivals with filters — SSG-aware
   async function fetchFiltered(filters: FestivalFilters): Promise<{ festivals: Festival[]; total: number; hasMore: boolean }> {
+    // During SSG: return all festivals (no filtering needed for initial render)
+    if (import.meta.env.SSR) {
+      const { getSSGFestivalList } = await import('@/lib/ssg-data')
+      const list = getSSGFestivalList() as Festival[]
+      allFestivals.value = list
+      return { festivals: list, total: list.length, hasMore: false }
+    }
+
     const url = buildUrl('/api/festivals', {
       type: filters.type,
       region: filters.region,
@@ -127,8 +143,14 @@ export function useFestivals() {
   const fetchByRegion = (region: FestivalRegion) => fetchByFilter('region', region)
   const fetchHiddenGems = () => fetchByFilter('hidden', 'true')
 
-  // Fetch single festival by slug
+  // Fetch single festival by slug (or pre-fetched data during SSG)
   async function fetchBySlug(slug: string): Promise<UpcomingFestival | null> {
+    // During SSG: read from pre-fetched data
+    if (import.meta.env.SSR) {
+      const { getSSGFestival } = await import('@/lib/ssg-data')
+      return getSSGFestival(slug) as UpcomingFestival | null
+    }
+
     return fetchApi<UpcomingFestival | null>(
       `/api/festivals/${encodeURIComponent(slug)}`,
       { errorMessage: 'Failed to fetch festival', defaultValue: null }

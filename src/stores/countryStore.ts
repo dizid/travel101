@@ -527,7 +527,7 @@ export const useCountryStore = defineStore('country', () => {
     return result.visa
   }
 
-  // Fetch attractions from API
+  // Fetch attractions from API (or pre-fetched data during SSG)
   async function fetchAttractions(options?: {
     category?: string
     hiddenGemsOnly?: boolean
@@ -535,6 +535,18 @@ export const useCountryStore = defineStore('country', () => {
   }) {
     attractionsLoading.value = true
     try {
+      // During SSG: read from pre-fetched data
+      if (import.meta.env.SSR) {
+        const { getSSGAttractionList } = await import('@/lib/ssg-data')
+        const list = getSSGAttractionList()
+        if (list.length) {
+          attractions.value = list.map(transformAttraction)
+          attractionsTotal.value = list.length
+          attractionsLoaded.value = true
+        }
+        return
+      }
+
       const params = new URLSearchParams()
       if (options?.category) params.set('category', options.category)
       if (options?.hiddenGemsOnly) params.set('hidden_gems', 'true')
@@ -565,10 +577,21 @@ export const useCountryStore = defineStore('country', () => {
     }
   }
 
-  // Fetch single attraction with full details
+  // Fetch single attraction with full details (or pre-fetched data during SSG)
   async function fetchAttractionBySlug(slug: string) {
     attractionsLoading.value = true
     try {
+      // During SSG: read from pre-fetched data
+      if (import.meta.env.SSR) {
+        const { getSSGAttraction } = await import('@/lib/ssg-data')
+        const raw = getSSGAttraction(slug)
+        if (raw) {
+          currentAttraction.value = transformAttractionDetail(raw)
+          return { attraction: currentAttraction.value, matchInfo: null }
+        }
+        return null
+      }
+
       const userStore = useUserStore()
       const headers: Record<string, string> = {}
       if (userStore.hasProfile) {

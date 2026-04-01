@@ -49,5 +49,6 @@ roadmap.md
 vite.config.d.ts
 vite.config.js
 .vite-ssg-temp/
+.ssg-data/
 scripts/*.js
 scripts/*.d.ts

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onServerPrefetch, watch } from 'vue'
 import { useApi } from '@/composables/useApi'
 import type { HeritageSite, HeritageImage } from '@/types'
 import HeritageCard from '@/components/features/heritage/HeritageCard.vue'
@@ -82,6 +82,16 @@ async function fetchSites() {
   error.value = null
 
   try {
+    // During SSG: read from pre-fetched data
+    if (import.meta.env.SSR) {
+      const { getSSGHeritageList } = await import('@/lib/ssg-data')
+      const list = getSSGHeritageList()
+      sites.value = list
+      total.value = list.length
+      hasMore.value = false
+      return
+    }
+
     const params = new URLSearchParams(queryParams.value)
     const response = await get<{
       sites: (HeritageSite & { primaryImage?: HeritageImage; imageCount?: number; eventCount?: number })[]
@@ -146,6 +156,9 @@ const hasActiveFilters = computed(() =>
 watch([queryParams], () => {
   fetchSites()
 }, { deep: true })
+
+// SSG: pre-fetch heritage sites so list renders with real content
+onServerPrefetch(() => fetchSites())
 
 onMounted(() => {
   fetchSites()

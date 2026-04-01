@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onServerPrefetch, watch } from 'vue'
 import { useFestivals } from '@/composables/useFestivals'
 import { useGeolocation } from '@/composables/useGeolocation'
 import { useUserStore } from '@/stores/userStore'
@@ -203,10 +203,13 @@ watch([queryParams, activeTab], () => {
   fetchFestivals()
 }, { deep: true })
 
+// SSG: pre-fetch festivals so list renders with real content
+onServerPrefetch(() => fetchFestivals())
+
 onMounted(() => {
   fetchFestivals()
   fetchFilterOptions()
-  // Also fetch upcoming for the banner
+  // Also fetch upcoming for the banner (client-only)
   fetchUpcoming(90).then(upcoming => {
     upcomingFestivals.value = upcoming
   })

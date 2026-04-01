@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onServerPrefetch, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
   ClockCircleOutlined,
@@ -86,19 +86,20 @@ const categoryConfig = computed(() =>
 
 
 async function loadGuide() {
-  const result = await fetchBySlug(slug.value)
+  const [result, allGuides] = await Promise.all([
+    fetchBySlug(slug.value),
+    fetchAll(),
+  ])
   if (!result) {
     router.replace('/guides')
     return
   }
   guide.value = result
 
-  // Load related guides (same category, excluding current)
-  const allGuides = await fetchAll()
+  // Related guides: same category first, excluding current
   relatedGuides.value = allGuides
     .filter(g => g.slug !== result.slug)
     .sort((a, b) => {
-      // Prioritize same category
       const aMatch = a.category === result.category ? 1 : 0
       const bMatch = b.category === result.category ? 1 : 0
       return bMatch - aMatch
@@ -114,7 +115,13 @@ function scrollToSection(id: string) {
   }
 }
 
-onMounted(() => loadGuide())
+// SSG: pre-fetch data so HTML renders with real content
+onServerPrefetch(() => loadGuide())
+
+onMounted(() => {
+  // Skip re-fetch if SSG already populated the data
+  if (!guide.value) loadGuide()
+})
 
 watch(slug, () => loadGuide())
 </script>

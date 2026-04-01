@@ -12,4 +12,3 @@ Disallow: /api/
 Disallow: /dashboard
 Disallow: /profile
 Disallow: /saved
-Disallow: /onward-ticket

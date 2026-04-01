@@ -50,8 +50,16 @@ function buildUrl(base: string, params: Record<string, string | number | undefin
 }
 
 export function useGuides() {
-  // Fetch all guides (listing, no content field)
+  // Fetch all guides (listing, no content field) — SSG-aware
   async function fetchAll(): Promise<Guide[]> {
+    // During SSG: read from pre-fetched data
+    if (import.meta.env.SSR) {
+      const { getSSGGuideList } = await import('@/lib/ssg-data')
+      const list = getSSGGuideList() as Guide[]
+      guides.value = list
+      return list
+    }
+
     loading.value = true
     error.value = null
     try {
@@ -86,8 +94,14 @@ export function useGuides() {
     }
   }
 
-  // Fetch single guide by slug (includes content)
+  // Fetch single guide by slug (includes content) — SSG-aware
   async function fetchBySlug(slug: string): Promise<Guide | null> {
+    // During SSG: read from pre-fetched data
+    if (import.meta.env.SSR) {
+      const { getSSGGuide } = await import('@/lib/ssg-data')
+      return getSSGGuide(slug) as Guide | null
+    }
+
     loading.value = true
     error.value = null
     try {

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onServerPrefetch, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useApi } from '@/composables/useApi'
 import { useWeather } from '@/composables/useWeather'
@@ -109,6 +109,16 @@ async function fetchSite() {
   error.value = null
 
   try {
+    // During SSG: read from pre-fetched data
+    if (import.meta.env.SSR) {
+      const { getSSGHeritage } = await import('@/lib/ssg-data')
+      const raw = getSSGHeritage(slug)
+      if (raw) {
+        site.value = raw as HeritageDetail
+      }
+      return
+    }
+
     const response = await get<{ site: HeritageDetail }>(`/heritage/${slug}`)
     if (response) {
       site.value = response.site
@@ -163,8 +173,12 @@ watch(() => site.value?.province, async (province) => {
   }
 }, { immediate: true })
 
+// SSG: pre-fetch data so HTML renders with real content
+onServerPrefetch(() => fetchSite())
+
 onMounted(() => {
-  fetchSite()
+  // Skip re-fetch if SSG already populated the data
+  if (!site.value) fetchSite()
 })
 </script>
 

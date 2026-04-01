@@ -49,11 +49,36 @@ export default defineConfig(({ isSsrBuild }) => ({
     script: 'async',
     formatting: 'minify',
     concurrency: 5,
-    // Fetch all routes including dynamic slugs from DB
+    // Fetch all routes and pre-fetch content data for SSR rendering
     async includedRoutes(_paths: string[]) {
-      // Dynamic import to avoid bundling DB client into the frontend
-      const { getAllRoutes } = await import('./scripts/fetch-routes')
-      return getAllRoutes()
+      const { prefetchSSGData } = await import('./scripts/prefetch-ssg-data')
+      // Pre-fetch all content data from DB → .ssg-data/ JSON files
+      // Also returns slugs so we don't need a second DB connection for routes
+      const slugs = await prefetchSSGData()
+
+      // Auth-only routes to skip during prerendering
+      const skipRoutes = new Set(['/dashboard', '/profile', '/saved', '/alerts', '/smart-match'])
+
+      // Static routes
+      const staticRoutes = [
+        '/', '/visa', '/tdac', '/warnings', '/attractions', '/heritage',
+        '/festivals', '/guides', '/emergency', '/phrasebook', '/visa-countdown',
+        '/about', '/people', '/privacy', '/terms', '/contact',
+        '/onward-ticket', '/itinerary', '/packing', '/safety', '/90-day',
+        '/medical', '/cost-calculator', '/setup-guide',
+      ]
+
+      // Dynamic routes from pre-fetched data
+      const dynamicRoutes = [
+        ...slugs.attractionSlugs.map(s => `/attractions/${s}`),
+        ...slugs.heritageSlugs.map(s => `/heritage/${s}`),
+        ...slugs.festivalSlugs.map(s => `/festivals/${s}`),
+        ...slugs.guideSlugs.map(s => `/guides/${s}`),
+      ]
+
+      const allRoutes = [...staticRoutes, ...dynamicRoutes].filter(r => !skipRoutes.has(r))
+      console.log(`[vite-ssg] ${staticRoutes.length} static + ${dynamicRoutes.length} dynamic = ${allRoutes.length} total routes`)
+      return allRoutes
     },
   },
 }))

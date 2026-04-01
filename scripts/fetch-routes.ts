@@ -56,20 +56,13 @@ export async function fetchDynamicRoutes(): Promise<DynamicRoutes> {
  */
 export async function getAllRoutes(): Promise<string[]> {
   // Routes to skip during prerendering (auth/pro-only)
+  // Only skip auth-required pages — all content pages should be prerendered for SEO
   const skipRoutes = new Set([
     '/dashboard',
     '/profile',
     '/saved',
-    '/onward-ticket',
-    '/itinerary',
     '/alerts',
     '/smart-match',
-    '/packing',
-    '/safety',
-    '/90-day',
-    '/medical',
-    '/cost-calculator',
-    '/setup-guide',
   ])
 
   // Static routes to always include

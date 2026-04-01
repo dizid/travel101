@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, onServerPrefetch, watch } from 'vue'
 import { SearchOutlined, ReadOutlined } from '@ant-design/icons-vue'
 import GuideCard from '@/components/features/GuideCard.vue'
 import BreadcrumbNav from '@/components/ui/BreadcrumbNav.vue'
@@ -61,6 +61,9 @@ watch(searchQuery, (val) => {
   }
   searchTimeout = setTimeout(() => loadGuides(), 300)
 })
+
+// SSG: pre-fetch guides so list renders with real content
+onServerPrefetch(() => loadGuides())
 
 onMounted(() => {
   loadGuides()

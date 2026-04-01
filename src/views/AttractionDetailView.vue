@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onServerPrefetch, watch } from 'vue'
 import { useRoute, RouterLink } from 'vue-router'
 import { useCountryStore } from '@stores/countryStore'
 import { useUserStore } from '@stores/userStore'
@@ -58,14 +58,23 @@ const isChatOpen = ref(false)
 const { fetchAll: fetchAllGuides, getCategoryConfig: getGuideCategoryConfig } = useGuides()
 const relatedGuides = ref<Guide[]>([])
 
-// Fetch attraction details and AI intro on mount
-onMounted(async () => {
+// Core data fetch — runs during both SSG and client
+async function loadAttraction() {
   const slug = route.params.id as string
   const result = await countryStore.fetchAttractionBySlug(slug)
   if (result?.matchInfo) {
     matchInfo.value = result.matchInfo
   }
-  // Fetch personalized intro if user has profile
+}
+
+// SSG: pre-fetch data so HTML renders with real content
+onServerPrefetch(() => loadAttraction())
+
+// Client: fetch data on mount (re-fetches even if SSG pre-rendered, for fresh data)
+onMounted(async () => {
+  await loadAttraction()
+  // Fetch personalized intro if user has profile (client-only)
+  const slug = route.params.id as string
   if (userStore.hasProfile) {
     fetchPersonalizedIntro(slug)
   }

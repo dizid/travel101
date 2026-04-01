@@ -58,7 +58,7 @@ describe('seo utils', () => {
       const noImage = { ...attraction, image: undefined }
       const schema = JSON.parse(generateAttractionSchema(noImage))
 
-      expect(schema.image).toContain('og-image.svg')
+      expect(schema.image).toContain('og-image.png')
     })
 
     it('should add HiddenGem type for hidden gems', () => {
@@ -82,8 +82,8 @@ describe('seo utils', () => {
       expect(schema['@type']).toBe('Organization')
       expect(schema.name).toBe('HappyRoam Thailand')
       expect(schema.url).toBe('https://happyroam.travel')
-      expect(schema.sameAs).toBeInstanceOf(Array)
-      expect(schema.sameAs.length).toBeGreaterThan(0)
+      // sameAs removed — don't add social links until accounts exist
+      expect(schema.sameAs).toBeUndefined()
     })
   })
 
