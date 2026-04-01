@@ -73,7 +73,11 @@ export default async (req: Request, context: Context) => {
             line_items: [{ price: priceId, quantity: 1 }],
             success_url: `${baseUrl}/dashboard?upgrade=success`,
             cancel_url: `${baseUrl}/dashboard?upgrade=canceled`,
-            metadata: { user_id: userId as string },
+            metadata: {
+              user_id: userId as string,
+              plugaff_ref: (req.headers.get('cookie') || '').match(/plugaff_ref=([^;]+)/)?.[1] || '',
+              plugaff_app: 'happyroam',
+            },
             subscription_data: {
               trial_period_days: 7,
             },
