@@ -66,8 +66,8 @@ npm run kill-ports       # Kill processes on ports 8888 and 3000
 src/
 ├── components/
 │   ├── layout/          # AppHeader, AppFooter
-│   ├── ui/              # LoadingSpinner, ProBadge, EmptyState, SectionHeader,
-│   │                    # FeatureCard, AILimitBanner, BreadcrumbNav,
+│   ├── ui/              # LoadingSpinner, ProBadge, ProGate, EmptyState, SectionHeader,
+│   │                    # FeatureCard, AILimitBanner, BreadcrumbNav, SkeletonLoader,
 │   │                    # ExitIntentPopup, MatchScoreCard, NewsletterSignup,
 │   │                    # PersonalizationBar, ShareButton, UpgradeModal, UsageMeter
 │   ├── common/          # AffiliateButton, AffiliateCard
@@ -85,21 +85,22 @@ src/
 │   ├── useAuth.ts       # Neon Auth session + profile sync
 │   ├── useCurrency.ts   # Currency conversion
 │   ├── useFavorites.ts  # Saved places/favorites
-│   ├── useFestivals.ts  # Thai festivals data
+│   ├── useFestivals.ts  # Thai festivals data (SSG-aware)
 │   ├── useFlights.ts    # Flight search
 │   ├── useGeolocation.ts # Browser geolocation
-│   ├── useGuides.ts     # Travel guides content
+│   ├── useGuides.ts     # Travel guides content (SSG-aware)
 │   ├── useItinerary.ts  # AI itinerary generation
 │   ├── useMatcher.ts    # Profile-based attraction scoring
 │   ├── useOnwardTicket.ts # Onward ticket booking
 │   ├── useSafety.ts     # Safety information
 │   ├── useSeo.ts        # SEO meta tags
 │   ├── useSubscription.ts # Stripe subscription status
+│   ├── useVisaCountdown.ts # Visa expiry countdown
 │   └── useWeather.ts    # Weather forecasts
 ├── stores/
 │   ├── userStore.ts     # Profile, auth, activity (localStorage persist)
 │   └── countryStore.ts  # Thailand data, visas, warnings, attractions
-├── views/               # 31 page components
+├── views/               # 34 page components
 │   ├── HomeView.vue             # Landing page
 │   ├── DashboardView.vue        # User dashboard
 │   ├── ProfileView.vue          # User profile settings
@@ -114,6 +115,7 @@ src/
 │   ├── GuidesView.vue           # Travel guides listing
 │   ├── GuideDetailView.vue      # Guide detail with markdown + TOC
 │   ├── VisaWizardView.vue       # Visa requirements wizard
+│   ├── VisaCountdownView.vue    # Visa expiry countdown timer
 │   ├── NinetyDayView.vue        # 90-day reporting guide
 │   ├── TDACGuideView.vue        # TDAC guide
 │   ├── SetupGuideView.vue       # Getting started guide
@@ -124,7 +126,9 @@ src/
 │   ├── SafetyView.vue           # Safety information (enriched)
 │   ├── AlertsView.vue           # Travel alerts
 │   ├── WarningsView.vue         # Travel warnings
+│   ├── EmergencyView.vue        # Emergency contacts + SOS info
 │   ├── MedicalView.vue          # Medical information (17 real hospitals)
+│   ├── PhrasebookView.vue       # Thai phrasebook
 │   ├── PeopleView.vue           # People/culture info
 │   ├── AboutView.vue            # About page with editorial credibility
 │   ├── ContactView.vue          # Contact page
@@ -132,7 +136,9 @@ src/
 │   ├── TermsView.vue            # Terms of service
 │   └── NotFoundView.vue         # 404 page
 ├── router/              # Vue Router with lazy-loaded routes
-├── lib/                 # Auth client wrapper
+├── lib/                 # Auth client + SSG data helpers
+│   ├── auth.ts          # Auth client wrapper
+│   └── ssg-data.ts      # SSG pre-fetched data reader (build-time JSON)
 ├── types/               # TypeScript interfaces
 ├── utils/               # Utility modules
 │   ├── affiliates.ts    # Affiliate link generation + tracking
@@ -178,8 +184,12 @@ netlify/functions/       # Serverless backend (26 functions)
     ├── security.mts     # Security utilities
     └── usage.mts        # Usage tracking utilities
 
+scripts/
+├── fetch-routes.ts          # Fetch dynamic routes from Neon DB for SSG
+└── prefetch-ssg-data.ts     # Pre-fetch all content data for SSG rendering
+
 db/
-├── migrations/          # SQL migrations (001-013)
+├── migrations/          # SQL migrations (001-016)
 │   ├── 001_attractions.sql
 │   ├── 002_places_expansion.sql
 │   ├── 003_add_cost_tier.sql
@@ -195,7 +205,10 @@ db/
 │   ├── 011_unesco_heritage_sites.sql
 │   ├── 011_fix_province_and_categories.sql
 │   ├── 012_onward_bookings.sql
-│   └── 013_onward_bookings_pro.sql
+│   ├── 013_onward_bookings_pro.sql
+│   ├── 014_new_guides.sql
+│   ├── 015_neighborhood_guides.sql
+│   └── 016_more_attractions.sql
 └── seed/
     ├── attractions_seed.sql
     ├── heritage_seed.sql
@@ -225,6 +238,19 @@ db/
 
 **Note**: Migrations 003 and 011 each have numbering conflicts (multiple files). All have been applied.
 
+## SSG (Static Site Generation)
+
+The app uses `vite-ssg` for pre-rendering. At build time:
+
+1. `scripts/prefetch-ssg-data.ts` fetches all content from Neon DB → `.ssg-data/` JSON files
+2. Views use `onServerPrefetch()` to call composables that read from `.ssg-data/` during SSR
+3. On the client, `onMounted()` guards skip re-fetching if SSG already populated the data
+4. Composables check `import.meta.env.SSR` and read from `src/lib/ssg-data.ts` helpers during SSG
+
+**SSG-aware composables**: `useFestivals`, `useGuides`, `countryStore.fetchAttractions/fetchAttractionBySlug`
+
+**SSG-aware views**: AttractionsView, AttractionDetailView, FestivalsView, FestivalDetailView, GuidesView, GuideDetailView, HeritageView, HeritageDetailView
+
 ## Key Patterns
 
 **Composables**: Logic separation - useApi for HTTP, useAI for AI calls with caching, useMatcher for weighted scoring (interests 3x, styles 2.5x, budget 2x)
@@ -239,7 +265,7 @@ db/
 
 **Affiliate System**: Klook, Agoda, 12go, GetYourGuide, SafetyWing affiliate links with tracking
 
-**SEO**: JSON-LD schemas (FAQPage, Article, WebSite, HowTo, BreadcrumbList), BreadcrumbNav on all hierarchical pages, dynamic sitemap with guide pages, hreflang tags
+**SEO**: JSON-LD schemas (FAQPage, Article, WebSite, HowTo, BreadcrumbList), BreadcrumbNav on all hierarchical pages, dynamic sitemap with guide pages, og:image (PNG only — SVG not supported by social crawlers)
 
 **Content System**: Travel guides with markdown rendering, table of contents extraction, related guides cross-linking on guide/attraction/festival detail pages
 

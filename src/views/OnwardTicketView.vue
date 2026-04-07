@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { useOnwardTicket } from '@/composables/useOnwardTicket'
+import type { FlightOffer, PassengerDetails } from '@/composables/useOnwardTicket'
 import { generateBookingPdf } from '@/utils/booking-pdf'
 import { THAI_AIRPORTS, POPULAR_DESTINATIONS, SERVICE_FEE_CENTS } from '@/data/exit-routes'
 import { loadStripe } from '@stripe/stripe-js'
@@ -46,6 +47,64 @@ let elements: StripeElements | null = null
 const stripeReady = ref(false)
 const stripeError = ref('')
 
+// Recovery context for Stripe 3DS redirect — Stripe navigates the browser away during 3DS auth
+// and back to return_url, which remounts this component and wipes all reactive state.
+// We persist the in-flight payment context so we can finalize the booking on return.
+const STRIPE_RECOVERY_KEY = 'onwardTicket.stripeRecovery.v1'
+const STRIPE_RECOVERY_MAX_AGE_MS = 60 * 60 * 1000 // 1 hour
+
+interface StripeRecoveryContext {
+  savedAt: number
+  selectedOffer: FlightOffer
+  passenger: PassengerDetails
+}
+
+function saveStripeRecoveryContext() {
+  if (!selectedOffer.value) return
+  try {
+    const ctx: StripeRecoveryContext = {
+      savedAt: Date.now(),
+      selectedOffer: { ...selectedOffer.value },
+      passenger: { ...passenger.value },
+    }
+    sessionStorage.setItem(STRIPE_RECOVERY_KEY, JSON.stringify(ctx))
+  } catch {
+    // sessionStorage may be unavailable (private mode, quota); non-3DS path still works
+  }
+}
+
+function loadStripeRecoveryContext(): StripeRecoveryContext | null {
+  try {
+    const raw = sessionStorage.getItem(STRIPE_RECOVERY_KEY)
+    if (!raw) return null
+    const ctx = JSON.parse(raw) as StripeRecoveryContext
+    if (!ctx?.savedAt || Date.now() - ctx.savedAt > STRIPE_RECOVERY_MAX_AGE_MS) {
+      sessionStorage.removeItem(STRIPE_RECOVERY_KEY)
+      return null
+    }
+    if (!ctx.selectedOffer || !ctx.passenger) return null
+    return ctx
+  } catch {
+    return null
+  }
+}
+
+function clearStripeRecoveryContext() {
+  try { sessionStorage.removeItem(STRIPE_RECOVERY_KEY) } catch { /* swallow */ }
+}
+
+function stripStripeRedirectParams() {
+  const url = new URL(window.location.href)
+  url.searchParams.delete('payment_intent')
+  url.searchParams.delete('payment_intent_client_secret')
+  url.searchParams.delete('redirect_status')
+  url.searchParams.delete('source_redirect_slug')
+  window.history.replaceState({}, '', url.toString())
+}
+
+// Set during 3DS recovery to suppress the step→3 watcher (which would re-run initStripe)
+const recovering = ref(false)
+
 // Upgrade modal state
 const showUpgradeModal = ref(false)
 
@@ -74,23 +133,26 @@ const departureDateDayjs = computed({
   },
 })
 
-const dobDayjs = computed({
-  get: () => passenger.value.born_on ? dayjs(passenger.value.born_on) : null,
-  set: (val: Dayjs | null) => {
-    passenger.value.born_on = val ? val.format('YYYY-MM-DD') : ''
-  },
-})
-
 function disabledDepartureDate(current: Dayjs): boolean {
   if (!current) return false
   const today = dayjs().startOf('day')
   return current.isBefore(today.add(1, 'day')) || current.isAfter(today.add(90, 'day'))
 }
 
-function disabledDobDate(current: Dayjs): boolean {
-  if (!current) return false
-  return current.isAfter(dayjs())
-}
+// DOB bounds for the native <input type="date">: today as max, 120y ago as min
+const maxDobIso = dayjs().format('YYYY-MM-DD')
+const minDobIso = dayjs().subtract(120, 'year').format('YYYY-MM-DD')
+
+// Soft validation — HTML5 min/max already blocks bad dates, this catches edge cases
+const dobError = computed(() => {
+  if (!passenger.value.born_on) return ''
+  const dob = dayjs(passenger.value.born_on)
+  if (!dob.isValid()) return 'Please enter a valid date'
+  const age = dayjs().diff(dob, 'year')
+  if (age < 0) return 'Date of birth cannot be in the future'
+  if (age > 120) return 'Please enter a valid date of birth'
+  return ''
+})
 
 const effectiveDestination = computed(() =>
   destination.value === 'other' ? customDestination.value.toUpperCase() : destination.value
@@ -100,10 +162,70 @@ const canSearch = computed(() =>
   origin.value && effectiveDestination.value.length === 3 && departureDate.value
 )
 
-// Fetch status on mount to know Pro status + booking count
-onMounted(() => {
+// Fetch status on mount, then check for a Stripe 3DS return-redirect to finalize the booking
+onMounted(async () => {
   fetchStatus()
+  await handleStripeRedirectReturn()
 })
+
+/**
+ * Detect if we landed back on this page from a Stripe 3DS redirect, and if so,
+ * restore the in-flight payment context and finalize the booking. Server is
+ * idempotent on paymentIntentId, so re-calling confirmBooking is safe.
+ */
+async function handleStripeRedirectReturn() {
+  const params = new URLSearchParams(window.location.search)
+  const paymentIntentId = params.get('payment_intent')
+  const redirectStatus = params.get('redirect_status')
+
+  // No redirect query params → normal mount, nothing to do
+  if (!paymentIntentId || !redirectStatus) return
+
+  const ctx = loadStripeRecoveryContext()
+
+  // 3DS failed / canceled / requires retry
+  if (redirectStatus !== 'succeeded') {
+    clearStripeRecoveryContext()
+    stripStripeRedirectParams()
+    if (ctx) {
+      // Restore so user can retry on step 3
+      selectedOffer.value = ctx.selectedOffer
+      passenger.value = ctx.passenger
+      step.value = 3
+      stripeError.value = redirectStatus === 'failed'
+        ? 'Payment authentication failed. Please try a different card.'
+        : 'Payment was not completed. Please try again.'
+    }
+    return
+  }
+
+  // redirect_status === 'succeeded' but no recovery context (cross-tab, expired, cleared)
+  if (!ctx) {
+    stripStripeRedirectParams()
+    stripeError.value = `Your payment succeeded but we lost your booking session. Please contact support with payment ID: ${paymentIntentId}`
+    return
+  }
+
+  // Happy path: restore state and finalize the booking
+  recovering.value = true
+  selectedOffer.value = ctx.selectedOffer
+  passenger.value = ctx.passenger
+  step.value = 3
+  paying.value = true
+
+  try {
+    await confirmBooking(paymentIntentId)
+    // booking.value is now set → confirmation card renders automatically
+    clearStripeRecoveryContext()
+    stripStripeRedirectParams()
+  } catch {
+    // Leave context + URL params intact so a refresh can re-attempt recovery
+    stripeError.value = `We received your payment but failed to finalize the booking. Refresh to retry, or contact support with payment ID: ${paymentIntentId}`
+  } finally {
+    paying.value = false
+    recovering.value = false
+  }
+}
 
 function formatTime(iso: string): string {
   return new Date(iso).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
@@ -122,8 +244,9 @@ async function handleSearch() {
 }
 
 // Step 3: Initialize Stripe for non-Pro users, or book directly for Pro
+// Skipped during 3DS recovery — handleStripeRedirectReturn() drives that path itself.
 watch(step, async (newStep) => {
-  if (newStep === 3 && !booking.value) {
+  if (newStep === 3 && !booking.value && !recovering.value) {
     if (isPro.value && !proLimitReached.value) {
       // Pro user with remaining bookings: book immediately
       await confirmBooking()
@@ -183,7 +306,7 @@ onUnmounted(() => {
 })
 
 function goToStep3() {
-  if (!passenger.value.born_on) return
+  if (!passenger.value.born_on || dobError.value) return
   step.value = 3
 }
 
@@ -192,6 +315,10 @@ async function handlePayAndBook() {
 
   paying.value = true
   stripeError.value = ''
+
+  // Persist recovery context BEFORE Stripe may navigate away (3DS authentication flow).
+  // On return, handleStripeRedirectReturn() will read this back and finalize the booking.
+  saveStripeRecoveryContext()
 
   const { error: stripeErr, paymentIntent } = await stripe.confirmPayment({
     elements,
@@ -202,14 +329,18 @@ async function handlePayAndBook() {
   })
 
   if (stripeErr) {
+    clearStripeRecoveryContext()
     stripeError.value = stripeErr.message || 'Payment failed. Please try again.'
     paying.value = false
     return
   }
 
   if (paymentIntent && paymentIntent.status === 'succeeded') {
+    // Local-resolve path (no 3DS redirect needed) — recovery context not needed
+    clearStripeRecoveryContext()
     await confirmBooking(paymentIntent.id)
   } else {
+    clearStripeRecoveryContext()
     stripeError.value = 'Payment was not completed. Please try again.'
     paying.value = false
   }
@@ -539,19 +670,18 @@ function downloadPdf() {
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Date of Birth</label>
-                <a-date-picker
-                  v-model:value="dobDayjs"
-                  :disabled-date="disabledDobDate"
-                  format="MMM D, YYYY"
-                  placeholder="Select date of birth"
-                  :input-read-only="true"
-                  size="large"
-                  class="w-full onward-datepicker"
-                  :popup-class-name="'onward-datepicker-popup'"
-                  :default-picker-value="dayjs().subtract(30, 'year')"
-                  :get-popup-container="(trigger: HTMLElement) => trigger.parentElement!"
+                <label for="dob-input" class="block text-sm font-medium text-gray-700 mb-2">Date of Birth</label>
+                <input
+                  id="dob-input"
+                  type="date"
+                  v-model="passenger.born_on"
+                  :max="maxDobIso"
+                  :min="minDobIso"
+                  autocomplete="bday"
+                  required
+                  class="w-full px-4 py-3 border border-gray-300 rounded-xl bg-white text-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 onward-datepicker"
                 />
+                <p v-if="dobError" class="mt-1 text-sm text-red-600">{{ dobError }}</p>
               </div>
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">Gender</label>
