@@ -14,23 +14,9 @@ async function pickDate(page: import('@playwright/test').Page, pickerIndex: numb
   await cell.click()
 }
 
-// Helper: pick DOB from the Ant DatePicker.
-// The picker defaults to ~30 years ago. Click any visible day cell.
+// Helper: fill the native <input type="date"> DOB field.
 async function fillDob(page: import('@playwright/test').Page) {
-  const picker = page.locator('.onward-datepicker').first()
-  await picker.scrollIntoViewIfNeeded()
-  await picker.click()
-
-  // Wait for the dropdown to appear
-  await page.locator('.ant-picker-dropdown').first().waitFor({ state: 'visible' })
-
-  // Click day "15" in the visible month (defaults to ~1996, any past date works)
-  const dayCell = page.locator('.ant-picker-dropdown:visible .ant-picker-cell-in-view .ant-picker-cell-inner').filter({ hasText: /^15$/ }).first()
-  await dayCell.click()
-
-  // Wait for picker to close, then scroll form back into view
-  await page.locator('.ant-picker-dropdown').first().waitFor({ state: 'hidden', timeout: 3000 }).catch(() => {})
-  await page.locator('h2:has-text("Passenger Details")').scrollIntoViewIfNeeded()
+  await page.locator('#dob-input').fill('1990-06-15')
 }
 
 // Helper: fill all passenger fields on Step 2
