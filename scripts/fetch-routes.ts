@@ -63,6 +63,8 @@ export async function getAllRoutes(): Promise<string[]> {
     '/saved',
     '/alerts',
     '/smart-match',
+    '/auth/sign-in',
+    '/auth/sign-up',
   ])
 
   // Static routes to always include

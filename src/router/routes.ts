@@ -200,6 +200,18 @@ const routes: RouteRecordRaw[] = [
     meta: { title: 'About HappyRoam', seoKey: 'about' },
   },
   {
+    path: '/auth/sign-in',
+    name: 'sign-in',
+    component: () => import('@views/SignInView.vue'),
+    meta: { title: 'Sign In — HappyRoam' },
+  },
+  {
+    path: '/auth/sign-up',
+    name: 'sign-up',
+    component: () => import('@views/SignUpView.vue'),
+    meta: { title: 'Create Account — HappyRoam' },
+  },
+  {
     path: '/:pathMatch(.*)*',
     name: 'not-found',
     component: () => import('@views/NotFoundView.vue'),
