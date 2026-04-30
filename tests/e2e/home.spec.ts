@@ -1,21 +1,23 @@
 import { test, expect } from '@playwright/test'
 
+// All home tests run as a returning visitor — wizard suppressed.
+// The wizard's own behavior is covered in welcome-wizard.spec.ts.
 test.describe('Home Page', () => {
   test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem('welcome-wizard-completed', '1')
+    })
     await page.goto('/')
   })
 
   test('displays hero section with headline', async ({ page }) => {
     await expect(page).toHaveTitle(/HappyRoam|Thailand|Travel Guide/i)
-
-    // Hero headline — only the page h1 (header logo is now a span)
     const h1 = page.getByRole('heading', { level: 1 })
     await expect(h1).toBeVisible()
     await expect(h1).toContainText('Land of Smiles')
   })
 
   test('shows Thai greeting pill', async ({ page }) => {
-    // Use .first() since text may appear in multiple places
     await expect(page.getByText('สวัสดี').first()).toBeVisible()
     await expect(page.getByText('Welcome to Thailand').first()).toBeVisible()
   })
@@ -30,45 +32,102 @@ test.describe('Home Page', () => {
     await expect(planTrip).toHaveAttribute('href', '/visa')
   })
 
-  test('displays stats bar', async ({ page }) => {
-    // Stats may appear more than once (hero + elsewhere), use .first()
-    await expect(page.getByText('400+').first()).toBeVisible()
-    await expect(page.getByText('50+').first()).toBeVisible()
-    await expect(page.getByText('UNESCO Sites').first()).toBeVisible()
+  test('hero "See everything you get" anchors to capabilities', async ({ page }) => {
+    const anchor = page.getByRole('link', { name: /see everything you get/i })
+    await expect(anchor).toBeVisible()
+    await expect(anchor).toHaveAttribute('href', '#capabilities')
+
+    await anchor.click()
+    // Section should be in viewport after click
+    await expect(page.locator('#capabilities')).toBeInViewport({ ratio: 0.1 })
   })
 
-  test('shows Discover Thailand section with content pillars', async ({ page }) => {
-    const discoverHeading = page.getByRole('heading', { name: /discover thailand/i })
-    await expect(discoverHeading).toBeVisible()
-
-    // Three pillar cards — use .first() in case of duplicates
-    await expect(page.getByRole('link', { name: /places to visit/i }).first()).toBeVisible()
-    await expect(page.getByRole('link', { name: /festivals.*events/i }).first()).toBeVisible()
-    await expect(page.getByRole('link', { name: /heritage sites/i }).first()).toBeVisible()
+  test('displays 5-stat hero bar', async ({ page }) => {
+    const hero = page.locator('section').first()
+    await expect(hero.getByText('400+').first()).toBeVisible()
+    await expect(hero.getByText('50+').first()).toBeVisible()
+    await expect(hero.getByText('UNESCO Sites').first()).toBeVisible()
+    await expect(hero.getByText('Guides').first()).toBeVisible()
+    await expect(hero.getByText('Phrases').first()).toBeVisible()
+    await expect(hero.getByText('46').first()).toBeVisible()
+    await expect(hero.getByText('211').first()).toBeVisible()
   })
 
-  test('shows Plan Your Trip section', async ({ page }) => {
-    const planHeading = page.getByRole('heading', { name: /plan your trip/i })
-    await expect(planHeading).toBeVisible()
+  test('shows Capabilities grid with 8 cards', async ({ page }) => {
+    const heading = page.getByRole('heading', { name: /everything you need for thailand/i })
+    await expect(heading).toBeVisible()
 
-    // Tool cards — use .first() since labels may appear in multiple contexts
-    await expect(page.getByText('Visa Guide').first()).toBeVisible()
-    await expect(page.getByText('TDAC Form').first()).toBeVisible()
-    await expect(page.getByText('Onward Ticket').first()).toBeVisible()
+    const grid = page.locator('#capabilities')
+    await expect(grid.getByText('Discover Places')).toBeVisible()
+    await expect(grid.getByText('Festivals & Heritage')).toBeVisible()
+    await expect(grid.getByText('Visa & Entry')).toBeVisible()
+    await expect(grid.getByText('AI Itinerary Planner')).toBeVisible()
+    await expect(grid.getByText('Smart Match')).toBeVisible()
+    await expect(grid.getByText('Packing & Phrases')).toBeVisible()
+    await expect(grid.getByText('Cost & Safety')).toBeVisible()
+    await expect(grid.getByText('Medical & Emergency')).toBeVisible()
+  })
+
+  test('Pro badges appear on AI Itinerary and Packing capability cards', async ({ page }) => {
+    const itineraryCard = page.locator('#capabilities a[href="/itinerary"]')
+    await expect(itineraryCard.getByText('PRO')).toBeVisible()
+
+    const packingCard = page.locator('#capabilities a[href="/packing"]')
+    await expect(packingCard.getByText('PRO')).toBeVisible()
+
+    // Discover Places (free) should NOT have a PRO badge
+    const placesCard = page.locator('#capabilities a[href="/attractions"]')
+    await expect(placesCard.getByText('PRO')).toHaveCount(0)
   })
 
   test('navigates to attractions via Explore Places CTA', async ({ page }) => {
-    const cta = page.getByRole('link', { name: /explore places/i }).first()
-    await cta.click()
-
+    await page.getByRole('link', { name: /explore places/i }).first().click()
     await expect(page).toHaveURL('/attractions')
   })
 
-  test('navigates to festivals via pillar card', async ({ page }) => {
-    const festivalCard = page.getByRole('link', { name: /festivals.*events/i }).first()
-    await festivalCard.click()
+  test('navigates via capability card', async ({ page }) => {
+    await page.locator('#capabilities a[href="/itinerary"]').click()
+    await expect(page).toHaveURL('/itinerary')
+  })
 
-    await expect(page).toHaveURL('/festivals')
+  test('shows Free vs Pro pricing section', async ({ page }) => {
+    const pricing = page.locator('#pricing')
+    await expect(pricing.getByRole('heading', { name: /free vs pro/i })).toBeVisible()
+    await expect(pricing.getByText('$0').first()).toBeVisible()
+    await expect(pricing.getByText('$10').first()).toBeVisible()
+    await expect(pricing.getByText(/7-day free trial/i).first()).toBeVisible()
+  })
+
+  test('Free plan lists honest free features', async ({ page }) => {
+    const pricing = page.locator('#pricing')
+    await expect(pricing.getByText(/400\+ Places.*UNESCO/i)).toBeVisible()
+    await expect(pricing.getByText(/Visa Wizard.*TDAC/i)).toBeVisible()
+    await expect(pricing.getByText(/1 use\/day per feature/i)).toBeVisible()
+  })
+
+  test('Pro plan lists only enforced Pro features', async ({ page }) => {
+    const pricing = page.locator('#pricing')
+    await expect(pricing.getByText(/AI Itinerary Planner/i)).toBeVisible()
+    await expect(pricing.getByText(/AI Packing Lists/i)).toBeVisible()
+    await expect(pricing.getByText(/Unlimited AI usage/i)).toBeVisible()
+    await expect(pricing.getByText(/Smart Match favorites/i)).toBeVisible()
+    await expect(pricing.getByText(/Onward Tickets — 2 free/i)).toBeVisible()
+    await expect(pricing.getByText(/Travel Alerts dashboard/i)).toBeVisible()
+  })
+
+  test('Pro section trial CTA is visible and enabled', async ({ page }) => {
+    const cta = page.getByRole('button', { name: /start 7-day free trial/i })
+    await expect(cta).toBeVisible()
+    await expect(cta).toBeEnabled()
+  })
+
+  test('bottom CTA Pro trial button anchors to pricing', async ({ page }) => {
+    const trialAnchor = page.getByRole('link', { name: /start 7-day pro trial/i })
+    await expect(trialAnchor).toBeVisible()
+    await expect(trialAnchor).toHaveAttribute('href', '#pricing')
+
+    await trialAnchor.click()
+    await expect(page.locator('#pricing')).toBeInViewport({ ratio: 0.1 })
   })
 
   test('shows booking partners section', async ({ page }) => {
@@ -81,17 +140,25 @@ test.describe('Home Page', () => {
     await expect(page.getByRole('heading', { name: /ready for thailand/i })).toBeVisible()
   })
 
-  test('is responsive on mobile', async ({ page }) => {
+  test('is responsive on mobile (no horizontal overflow)', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 667 })
     await page.goto('/')
 
-    // Hero should still be visible
     const h1 = page.getByRole('heading', { level: 1 })
     await expect(h1).toBeVisible()
 
-    // No horizontal overflow
     const scrollWidth = await page.locator('body').evaluate((el) => el.scrollWidth)
     const clientWidth = await page.locator('body').evaluate((el) => el.clientWidth)
     expect(scrollWidth).toBeLessThanOrEqual(clientWidth + 20)
+  })
+
+  test('Free vs Pro section stacks on mobile', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 667 })
+    await page.goto('/')
+
+    const pricing = page.locator('#pricing')
+    await pricing.scrollIntoViewIfNeeded()
+    await expect(pricing.getByText('$0').first()).toBeVisible()
+    await expect(pricing.getByText('$10').first()).toBeVisible()
   })
 })

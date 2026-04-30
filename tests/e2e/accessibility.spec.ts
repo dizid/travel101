@@ -22,6 +22,9 @@ const pages = [
 test.describe('Accessibility', () => {
   for (const page of pages) {
     test(`${page.name} page has no critical accessibility violations`, async ({ page: pageObj }) => {
+      await pageObj.addInitScript(() => {
+        localStorage.setItem('welcome-wizard-completed', '1')
+      })
       await pageObj.goto(page.path)
 
       // Wait for page to load

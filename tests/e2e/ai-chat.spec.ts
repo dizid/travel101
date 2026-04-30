@@ -2,6 +2,9 @@ import { test, expect } from '@playwright/test'
 
 test.describe('AI Chat', () => {
   test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem('welcome-wizard-completed', '1')
+    })
     await page.goto('/')
   })
 

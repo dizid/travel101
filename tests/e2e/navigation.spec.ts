@@ -1,6 +1,13 @@
 import { test, expect } from '@playwright/test'
 
 test.describe('Navigation', () => {
+  test.beforeEach(async ({ page }) => {
+    // Suppress first-visit wizard so it doesn't intercept clicks
+    await page.addInitScript(() => {
+      localStorage.setItem('welcome-wizard-completed', '1')
+    })
+  })
+
   test('header is visible on all pages', async ({ page }) => {
     await page.goto('/')
     await expect(page.locator('header')).toBeVisible()
@@ -85,6 +92,9 @@ test.describe('Navigation', () => {
 
 test.describe('Mobile Navigation', () => {
   test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem('welcome-wizard-completed', '1')
+    })
     await page.setViewportSize({ width: 375, height: 667 })
   })
 
@@ -179,6 +189,12 @@ test.describe('404 Page', () => {
 })
 
 test.describe('Footer', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem('welcome-wizard-completed', '1')
+    })
+  })
+
   test('footer is visible on home page', async ({ page }) => {
     await page.goto('/')
 
