@@ -8,7 +8,7 @@ import { usePageHead, useStructuredData, generateBreadcrumbSchema } from '@/util
 // SEO
 usePageHead({
   title: 'Thai Phrasebook — 210+ Essential Phrases',
-  description: 'Learn 210+ essential Thai phrases for travel. Greetings, ordering food, bargaining, directions, and emergencies — with Thai script and phonetic pronunciation.',
+  description: 'Learn 210+ essential Thai phrases for travel. Greetings, ordering food, bargaining, directions, and emergencies — with Thai script, phonetic spelling, and audio pronunciation.',
   url: '/phrasebook',
 })
 useStructuredData('breadcrumb-schema', generateBreadcrumbSchema([
@@ -21,8 +21,9 @@ useStructuredData('breadcrumb-schema', generateBreadcrumbSchema([
 // ------------------------------------------------------------------
 const activeCategory = ref<PhraseCategory | 'all'>('all')
 const searchQuery = ref('')
-const showLocalPhrase = ref<ThaiPhrase | null>(null)
 const copiedId = ref<number | null>(null)
+const speakingId = ref<number | null>(null)
+const ttsSupported = ref(false)
 
 // ------------------------------------------------------------------
 // Categories list: ['all', ...CATEGORY_CONFIG keys]
@@ -88,23 +89,21 @@ function copyToClipboard(phrase: ThaiPhrase): void {
 }
 
 // ------------------------------------------------------------------
-// Show-to-local overlay
+// Audio pronunciation (Web Speech API)
 // ------------------------------------------------------------------
-function openOverlay(phrase: ThaiPhrase): void {
-  showLocalPhrase.value = phrase
-  document.body.style.overflow = 'hidden'
-}
-
-function closeOverlay(): void {
-  showLocalPhrase.value = null
-  document.body.style.overflow = ''
-}
-
-// ------------------------------------------------------------------
-// Keyboard: close overlay on Escape
-// ------------------------------------------------------------------
-function onKeydown(e: KeyboardEvent): void {
-  if (e.key === 'Escape') closeOverlay()
+function speakPhrase(phrase: ThaiPhrase): void {
+  if (!ttsSupported.value) return
+  const synth = window.speechSynthesis
+  synth.cancel()
+  const u = new SpeechSynthesisUtterance(phrase.thai)
+  u.lang = 'th-TH'
+  u.rate = 0.85
+  const thaiVoice = synth.getVoices().find(v => v.lang.startsWith('th'))
+  if (thaiVoice) u.voice = thaiVoice
+  u.onstart = () => { speakingId.value = phrase.id }
+  u.onend = () => { speakingId.value = null }
+  u.onerror = () => { speakingId.value = null }
+  synth.speak(u)
 }
 
 // ------------------------------------------------------------------
@@ -119,12 +118,15 @@ function selectCategory(key: PhraseCategory | 'all'): void {
 // Lifecycle
 // ------------------------------------------------------------------
 onMounted(() => {
-  window.addEventListener('keydown', onKeydown)
+  ttsSupported.value = typeof window !== 'undefined' && 'speechSynthesis' in window
+  // Some browsers populate voices async; trigger load
+  if (ttsSupported.value) window.speechSynthesis.getVoices()
 })
 
 onUnmounted(() => {
-  window.removeEventListener('keydown', onKeydown)
-  document.body.style.overflow = ''
+  if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+    window.speechSynthesis.cancel()
+  }
 })
 </script>
 
@@ -149,7 +151,7 @@ onUnmounted(() => {
           Thai Phrasebook
         </h1>
         <p class="text-lg text-white/80 max-w-xl mx-auto mb-8">
-          210+ essential phrases for traveling in Thailand — with Thai script, phonetic pronunciation, and context tips
+          210+ essential phrases for traveling in Thailand — with Thai script, phonetic pronunciation, and audio playback
         </p>
 
         <!-- Search -->
@@ -302,14 +304,19 @@ onUnmounted(() => {
               <span>{{ copiedId === phrase.id ? 'Copied!' : 'Copy' }}</span>
             </button>
 
-            <!-- Show to local button -->
+            <!-- Listen / pronunciation button -->
             <button
-              @click="openOverlay(phrase)"
-              class="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-medium bg-primary-50 border border-primary-200 text-primary-700 hover:bg-primary-100 hover:border-primary-300 transition-all"
-              title="Show this phrase to a local Thai speaker"
+              v-if="ttsSupported"
+              @click="speakPhrase(phrase)"
+              class="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-medium border transition-all"
+              :class="speakingId === phrase.id
+                ? 'bg-primary-100 border-primary-300 text-primary-800 ring-2 ring-primary-300'
+                : 'bg-primary-50 border-primary-200 text-primary-700 hover:bg-primary-100 hover:border-primary-300'"
+              :title="`Listen to: ${phrase.english}`"
+              :aria-label="`Listen to pronunciation of ${phrase.english}`"
             >
-              <span>📱</span>
-              <span>Show</span>
+              <span>{{ speakingId === phrase.id ? '🔊' : '🔈' }}</span>
+              <span>{{ speakingId === phrase.id ? 'Playing…' : 'Listen' }}</span>
             </button>
           </div>
         </div>
@@ -328,49 +335,6 @@ onUnmounted(() => {
       </div>
     </div>
 
-    <!-- ==========================================================
-         Show-to-local overlay
-    ========================================================== -->
-    <Teleport to="body">
-      <Transition name="overlay-fade">
-        <div
-          v-if="showLocalPhrase"
-          class="fixed inset-0 z-50 bg-black/92 flex flex-col items-center justify-center px-6 cursor-pointer select-none"
-          @click="closeOverlay"
-          role="dialog"
-          aria-modal="true"
-          :aria-label="`Show phrase: ${showLocalPhrase.english}`"
-        >
-          <!-- Thai script — very large -->
-          <p class="font-thai text-white text-5xl sm:text-7xl md:text-8xl font-bold leading-tight text-center mb-8">
-            {{ showLocalPhrase.thai }}
-          </p>
-
-          <!-- Phonetic -->
-          <p class="text-white/60 text-lg sm:text-2xl italic mb-4 text-center">
-            {{ showLocalPhrase.phonetic }}
-          </p>
-
-          <!-- English -->
-          <p class="text-white/80 text-xl sm:text-2xl font-medium text-center mb-12">
-            {{ showLocalPhrase.english }}
-          </p>
-
-          <!-- Context note in overlay -->
-          <p
-            v-if="showLocalPhrase.context"
-            class="text-white/40 text-sm max-w-sm text-center mb-12"
-          >
-            {{ showLocalPhrase.context }}
-          </p>
-
-          <!-- Dismiss hint -->
-          <p class="text-white/30 text-sm mt-auto pb-8">
-            Tap anywhere or press Esc to close
-          </p>
-        </div>
-      </Transition>
-    </Teleport>
   </div>
 </template>
 
@@ -382,15 +346,5 @@ onUnmounted(() => {
 }
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
-}
-
-/* Overlay transition */
-.overlay-fade-enter-active,
-.overlay-fade-leave-active {
-  transition: opacity 0.2s ease;
-}
-.overlay-fade-enter-from,
-.overlay-fade-leave-to {
-  opacity: 0;
 }
 </style>
