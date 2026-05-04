@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none">
+  <title>Motorbike</title>
+  <!-- Rear wheel -->
+  <circle cx="52"  cy="142" r="36" fill="#1c1917"/>
+  <circle cx="52"  cy="142" r="22" fill="#fef3c7"/>
+  <circle cx="52"  cy="142" r="8"  fill="#1c1917"/>
+  <!-- Spokes -->
+  <line x1="52" y1="120" x2="52" y2="164" stroke="#1c1917" stroke-width="2.5"/>
+  <line x1="30" y1="142" x2="74" y2="142" stroke="#1c1917" stroke-width="2.5"/>
+  <line x1="37" y1="127" x2="67" y2="157" stroke="#1c1917" stroke-width="2.5"/>
+  <line x1="37" y1="157" x2="67" y2="127" stroke="#1c1917" stroke-width="2.5"/>
+  <!-- Front wheel -->
+  <circle cx="155" cy="142" r="36" fill="#1c1917"/>
+  <circle cx="155" cy="142" r="22" fill="#fef3c7"/>
+  <circle cx="155" cy="142" r="8"  fill="#1c1917"/>
+  <!-- Spokes -->
+  <line x1="155" y1="120" x2="155" y2="164" stroke="#1c1917" stroke-width="2.5"/>
+  <line x1="133" y1="142" x2="177" y2="142" stroke="#1c1917" stroke-width="2.5"/>
+  <line x1="140" y1="127" x2="170" y2="157" stroke="#1c1917" stroke-width="2.5"/>
+  <line x1="140" y1="157" x2="170" y2="127" stroke="#1c1917" stroke-width="2.5"/>
+  <!-- Frame -->
+  <path d="M52 142 L80 100 L120 95 L155 142" stroke="#1c1917" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <!-- Engine / body -->
+  <path d="M80 100 Q100 88 120 95 L118 118 Q100 122 82 118 Z" fill="#f59e0b" stroke="#1c1917" stroke-width="4" stroke-linejoin="round"/>
+  <!-- Seat -->
+  <path d="M76 98 Q100 88 124 96 L124 88 Q100 80 76 90 Z" fill="#fbbf24" stroke="#1c1917" stroke-width="3" stroke-linejoin="round"/>
+  <!-- Handlebars -->
+  <path d="M140 100 L152 88 L168 90" stroke="#1c1917" stroke-width="5" stroke-linecap="round" fill="none"/>
+  <!-- Front fork -->
+  <path d="M148 92 L155 142" stroke="#1c1917" stroke-width="6" stroke-linecap="round"/>
+  <!-- Rear frame -->
+  <path d="M52 142 L68 116" stroke="#1c1917" stroke-width="6" stroke-linecap="round"/>
+  <!-- Headlight -->
+  <ellipse cx="164" cy="105" rx="10" ry="7" fill="#fde68a" stroke="#1c1917" stroke-width="2.5"/>
+  <!-- Exhaust -->
+  <path d="M80 115 Q58 120 50 132" stroke="#1c1917" stroke-width="4" stroke-linecap="round"/>
+</svg>

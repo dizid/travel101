@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" fill="none">
+  <title>No results — magnifying glass over torn map</title>
+  <!-- Map base — aged paper -->
+  <path d="M40 220 Q30 228 40 240 L360 240 Q368 228 360 220 L340 60 Q330 48 320 54 L80 54 Q66 50 60 62 Z" fill="#fde68a" stroke="#1c1917" stroke-width="3" stroke-linejoin="round"/>
+  <!-- Map crease fold lines -->
+  <line x1="200" y1="54"  x2="200" y2="240" stroke="#e7e0d4" stroke-width="1.5" stroke-dasharray="8 6"/>
+  <line x1="40"  y1="148" x2="360" y2="148" stroke="#e7e0d4" stroke-width="1.5" stroke-dasharray="8 6"/>
+  <!-- Map — torn right edge -->
+  <path d="M340 60 Q352 80 348 100 Q358 118 344 136 Q354 152 342 172 Q356 188 344 210 L360 240" stroke="#1c1917" stroke-width="2.5" stroke-linecap="round" fill="none" stroke-dasharray="6 3"/>
+  <!-- Torn paper texture on right -->
+  <path d="M340 60 Q335 72 340 84 Q334 96 339 110 Q333 124 338 138 Q332 152 337 168 Q331 184 336 200 L344 240" fill="#fef3c7" stroke="#d97706" stroke-width="1.5" stroke-dasharray="3 3"/>
+  <!-- Map rivers / roads -->
+  <path d="M80 100 Q140 90 180 120 Q220 150 280 140" stroke="#14b8a6" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+  <path d="M60 180 Q130 170 200 180 Q240 186 310 175" stroke="#14b8a6" stroke-width="2" stroke-linecap="round" fill="none" opacity="0.5"/>
+  <!-- Map road dashes -->
+  <path d="M100 140 Q160 130 220 148 Q260 158 310 140" stroke="#f59e0b" stroke-width="2" stroke-dasharray="10 6" stroke-linecap="round" fill="none"/>
+  <!-- Location pins on map -->
+  <path d="M130 115 Q130 95 142 95 Q154 95 154 115 Q154 132 142 140 Q130 132 130 115 Z" fill="#f97316" stroke="#1c1917" stroke-width="2.5"/>
+  <circle cx="142" cy="112" r="6" fill="#fffbf5"/>
+  <path d="M240 100 Q240 80 252 80 Q264 80 264 100 Q264 117 252 125 Q240 117 240 100 Z" fill="#f59e0b" stroke="#1c1917" stroke-width="2.5"/>
+  <circle cx="252" cy="97" r="6" fill="#fffbf5"/>
+  <!-- Magnifying glass — large, center-right -->
+  <!-- Glass circle -->
+  <circle cx="256" cy="168" r="58" fill="white" fill-opacity="0.82" stroke="#1c1917" stroke-width="5"/>
+  <circle cx="256" cy="168" r="46" fill="none" stroke="#1c1917" stroke-width="3" stroke-dasharray="4 3" opacity="0.3"/>
+  <!-- Glass gleam -->
+  <path d="M226 142 Q236 132 250 134" stroke="white" stroke-width="4" stroke-linecap="round" fill="none" opacity="0.6"/>
+  <!-- Handle -->
+  <path d="M300 210 L336 246" stroke="#1c1917" stroke-width="10" stroke-linecap="round"/>
+  <path d="M300 210 L336 246" stroke="#92400e" stroke-width="6" stroke-linecap="round"/>
+  <!-- Map viewed through glass — slightly enlarged / different tone -->
+  <circle cx="256" cy="168" r="50" fill="#fffde7" fill-opacity="0.4"/>
+  <!-- Question mark inside glass -->
+  <text x="246" y="184" font-family="Georgia, serif" font-size="42" font-weight="700" fill="#b45309" opacity="0.4">?</text>
+</svg>

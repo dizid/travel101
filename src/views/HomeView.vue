@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRouter } from 'vue-router'
 import { useCountryStore } from '@stores/countryStore'
 import { useUserStore } from '@stores/userStore'
 import { useSubscription } from '@composables/useSubscription'
@@ -9,16 +9,11 @@ import AffiliateButton from '@components/common/AffiliateButton.vue'
 import UpcomingFestivalBanner from '@components/features/UpcomingFestivalBanner.vue'
 import ProBadge from '@components/ui/ProBadge.vue'
 import WelcomeWizard from '@components/features/WelcomeWizard.vue'
-import {
-  RightOutlined,
-  SafetyOutlined,
-  CompassOutlined,
-  FileTextOutlined,
-  StarOutlined,
-} from '@ant-design/icons-vue'
+import { RightOutlined, StarOutlined } from '@ant-design/icons-vue'
 
 const countryStore = useCountryStore()
 const userStore = useUserStore()
+const router = useRouter()
 const { startCheckout, loading: checkoutLoading } = useSubscription()
 
 // First-visit onboarding — SSG-safe (only reads localStorage in onMounted)
@@ -31,6 +26,12 @@ onMounted(() => {
   const done = localStorage.getItem('welcome-wizard-completed')
   if (!done && !userStore.hasProfile) showWizard.value = true
 })
+
+// Hero "Plan my trip" — route to itinerary if profile exists, else open wizard
+function planMyTrip() {
+  if (userStore.hasProfile) router.push('/itinerary')
+  else openWizard()
+}
 
 // Tailwind 3 needs literal class names — inline them per card.
 type Capability = {
@@ -135,7 +136,7 @@ const proFeatures = [
 
 <template>
   <div class="min-h-screen">
-    <!-- Section 1: Hero -->
+    <!-- Section 1: Hero — intent picker -->
     <section class="relative overflow-hidden">
       <!-- Background gradient -->
       <div class="absolute inset-0 bg-gradient-to-br from-primary-50 via-white to-accent-50/30" />
@@ -144,7 +145,7 @@ const proFeatures = [
       <div class="absolute top-20 left-10 w-64 h-64 bg-primary-200/30 rounded-full blur-3xl" />
       <div class="absolute bottom-10 right-10 w-80 h-80 bg-accent-200/30 rounded-full blur-3xl" />
 
-      <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-20 md:pt-20 md:pb-32">
+      <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 pb-24 md:pt-16 md:pb-32">
         <div class="text-center max-w-4xl mx-auto">
           <!-- Thai greeting pill -->
           <div class="inline-flex items-center gap-2 px-4 py-2 bg-white/80 backdrop-blur rounded-full shadow-soft mb-6 animate-fade-in">
@@ -155,77 +156,102 @@ const proFeatures = [
           </div>
 
           <!-- Headline -->
-          <h1 class="text-4xl md:text-6xl lg:text-7xl font-display font-bold text-gray-900 mb-6 animate-slide-up">
-            Your Friendly Guide to the
-            <span class="text-gradient-thai block mt-2">Land of Smiles</span>
+          <h1 class="text-5xl md:text-7xl lg:text-8xl font-display font-bold text-gray-900 mb-5 animate-slide-up">
+            Thailand,
+            <span class="text-gradient-thai">sorted.</span>
           </h1>
 
-          <!-- Subtitle -->
-          <p class="text-lg md:text-xl text-gray-600 max-w-2xl mx-auto mb-10 animate-slide-up animate-delay-100">
-            Visas, AI itineraries, hidden gems, festivals, safety, language — everything for your Thailand trip in one place.
+          <!-- Sub-H1 — names the differentiator -->
+          <p class="text-lg md:text-2xl text-gray-700 max-w-3xl mx-auto mb-10 animate-slide-up animate-delay-100">
+            Visa, AI itinerary, onward ticket, safety — in one app.
           </p>
 
-          <!-- CTAs -->
-          <div class="flex flex-col items-center justify-center gap-4 animate-slide-up animate-delay-200">
-            <div class="flex flex-col sm:flex-row items-center gap-4">
-              <RouterLink to="/attractions" class="btn-thai text-lg px-8 py-4">
-                Explore Places
-                <RightOutlined class="text-sm" />
-              </RouterLink>
-              <RouterLink to="/visa" class="btn-thai-outline text-lg px-8 py-4">
-                Plan Your Trip
-              </RouterLink>
-            </div>
+          <!-- Three "I want to…" intent cards -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-4xl mx-auto mb-8 text-left animate-slide-up animate-delay-200">
+            <button
+              type="button"
+              @click="planMyTrip"
+              class="group bg-white/95 backdrop-blur rounded-2xl shadow-soft hover:shadow-thai-lg p-5 transition-all duration-300 hover:-translate-y-0.5 min-h-[44px] border border-transparent hover:border-primary-200"
+            >
+              <div class="flex items-start gap-3">
+                <div class="text-3xl flex-shrink-0">🗺️</div>
+                <div class="min-w-0">
+                  <div class="font-semibold text-gray-900 group-hover:text-primary-600 transition-colors">
+                    Plan my trip
+                  </div>
+                  <div class="text-sm text-gray-600 mt-0.5">Multi-day plan with budget</div>
+                </div>
+                <RightOutlined class="ml-auto text-gray-400 group-hover:text-primary-500 transition-colors" />
+              </div>
+            </button>
+
+            <RouterLink
+              to="/visa"
+              class="group bg-white/95 backdrop-blur rounded-2xl shadow-soft hover:shadow-thai-lg p-5 transition-all duration-300 hover:-translate-y-0.5 min-h-[44px] border border-transparent hover:border-primary-200"
+            >
+              <div class="flex items-start gap-3">
+                <div class="text-3xl flex-shrink-0">🛂</div>
+                <div class="min-w-0">
+                  <div class="font-semibold text-gray-900 group-hover:text-primary-600 transition-colors">
+                    Check my visa
+                  </div>
+                  <div class="text-sm text-gray-600 mt-0.5">60-second visa wizard</div>
+                </div>
+                <RightOutlined class="ml-auto text-gray-400 group-hover:text-primary-500 transition-colors" />
+              </div>
+            </RouterLink>
+
+            <RouterLink
+              to="/onward-ticket"
+              class="group bg-white/95 backdrop-blur rounded-2xl shadow-soft hover:shadow-thai-lg p-5 transition-all duration-300 hover:-translate-y-0.5 min-h-[44px] border border-transparent hover:border-primary-200"
+            >
+              <div class="flex items-start gap-3">
+                <div class="text-3xl flex-shrink-0">✈️</div>
+                <div class="min-w-0">
+                  <div class="font-semibold text-gray-900 group-hover:text-primary-600 transition-colors">
+                    Get an onward ticket
+                  </div>
+                  <div class="text-sm text-gray-600 mt-0.5">Bookable in 2 minutes</div>
+                </div>
+                <RightOutlined class="ml-auto text-gray-400 group-hover:text-primary-500 transition-colors" />
+              </div>
+            </RouterLink>
+          </div>
+
+          <!-- Trial line -->
+          <p class="text-sm text-gray-600 mb-10 animate-fade-in animate-delay-300">
+            Free to start. AI tools $10/month —
+            <a href="#pricing" class="text-primary-600 font-medium hover:text-primary-700 underline underline-offset-4">
+              7-day free trial, cancel anytime →
+            </a>
+          </p>
+
+          <!-- Trust strip — single horizontal row -->
+          <div class="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 md:gap-x-6 text-sm text-gray-500 animate-fade-in animate-delay-400">
+            <span><strong class="text-gray-900">400+</strong> Places</span>
+            <span class="hidden md:inline w-px h-4 bg-gray-300" />
+            <span><strong class="text-gray-900">50+</strong> Festivals</span>
+            <span class="hidden md:inline w-px h-4 bg-gray-300" />
+            <span><strong class="text-gray-900">8</strong> UNESCO</span>
+            <span class="hidden md:inline w-px h-4 bg-gray-300" />
+            <span><strong class="text-gray-900">46</strong> Guides</span>
+            <span class="hidden md:inline w-px h-4 bg-gray-300" />
+            <span><strong class="text-gray-900">211</strong> Phrases</span>
+            <span class="hidden md:inline w-px h-4 bg-gray-300" />
+            <span class="flex items-center gap-1.5">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              Updated weekly
+            </span>
+          </div>
+
+          <!-- Optional sub-link -->
+          <div class="mt-6 animate-fade-in animate-delay-400">
             <a
               href="#capabilities"
               class="text-sm text-primary-600 font-medium hover:text-primary-700 underline underline-offset-4"
             >
               See everything you get →
             </a>
-          </div>
-
-          <!-- Trust indicators -->
-          <div class="flex items-center justify-center gap-8 mt-12 text-sm text-gray-500 animate-fade-in animate-delay-300">
-            <div class="flex items-center gap-2">
-              <SafetyOutlined class="text-accent-500" />
-              <span>Trusted info</span>
-            </div>
-            <div class="flex items-center gap-2">
-              <CompassOutlined class="text-accent-500" />
-              <span>Local insights</span>
-            </div>
-            <div class="flex items-center gap-2">
-              <FileTextOutlined class="text-accent-500" />
-              <span>Always updated</span>
-            </div>
-          </div>
-
-          <!-- Stats bar — 5 numbers, dividers on md+ only -->
-          <div class="flex flex-wrap items-center justify-center gap-x-6 gap-y-3 md:gap-x-10 mt-8 animate-fade-in animate-delay-400">
-            <div class="text-center">
-              <div class="text-2xl md:text-3xl font-bold text-gray-900">400+</div>
-              <div class="text-xs text-gray-500">Places</div>
-            </div>
-            <div class="hidden md:block w-px h-8 bg-gray-200" />
-            <div class="text-center">
-              <div class="text-2xl md:text-3xl font-bold text-gray-900">50+</div>
-              <div class="text-xs text-gray-500">Festivals</div>
-            </div>
-            <div class="hidden md:block w-px h-8 bg-gray-200" />
-            <div class="text-center">
-              <div class="text-2xl md:text-3xl font-bold text-gray-900">8</div>
-              <div class="text-xs text-gray-500">UNESCO Sites</div>
-            </div>
-            <div class="hidden md:block w-px h-8 bg-gray-200" />
-            <div class="text-center">
-              <div class="text-2xl md:text-3xl font-bold text-gray-900">46</div>
-              <div class="text-xs text-gray-500">Guides</div>
-            </div>
-            <div class="hidden md:block w-px h-8 bg-gray-200" />
-            <div class="text-center">
-              <div class="text-2xl md:text-3xl font-bold text-gray-900">211</div>
-              <div class="text-xs text-gray-500">Phrases</div>
-            </div>
           </div>
         </div>
       </div>

@@ -19,13 +19,12 @@ const emit = defineEmits<{
 const { startCheckout, loading } = useSubscription()
 
 const proFeatures = [
+  { icon: '🎯', label: 'AI Itinerary Planner', description: 'Multi-day plans, ICS & PDF export' },
+  { icon: '🎒', label: 'AI Packing Lists', description: 'Weather + activity-aware' },
+  { icon: '♾️', label: 'Unlimited AI usage', description: 'No daily limits on Smart Match, Chat, tools' },
+  { icon: '⭐', label: 'Smart Match favorites', description: 'Save your top destinations' },
   { icon: '✈️', label: 'Onward Tickets', description: '2 free bookings/month' },
-  { icon: '♾️', label: 'Unlimited AI Chats', description: 'No daily limits' },
-  { icon: '🎯', label: 'AI Itineraries', description: 'Personalized trip plans' },
-  { icon: '💎', label: 'Hidden Gems', description: 'Pro-only secrets' },
-  { icon: '🎒', label: 'AI Packing Lists', description: 'Smart packing suggestions' },
-  { icon: '💬', label: 'Persistent Chats', description: 'Resume conversations' },
-  { icon: '🔔', label: 'Smart Alerts', description: 'Visa reminders' },
+  { icon: '🔔', label: 'Travel Alerts dashboard', description: 'Visa, weather, safety alerts in one view' },
 ]
 
 async function handleUpgrade() {

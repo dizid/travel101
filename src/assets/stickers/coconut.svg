@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none">
+  <title>Coconut</title>
+  <!-- Half coconut shell -->
+  <path d="M30 130 Q30 82 100 82 Q170 82 170 130 L170 142 Q170 155 100 155 Q30 155 30 142 Z" fill="#92400e" stroke="#1c1917" stroke-width="5" stroke-linejoin="round"/>
+  <!-- Coconut flesh rim -->
+  <ellipse cx="100" cy="130" rx="70" ry="20" fill="#fef3c7" stroke="#1c1917" stroke-width="4"/>
+  <!-- Coconut milk / water inside -->
+  <ellipse cx="100" cy="126" rx="58" ry="16" fill="#f0fdfa" stroke="#ccfbf1" stroke-width="2"/>
+  <!-- Straw -->
+  <rect x="95" y="42" width="10" height="90" rx="5" fill="#fbbf24" stroke="#1c1917" stroke-width="3"/>
+  <!-- Straw bend -->
+  <path d="M105 80 Q120 68 128 55" stroke="#fbbf24" stroke-width="10" stroke-linecap="round" fill="none"/>
+  <path d="M105 80 Q120 68 128 55" stroke="#1c1917" stroke-width="3" stroke-linecap="round" fill="none"/>
+  <!-- Straw opening -->
+  <ellipse cx="128" cy="54" rx="5" ry="3" fill="#fbbf24" stroke="#1c1917" stroke-width="2.5" transform="rotate(-20, 128, 54)"/>
+  <!-- Shell texture fiber lines -->
+  <path d="M55 90 Q100 85 145 90" stroke="#78350f" stroke-width="2" stroke-linecap="round" fill="none"/>
+  <path d="M42 104 Q100 98 158 104" stroke="#78350f" stroke-width="2" stroke-linecap="round" fill="none"/>
+  <path d="M36 118 Q100 112 164 118" stroke="#78350f" stroke-width="2" stroke-linecap="round" fill="none"/>
+  <!-- Three eyes on shell face -->
+  <circle cx="78"  cy="100" r="4" fill="#1c1917"/>
+  <circle cx="100" cy="97"  r="4" fill="#1c1917"/>
+  <circle cx="122" cy="100" r="4" fill="#1c1917"/>
+</svg>

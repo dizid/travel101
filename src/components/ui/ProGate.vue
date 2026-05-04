@@ -12,11 +12,12 @@ const userStore = useUserStore()
 const { startCheckout, loading } = useSubscription()
 
 const proFeatures = [
-  'AI-Powered Itineraries',
-  'Unlimited AI Chat',
-  'Smart Match Favorites',
-  'Expense Tracking',
-  'Priority Support',
+  'AI Itinerary Planner — multi-day plans, ICS & PDF export',
+  'AI Packing Lists — weather + activity-aware',
+  'Unlimited AI usage — no daily limits',
+  'Smart Match favorites',
+  'Onward Tickets — 2 free bookings/month',
+  'Travel Alerts dashboard',
 ]
 </script>
 

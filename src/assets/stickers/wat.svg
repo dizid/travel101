@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none">
+  <title>Wat (Thai temple)</title>
+  <!-- Base platform / steps -->
+  <rect x="20"  y="168" width="160" height="12" rx="2" fill="#fef3c7" stroke="#1c1917" stroke-width="3"/>
+  <rect x="32"  y="158" width="136" height="12" rx="2" fill="#fef3c7" stroke="#1c1917" stroke-width="3"/>
+  <rect x="44"  y="148" width="112" height="12" rx="2" fill="#fef3c7" stroke="#1c1917" stroke-width="3"/>
+  <!-- Main hall body -->
+  <rect x="52" y="110" width="96" height="40" rx="3" fill="#fef3c7" stroke="#1c1917" stroke-width="4"/>
+  <!-- Door -->
+  <rect x="84" y="120" width="32" height="30" rx="4" fill="#b45309" stroke="#1c1917" stroke-width="3"/>
+  <!-- Door arch -->
+  <path d="M84 124 Q100 112 116 124" fill="#d97706" stroke="#1c1917" stroke-width="2"/>
+  <!-- Main roof tier 1 (lowest) -->
+  <path d="M42 112 L100 88 L158 112 Z" fill="#f59e0b" stroke="#1c1917" stroke-width="4" stroke-linejoin="round"/>
+  <!-- Roof eave curl at ends -->
+  <path d="M42 112 Q36 116 34 124" stroke="#1c1917" stroke-width="3" stroke-linecap="round" fill="none"/>
+  <path d="M158 112 Q164 116 166 124" stroke="#1c1917" stroke-width="3" stroke-linecap="round" fill="none"/>
+  <!-- Main roof tier 2 -->
+  <path d="M58 90 L100 68 L142 90 Z" fill="#fbbf24" stroke="#1c1917" stroke-width="4" stroke-linejoin="round"/>
+  <path d="M58 90 Q52 94 50 100" stroke="#1c1917" stroke-width="3" stroke-linecap="round" fill="none"/>
+  <path d="M142 90 Q148 94 150 100" stroke="#1c1917" stroke-width="3" stroke-linecap="round" fill="none"/>
+  <!-- Main roof tier 3 (top) -->
+  <path d="M72 70 L100 50 L128 70 Z" fill="#f59e0b" stroke="#1c1917" stroke-width="4" stroke-linejoin="round"/>
+  <!-- Spire / chedi finial -->
+  <path d="M88 52 L100 30 L112 52 L106 52 L106 70 L94 70 L94 52 Z" fill="#fbbf24" stroke="#1c1917" stroke-width="3" stroke-linejoin="round"/>
+  <!-- Finial top ball -->
+  <circle cx="100" cy="26" r="7" fill="#fbbf24" stroke="#1c1917" stroke-width="3"/>
+  <!-- Column decorations -->
+  <rect x="60" y="110" width="8" height="40" rx="2" fill="#fde68a" stroke="#1c1917" stroke-width="2"/>
+  <rect x="132" y="110" width="8" height="40" rx="2" fill="#fde68a" stroke="#1c1917" stroke-width="2"/>
+  <!-- Small ornament windows -->
+  <rect x="64"  y="122" width="14" height="16" rx="3" fill="#dbeafe" stroke="#1c1917" stroke-width="2"/>
+  <rect x="122" y="122" width="14" height="16" rx="3" fill="#dbeafe" stroke="#1c1917" stroke-width="2"/>
+</svg>

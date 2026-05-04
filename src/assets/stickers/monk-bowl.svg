@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none">
+  <title>Monk's alms bowl</title>
+  <!-- Shadow -->
+  <ellipse cx="100" cy="178" rx="60" ry="10" fill="#e7e0d4" stroke="none"/>
+  <!-- Bowl body — deep, rounded -->
+  <path d="M30 112 Q30 170 100 170 Q170 170 170 112 L160 88 Q140 72 100 72 Q60 72 40 88 Z" fill="#1c1917" stroke="#1c1917" stroke-width="4" stroke-linejoin="round"/>
+  <!-- Bowl inner — warm dark -->
+  <path d="M42 112 Q42 158 100 158 Q158 158 158 112 L150 94 Q132 82 100 82 Q68 82 50 94 Z" fill="#292524"/>
+  <!-- Bowl rim highlight -->
+  <ellipse cx="100" cy="88" rx="60" ry="18" fill="#3d3532" stroke="#1c1917" stroke-width="3"/>
+  <!-- Rim shine -->
+  <path d="M52 82 Q80 74 100 76 Q120 74 148 82" stroke="#57534e" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+  <!-- Saffron robe draped on rim -->
+  <path d="M40 92 Q34 104 36 118" stroke="#f59e0b" stroke-width="6" stroke-linecap="round" fill="none"/>
+  <path d="M160 92 Q166 104 164 118" stroke="#f59e0b" stroke-width="6" stroke-linecap="round" fill="none"/>
+  <!-- Rice offering inside (visible from top angle) -->
+  <ellipse cx="100" cy="110" rx="32" ry="16" fill="#fffde7" stroke="#e7e0d4" stroke-width="1.5"/>
+  <!-- Marigold offering on top -->
+  <circle cx="100" cy="100" r="12" fill="#fbbf24" stroke="#d97706" stroke-width="2"/>
+  <circle cx="100" cy="100" r="6"  fill="#f97316"/>
+  <!-- Petals -->
+  <ellipse cx="88"  cy="100" rx="5" ry="3" fill="#fbbf24" transform="rotate(-20, 88, 100)"/>
+  <ellipse cx="112" cy="100" rx="5" ry="3" fill="#fbbf24" transform="rotate(20, 112, 100)"/>
+  <ellipse cx="100" cy="88"  rx="3" ry="5" fill="#fbbf24"/>
+  <ellipse cx="100" cy="112" rx="3" ry="5" fill="#fbbf24"/>
+  <!-- Bowl ring base -->
+  <ellipse cx="100" cy="168" rx="40" ry="8" fill="#3d3532" stroke="#1c1917" stroke-width="3"/>
+</svg>

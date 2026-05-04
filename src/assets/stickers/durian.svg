@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none">
+  <title>Durian</title>
+  <!-- Stem -->
+  <rect x="94" y="28" width="12" height="24" rx="6" fill="#78350f" stroke="#1c1917" stroke-width="3"/>
+  <!-- Leaves at stem -->
+  <path d="M100 30 Q82 22 74 36 Q88 34 100 30 Z" fill="#4ade80" stroke="#1c1917" stroke-width="2.5"/>
+  <path d="M100 30 Q118 22 126 36 Q112 34 100 30 Z" fill="#4ade80" stroke="#1c1917" stroke-width="2.5"/>
+  <!-- Main durian body — roughly oval with pointed spikes -->
+  <ellipse cx="100" cy="120" rx="62" ry="72" fill="#fbbf24" stroke="#1c1917" stroke-width="5"/>
+  <!-- Spikes — radiate outward from the ovoid -->
+  <g stroke="#1c1917" stroke-width="3" stroke-linecap="round">
+    <!-- Top spikes -->
+    <path d="M88 52  L86 36 L92 52" fill="#fde68a"/>
+    <path d="M100 50 L100 32 L106 50" fill="#fde68a"/>
+    <path d="M112 52 L114 36 L108 52" fill="#fde68a"/>
+    <!-- Upper sides -->
+    <path d="M64 68  L50 56 L66 74" fill="#fde68a"/>
+    <path d="M136 68 L150 56 L134 74" fill="#fde68a"/>
+    <!-- Mid sides -->
+    <path d="M44 100 L26 96  L46 108" fill="#fde68a"/>
+    <path d="M156 100 L174 96 L154 108" fill="#fde68a"/>
+    <!-- Lower sides -->
+    <path d="M56 136 L40 148 L60 138" fill="#fde68a"/>
+    <path d="M144 136 L160 148 L140 138" fill="#fde68a"/>
+    <!-- Bottom spikes -->
+    <path d="M80 178 L76 162  L84 176" fill="#fde68a"/>
+    <path d="M100 180 L100 164 L106 178" fill="#fde68a"/>
+    <path d="M120 178 L124 162 L116 176" fill="#fde68a"/>
+  </g>
+  <!-- Segment lines -->
+  <path d="M100 52 L100 185" stroke="#1c1917" stroke-width="2.5" stroke-dasharray="8 5"/>
+  <path d="M60 68 Q80 120 72 172" stroke="#1c1917" stroke-width="2" stroke-dasharray="6 5" fill="none"/>
+  <path d="M140 68 Q120 120 128 172" stroke="#1c1917" stroke-width="2" stroke-dasharray="6 5" fill="none"/>
+</svg>

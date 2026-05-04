@@ -100,7 +100,7 @@ src/
 ├── stores/
 │   ├── userStore.ts     # Profile, auth, activity (localStorage persist)
 │   └── countryStore.ts  # Thailand data, visas, warnings, attractions
-├── views/               # 34 page components
+├── views/               # 36 page components
 │   ├── HomeView.vue             # Landing page
 │   ├── DashboardView.vue        # User dashboard
 │   ├── ProfileView.vue          # User profile settings
@@ -134,6 +134,8 @@ src/
 │   ├── ContactView.vue          # Contact page
 │   ├── PrivacyView.vue          # Privacy policy
 │   ├── TermsView.vue            # Terms of service
+│   ├── SignInView.vue           # /auth/sign-in — email + password (Neon Auth SDK)
+│   ├── SignUpView.vue           # /auth/sign-up — name + email + password
 │   └── NotFoundView.vue         # 404 page
 ├── router/              # Vue Router with lazy-loaded routes
 ├── lib/                 # Auth client + SSG data helpers

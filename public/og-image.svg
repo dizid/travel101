@@ -1,71 +1,131 @@
-<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <!-- Background gradient -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630" fill="none">
+  <title>HappyRoam — Thailand, beautifully guided</title>
   <defs>
-    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#0d9488"/>
-      <stop offset="50%" style="stop-color:#0891b2"/>
-      <stop offset="100%" style="stop-color:#6366f1"/>
+    <!-- Warm paper background gradient -->
+    <linearGradient id="bg" x1="0" y1="0" x2="1200" y2="630" gradientUnits="userSpaceOnUse">
+      <stop offset="0%"   stop-color="#fffbf5"/>
+      <stop offset="55%"  stop-color="#fef3c7"/>
+      <stop offset="100%" stop-color="#fde68a"/>
     </linearGradient>
-    <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#fbbf24"/>
-      <stop offset="100%" style="stop-color:#f59e0b"/>
+    <!-- Gold brand gradient for accents -->
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#fbbf24"/>
+      <stop offset="100%" stop-color="#d97706"/>
+    </linearGradient>
+    <!-- Teal accent gradient -->
+    <linearGradient id="teal-grad" x1="0" y1="0" x2="200" y2="200" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#14b8a6"/>
+      <stop offset="100%" stop-color="#0d9488"/>
+    </linearGradient>
+    <!-- Monogram mark gradient -->
+    <linearGradient id="mark-bg" x1="80" y1="80" x2="220" y2="220" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#fbbf24"/>
+      <stop offset="100%" stop-color="#d97706"/>
+    </linearGradient>
+    <linearGradient id="mark-bg-lg" x1="800" y1="100" x2="1080" y2="560" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#fde68a" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#f59e0b" stop-opacity="0.05"/>
     </linearGradient>
   </defs>
 
-  <!-- Background -->
-  <rect width="1200" height="630" fill="url(#bgGradient)"/>
+  <!-- ── Background ── -->
+  <rect width="1200" height="630" fill="url(#bg)"/>
 
-  <!-- Decorative pattern -->
-  <g opacity="0.1">
-    <circle cx="100" cy="100" r="200" fill="white"/>
-    <circle cx="1100" cy="530" r="250" fill="white"/>
-    <circle cx="600" cy="-50" r="150" fill="white"/>
+  <!-- Subtle warm texture dots — top right -->
+  <g opacity="0.06">
+    <circle cx="1050" cy="80"  r="140" fill="#b45309"/>
+    <circle cx="1150" cy="320" r="90"  fill="#f59e0b"/>
+    <circle cx="980"  cy="540" r="110" fill="#d97706"/>
   </g>
 
-  <!-- Main content area -->
-  <rect x="60" y="60" width="1080" height="510" rx="24" fill="white" fill-opacity="0.95"/>
+  <!-- Large decorative HR monogram — right side, light watermark -->
+  <g opacity="0.08">
+    <rect x="820" y="90" width="300" height="450" rx="48" fill="url(#mark-bg-lg)"/>
+  </g>
 
-  <!-- Logo icon -->
-  <rect x="100" y="100" width="80" height="80" rx="20" fill="url(#goldGradient)"/>
-  <text x="140" y="155" font-size="40" text-anchor="middle" fill="white">🌴</text>
+  <!-- ── Left content column ── -->
 
-  <!-- Title -->
-  <text x="200" y="145" font-family="system-ui, -apple-system, sans-serif" font-size="42" font-weight="bold" fill="#111827">Smart Traveler Thailand</text>
+  <!-- Brand mark (small, top-left) -->
+  <rect x="72" y="72" width="72" height="72" rx="16" fill="url(#mark-bg)"/>
+  <!-- H in mark -->
+  <rect x="87"  y="92"  width="8"  height="32" rx="2" fill="#1c1917"/>
+  <rect x="109" y="92"  width="8"  height="32" rx="2" fill="#1c1917"/>
+  <rect x="87"  y="105" width="30" height="7"  rx="2" fill="#1c1917"/>
+  <!-- R in mark -->
+  <rect x="122" y="92"  width="8"  height="32" rx="2" fill="#1c1917"/>
+  <path d="M130 92 Q144 92 144 101.5 Q144 111 130 111 L130 92 Z" fill="#1c1917"/>
+  <ellipse cx="137" cy="101.5" rx="7" ry="9.5" fill="url(#mark-bg)"/>
+  <path d="M130 111 L142 124" stroke="#1c1917" stroke-width="7" stroke-linecap="round"/>
+
+  <!-- "HappyRoam" wordmark — large display text (rendered as path approximation) -->
+  <!-- Using SVG text with web-safe fallback for rasterisation compatibility -->
+  <text
+    x="72" y="248"
+    font-family="Prompt, 'Inter Tight', Georgia, serif"
+    font-size="96"
+    font-weight="700"
+    letter-spacing="-3"
+    fill="#1c1917"
+  >HappyRoam</text>
 
   <!-- Tagline -->
-  <text x="100" y="220" font-family="system-ui, -apple-system, sans-serif" font-size="28" fill="#6b7280">Your AI-powered guide to the Land of Smiles</text>
+  <text
+    x="72" y="308"
+    font-family="'Inter Tight', Inter, Georgia, sans-serif"
+    font-size="28"
+    font-weight="500"
+    letter-spacing="0.5"
+    fill="#57534e"
+  >Thailand, beautifully guided.</text>
 
-  <!-- Feature cards -->
-  <g>
-    <!-- Card 1: Visa Guide -->
-    <rect x="100" y="270" width="300" height="120" rx="16" fill="#fef3c7"/>
-    <text x="140" y="320" font-size="36">🛂</text>
-    <text x="180" y="325" font-family="system-ui, sans-serif" font-size="22" font-weight="600" fill="#92400e">Visa Guide</text>
-    <text x="140" y="365" font-family="system-ui, sans-serif" font-size="16" fill="#a16207">90-day tourist visas explained</text>
+  <!-- Decorative rule under tagline -->
+  <rect x="72" y="334" width="120" height="3" rx="2" fill="url(#gold)"/>
 
-    <!-- Card 2: 400+ Places -->
-    <rect x="420" y="270" width="300" height="120" rx="16" fill="#d1fae5"/>
-    <text x="460" y="320" font-size="36">🗺️</text>
-    <text x="500" y="325" font-family="system-ui, sans-serif" font-size="22" font-weight="600" fill="#065f46">400+ Places</text>
-    <text x="460" y="365" font-family="system-ui, sans-serif" font-size="16" fill="#047857">Hidden gems & local secrets</text>
+  <!-- Feature pills — bottom left -->
+  <g transform="translate(72, 390)">
+    <!-- Pill 1 -->
+    <rect x="0" y="0" width="180" height="44" rx="22" fill="#fef3c7" stroke="#fde68a" stroke-width="1.5"/>
+    <text x="24" y="28" font-family="Inter, sans-serif" font-size="16" font-weight="600" fill="#b45309">400+ Destinations</text>
 
-    <!-- Card 3: AI Advisor -->
-    <rect x="740" y="270" width="300" height="120" rx="16" fill="#e0e7ff"/>
-    <text x="780" y="320" font-size="36">🤖</text>
-    <text x="820" y="325" font-family="system-ui, sans-serif" font-size="22" font-weight="600" fill="#3730a3">AI Advisor</text>
-    <text x="780" y="365" font-family="system-ui, sans-serif" font-size="16" fill="#4f46e5">Personalized recommendations</text>
+    <!-- Pill 2 -->
+    <rect x="196" y="0" width="160" height="44" rx="22" fill="#ccfbf1" stroke="#99f6e4" stroke-width="1.5"/>
+    <text x="220" y="28" font-family="Inter, sans-serif" font-size="16" font-weight="600" fill="#0f766e">AI Recommendations</text>
+
+    <!-- Pill 3 -->
+    <rect x="372" y="0" width="130" height="44" rx="22" fill="#dbeafe" stroke="#bfdbfe" stroke-width="1.5"/>
+    <text x="396" y="28" font-family="Inter, sans-serif" font-size="16" font-weight="600" fill="#1d4ed8">Visa Guidance</text>
   </g>
 
-  <!-- Bottom section -->
-  <g>
-    <!-- Thai greeting -->
-    <text x="100" y="470" font-family="system-ui, sans-serif" font-size="24" fill="#0d9488" font-weight="500">สวัสดี • Sawasdee!</text>
+  <!-- URL — bottom -->
+  <text
+    x="72" y="575"
+    font-family="'JetBrains Mono', 'Courier New', monospace"
+    font-size="20"
+    font-weight="400"
+    fill="#a8a29e"
+    letter-spacing="0.5"
+  >happyroam.travel</text>
 
-    <!-- URL -->
-    <text x="100" y="520" font-family="system-ui, sans-serif" font-size="20" fill="#9ca3af">happyroam.travel</text>
+  <!-- ── Decorative right side — large HR monogram ── -->
+  <g transform="translate(820, 90)">
+    <!-- Outer rounded square -->
+    <rect width="300" height="450" rx="48" fill="#f59e0b" opacity="0.12"/>
+    <rect x="24" y="24" width="252" height="402" rx="36" fill="#f59e0b" opacity="0.1"/>
 
-    <!-- CTA -->
-    <rect x="860" y="440" width="240" height="60" rx="30" fill="url(#goldGradient)"/>
-    <text x="980" y="480" font-family="system-ui, sans-serif" font-size="20" font-weight="600" text-anchor="middle" fill="white">Plan Your Trip →</text>
+    <!-- Large H -->
+    <rect x="48"  y="90"  width="30" height="130" rx="6" fill="#b45309" opacity="0.5"/>
+    <rect x="126" y="90"  width="30" height="130" rx="6" fill="#b45309" opacity="0.5"/>
+    <rect x="48"  y="142" width="108" height="26" rx="6" fill="#b45309" opacity="0.5"/>
+
+    <!-- Large R -->
+    <rect x="174" y="90"  width="30" height="130" rx="6" fill="#b45309" opacity="0.5"/>
+    <path d="M204 90 Q254 90 254 120 Q254 150 204 150 L204 90 Z" fill="#b45309" opacity="0.5"/>
+    <ellipse cx="229" cy="120" rx="25" ry="30" fill="#f59e0b" opacity="0.2"/>
+    <path d="M204 150 L246 220" stroke="#b45309" stroke-width="28" stroke-linecap="round" opacity="0.5"/>
   </g>
+
+  <!-- Teal accent strip — right edge -->
+  <rect x="1168" y="0" width="32" height="630" fill="url(#teal-grad)" opacity="0.6"/>
+  <!-- Gold accent strip — bottom edge -->
+  <rect x="0" y="606" width="1200" height="24" fill="url(#gold)" opacity="0.5"/>
 </svg>

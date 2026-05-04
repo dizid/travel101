@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none">
+  <title>Mango sticky rice</title>
+  <!-- Banana leaf base -->
+  <ellipse cx="100" cy="162" rx="76" ry="18" fill="#86efac" stroke="#1c1917" stroke-width="4"/>
+  <path d="M24 162 Q24 148 100 148 Q176 148 176 162 L176 166 Q176 172 100 172 Q24 172 24 166 Z" fill="#4ade80" stroke="#1c1917" stroke-width="3"/>
+  <!-- Sticky rice mound -->
+  <ellipse cx="70" cy="148" rx="42" ry="18" fill="#fffde7" stroke="#1c1917" stroke-width="4"/>
+  <path d="M28 148 Q28 118 70 118 Q112 118 112 148 L112 152 Q112 156 70 156 Q28 156 28 152 Z" fill="#fef9c3" stroke="#1c1917" stroke-width="4" stroke-linejoin="round"/>
+  <!-- Coconut milk drizzle -->
+  <path d="M50 120 Q60 110 70 118 Q80 126 90 115 Q100 104 110 118" stroke="#fffde7" stroke-width="4" stroke-linecap="round" fill="none" opacity="0.7"/>
+  <!-- Mango slices -->
+  <path d="M108 105 Q130 88 148 95 Q168 104 165 130 Q162 152 145 158 Q128 160 115 148 Q103 136 108 105 Z" fill="#fbbf24" stroke="#1c1917" stroke-width="4.5" stroke-linejoin="round"/>
+  <!-- Mango highlight -->
+  <path d="M118 110 Q136 96 148 106" stroke="#fde68a" stroke-width="3" stroke-linecap="round" fill="none" opacity="0.7"/>
+  <!-- Sesame seeds on rice -->
+  <circle cx="55" cy="128" r="3" fill="#b45309"/>
+  <circle cx="68" cy="124" r="3" fill="#b45309"/>
+  <circle cx="80" cy="128" r="3" fill="#b45309"/>
+  <circle cx="62" cy="134" r="3" fill="#b45309"/>
+  <circle cx="75" cy="133" r="3" fill="#b45309"/>
+  <!-- Leaf vein -->
+  <line x1="24" y1="162" x2="176" y2="162" stroke="#16a34a" stroke-width="2" stroke-dasharray="8 5"/>
+</svg>

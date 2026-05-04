@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" fill="none">
+  <title>Error — tipped chai cup with warm spill</title>
+  <!-- Warm spill — spreading puddle -->
+  <ellipse cx="195" cy="236" rx="130" ry="30" fill="#fbbf24" opacity="0.25"/>
+  <ellipse cx="185" cy="240" rx="110" ry="22" fill="#f59e0b" opacity="0.3"/>
+  <!-- Spill blob — amorphous warm shape -->
+  <path d="M100 232 Q80 252 110 266 Q150 278 195 270 Q240 278 270 264 Q296 250 286 232 Q280 218 250 220 Q220 222 195 218 Q165 214 140 218 Q115 222 100 232 Z" fill="#f59e0b" stroke="#d97706" stroke-width="2"/>
+  <!-- Steam wisps from spill (fading) -->
+  <path d="M155 230 Q150 216 155 202 Q158 192 155 180" stroke="#e7e0d4" stroke-width="3" stroke-linecap="round" fill="none" opacity="0.6"/>
+  <path d="M195 224 Q192 208 196 194 Q200 182 196 168" stroke="#e7e0d4" stroke-width="3" stroke-linecap="round" fill="none" opacity="0.5"/>
+  <!-- Cup — lying on side, tipped -->
+  <!-- Cup body (cylinder, tipped about 100° — appears as ellipse + rect) -->
+  <g transform="translate(196, 200) rotate(100)">
+    <!-- Cup cylinder body -->
+    <rect x="-28" y="-50" width="56" height="90" rx="12" fill="#fef3c7" stroke="#1c1917" stroke-width="4"/>
+    <!-- Cup top opening (ellipse rim) -->
+    <ellipse cx="0" cy="-50" rx="28" ry="10" fill="#fffbf5" stroke="#1c1917" stroke-width="4"/>
+    <!-- Cup bottom (flat) -->
+    <ellipse cx="0" cy="40" rx="28" ry="10" fill="#e7e0d4" stroke="#1c1917" stroke-width="3"/>
+    <!-- Cup decoration band -->
+    <rect x="-28" y="-12" width="56" height="16" fill="#f59e0b" stroke="#d97706" stroke-width="1.5"/>
+    <!-- Thai pattern dots on band -->
+    <circle cx="-18" cy="-4" r="3" fill="#b45309"/>
+    <circle cx="-6"  cy="-4" r="3" fill="#b45309"/>
+    <circle cx="6"   cy="-4" r="3" fill="#b45309"/>
+    <circle cx="18"  cy="-4" r="3" fill="#b45309"/>
+  </g>
+  <!-- Handle -->
+  <path d="M228 178 Q250 188 248 208 Q246 226 228 228" stroke="#1c1917" stroke-width="5" stroke-linecap="round" fill="none"/>
+  <!-- Liquid dripping from cup opening -->
+  <path d="M165 196 Q158 210 155 230" stroke="#f59e0b" stroke-width="6" stroke-linecap="round" fill="none"/>
+  <path d="M172 194 Q168 208 165 228" stroke="#fbbf24" stroke-width="4" stroke-linecap="round" fill="none" opacity="0.7"/>
+  <!-- Saucer — also tipped, leaning against cup -->
+  <ellipse cx="210" cy="246" rx="52" ry="10" fill="#fef3c7" stroke="#1c1917" stroke-width="3" transform="rotate(-15, 210, 246)"/>
+  <!-- Spice particles — cardamom / star anise shapes -->
+  <path d="M130 250 L135 244 L140 250 L135 256 Z" fill="#b45309" stroke="#78350f" stroke-width="1.5"/>
+  <circle cx="260" cy="255" r="5" fill="none" stroke="#b45309" stroke-width="2"/>
+  <line x1="255" y1="255" x2="265" y2="255" stroke="#b45309" stroke-width="1.5"/>
+  <line x1="260" y1="250" x2="260" y2="260" stroke="#b45309" stroke-width="1.5"/>
+  <!-- Small splash droplets -->
+  <circle cx="108" cy="220" r="4"  fill="#f59e0b" opacity="0.7"/>
+  <circle cx="280" cy="218" r="5"  fill="#fbbf24" opacity="0.6"/>
+  <circle cx="116" cy="238" r="3"  fill="#f59e0b" opacity="0.5"/>
+  <circle cx="268" cy="245" r="4"  fill="#fbbf24" opacity="0.6"/>
+  <circle cx="148" cy="212" r="3"  fill="#f59e0b" opacity="0.5"/>
+  <!-- Exclamation — subtle, in background -->
+  <text x="176" y="170" font-family="Georgia, serif" font-size="48" font-weight="700" fill="#f59e0b" opacity="0.15">!</text>
+</svg>

@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none">
+  <title>Elephant</title>
+  <!-- Body -->
+  <ellipse cx="100" cy="130" rx="70" ry="52" fill="#fef3c7" stroke="#1c1917" stroke-width="5"/>
+  <!-- Head -->
+  <circle cx="60" cy="92" r="38" fill="#fef3c7" stroke="#1c1917" stroke-width="5"/>
+  <!-- Ear -->
+  <ellipse cx="32" cy="88" rx="22" ry="28" fill="#fbbf24" stroke="#1c1917" stroke-width="4"/>
+  <!-- Ear inner -->
+  <ellipse cx="35" cy="90" rx="13" ry="17" fill="#fef3c7" stroke="#1c1917" stroke-width="2"/>
+  <!-- Trunk -->
+  <path d="M40 106 Q28 130 38 152 Q44 162 52 160 Q58 158 55 150 Q50 138 58 120" stroke="#1c1917" stroke-width="5" stroke-linecap="round" fill="none"/>
+  <path d="M40 106 Q28 130 38 152 Q44 162 52 160 Q58 158 55 150 Q50 138 58 120" stroke="#fef3c7" stroke-width="2" stroke-linecap="round" fill="none"/>
+  <!-- Trunk tip / curl -->
+  <path d="M55 150 Q62 164 54 168 Q48 170 46 164" stroke="#1c1917" stroke-width="4" stroke-linecap="round" fill="none"/>
+  <!-- Eye -->
+  <circle cx="54" cy="84" r="6" fill="#1c1917"/>
+  <circle cx="56" cy="82" r="2" fill="white"/>
+  <!-- Tusk -->
+  <path d="M52 108 Q40 115 36 126 Q34 132 40 134" stroke="#fffde7" stroke-width="5" stroke-linecap="round" fill="none"/>
+  <path d="M52 108 Q40 115 36 126 Q34 132 40 134" stroke="#1c1917" stroke-width="2" stroke-linecap="round" fill="none"/>
+  <!-- Legs -->
+  <rect x="52"  y="168" width="26" height="26" rx="8" fill="#fef3c7" stroke="#1c1917" stroke-width="4"/>
+  <rect x="86"  y="168" width="26" height="26" rx="8" fill="#fef3c7" stroke="#1c1917" stroke-width="4"/>
+  <rect x="118" y="168" width="26" height="26" rx="8" fill="#fef3c7" stroke="#1c1917" stroke-width="4"/>
+  <!-- Tail -->
+  <path d="M168 138 Q182 150 176 164 Q172 172 166 168" stroke="#1c1917" stroke-width="4" stroke-linecap="round" fill="none"/>
+  <!-- Decorative cloth (marigold) -->
+  <rect x="88" y="108" width="64" height="28" rx="6" fill="#f59e0b" stroke="#1c1917" stroke-width="3"/>
+  <!-- Cloth pattern -->
+  <path d="M96 108 L96 136 M108 108 L108 136 M120 108 L120 136 M132 108 L132 136" stroke="#b45309" stroke-width="1.5" stroke-dasharray="4 4"/>
+</svg>

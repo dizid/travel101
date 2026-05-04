@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Prompt:wght@400;500;600;700&family=Sarabun:wght@300;400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Inter+Tight:wght@500;600;700&family=Prompt:wght@600;700&family=JetBrains+Mono:wght@400;500&family=Sarabun:wght@300;400;500;600&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,110 +6,233 @@
 
 @layer base {
   :root {
-    --color-thai-gold: #f59e0b;
-    --color-thai-teal: #14b8a6;
-    --color-thai-blue: #2563eb;
-    --color-thai-coral: #f97316;
+    /* Core brand palette as CSS custom properties */
+    --color-brand:        #f59e0b;
+    --color-brand-deep:   #b45309;
+    --color-ink:          #1c1917;
+    --color-ink-muted:    #57534e;
+    --color-surface:      #fffbf5;
+    --color-surface-sunk: #f5f0e8;
+    --color-edge:         #e7e0d4;
+    --color-accent-warm:  #f97316;
+    --color-accent-cool:  #14b8a6;
+    --color-accent-royal: #2563eb;
+
+    /* Motion tokens */
+    --ease-standard:  cubic-bezier(0.2, 0, 0, 1);
+    --ease-editorial: cubic-bezier(0.4, 0, 0.2, 1);
+    --duration-fast:  150ms;
+    --duration-base:  250ms;
+    --duration-slow:  400ms;
+    --duration-editorial: 600ms;
   }
 
   html {
     scroll-behavior: smooth;
   }
 
+  /* Warm off-white base — replaces harsh white/gray SaaS look */
   body {
-    @apply font-sans antialiased text-gray-800 bg-gradient-to-br from-amber-50/30 via-white to-teal-50/20;
+    @apply font-sans antialiased;
+    color: var(--color-ink);
+    background-color: var(--color-surface);
+    /* Subtle warm gradient: fffbf5 → fffefa → f7fdfb — barely perceptible */
+    background-image: linear-gradient(160deg, #fffbf5 0%, #fffefa 55%, #f4fdfb 100%);
     min-height: 100vh;
   }
 
+  /* Headings use Inter Tight for editorial weight */
   h1, h2, h3, h4, h5, h6 {
-    @apply font-display font-semibold text-gray-900;
+    font-family: "Inter Tight", Inter, system-ui, sans-serif;
+    font-weight: 600;
+    color: var(--color-ink);
   }
 
+  /* Display-size headings get Prompt */
+  .font-display h1,
+  h1.display {
+    font-family: Prompt, Inter, system-ui, sans-serif;
+  }
+
+  /* Warm selection */
   ::selection {
-    @apply bg-primary-200 text-primary-900;
+    background-color: #fde68a;
+    color: var(--color-ink);
+  }
+
+  /* Warm focus ring */
+  *:focus-visible {
+    outline: 2px solid var(--color-brand);
+    outline-offset: 2px;
+    border-radius: 4px;
   }
 }
 
 @layer components {
-  /* Thai-inspired card styles */
+  /* ─── Card family ───────────────────────────────────────────────────── */
+
+  /* Base card — warm surface, warm border, warm shadow */
   .card-thai {
-    @apply bg-white rounded-thai-lg shadow-soft p-6 border border-gray-100/50;
-    @apply transition-all duration-300 hover:shadow-soft-lg hover:border-primary-100;
+    background-color: var(--color-surface-raised, #ffffff);
+    border-radius: 1rem;           /* thai alias — 16px */
+    box-shadow: 0 2px 15px 0 rgba(28, 25, 23, 0.05);
+    padding: 1.5rem;
+    border: 1px solid var(--color-edge);
+    transition: box-shadow var(--duration-base) var(--ease-standard),
+                border-color var(--duration-base) var(--ease-standard),
+                transform var(--duration-base) var(--ease-standard);
   }
 
+  .card-thai:hover {
+    box-shadow: 0 5px 30px 0 rgba(28, 25, 23, 0.08);
+    border-color: #fde68a;           /* brand-200 */
+    transform: translateY(-2px);
+  }
+
+  /* Elevated card — warm gold shadow */
   .card-thai-elevated {
-    @apply card-thai shadow-thai hover:shadow-thai-lg;
+    @apply card-thai;
+    box-shadow: 0 4px 14px 0 rgba(245, 158, 11, 0.15);
   }
 
+  .card-thai-elevated:hover {
+    box-shadow: 0 10px 40px 0 rgba(245, 158, 11, 0.2);
+  }
+
+  /* Glass card — warm tinted, for overlays */
   .card-thai-glass {
-    @apply backdrop-blur-md bg-white/80 rounded-thai-lg shadow-soft p-6;
-    @apply border border-white/50;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    background-color: rgba(255, 251, 245, 0.85);
+    border-radius: 1rem;
+    box-shadow: 0 2px 15px 0 rgba(28, 25, 23, 0.05);
+    padding: 1.5rem;
+    border: 1px solid rgba(231, 224, 212, 0.6);
   }
 
-  /* Button styles */
+  /* ─── Button family ─────────────────────────────────────────────────── */
+
   .btn-thai {
     @apply inline-flex items-center justify-center gap-2 px-6 py-3;
-    @apply font-medium text-white bg-gradient-to-r from-primary-500 to-primary-600;
-    @apply rounded-full shadow-thai transition-all duration-300;
-    @apply hover:shadow-thai-lg hover:from-primary-600 hover:to-primary-700;
-    @apply active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-primary-300;
+    @apply font-medium text-white rounded-full;
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    box-shadow: 0 4px 14px 0 rgba(245, 158, 11, 0.3);
+    transition: box-shadow var(--duration-base) var(--ease-standard),
+                filter var(--duration-base) var(--ease-standard),
+                transform var(--duration-fast) var(--ease-standard);
+  }
+
+  .btn-thai:hover {
+    box-shadow: 0 10px 40px 0 rgba(245, 158, 11, 0.35);
+    filter: brightness(1.05);
+    transform: translateY(-1px);
+  }
+
+  .btn-thai:active {
+    transform: scale(0.98);
+    filter: brightness(0.98);
+  }
+
+  .btn-thai:focus-visible {
+    outline: 2px solid var(--color-brand);
+    outline-offset: 3px;
   }
 
   .btn-thai-outline {
     @apply inline-flex items-center justify-center gap-2 px-6 py-3;
-    @apply font-medium text-primary-600 bg-white border-2 border-primary-200;
-    @apply rounded-full transition-all duration-300;
-    @apply hover:bg-primary-50 hover:border-primary-300;
-    @apply active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-primary-200;
+    @apply font-medium rounded-full;
+    color: var(--color-brand-deep);
+    background-color: var(--color-surface-raised, #ffffff);
+    border: 2px solid var(--color-edge);
+    transition: background-color var(--duration-base) var(--ease-standard),
+                border-color var(--duration-base) var(--ease-standard),
+                transform var(--duration-fast) var(--ease-standard);
+  }
+
+  .btn-thai-outline:hover {
+    background-color: #fffbeb;   /* brand-50 */
+    border-color: #fbbf24;       /* brand-400 */
+  }
+
+  .btn-thai-outline:active {
+    transform: scale(0.98);
   }
 
   .btn-thai-ghost {
     @apply inline-flex items-center justify-center gap-2 px-4 py-2;
-    @apply font-medium text-gray-600 rounded-lg transition-all duration-200;
-    @apply hover:bg-gray-100 hover:text-gray-900;
-    @apply active:scale-[0.98];
+    @apply font-medium rounded-lg;
+    color: var(--color-ink-muted);
+    transition: background-color var(--duration-fast) var(--ease-standard),
+                color var(--duration-fast) var(--ease-standard);
+  }
+
+  .btn-thai-ghost:hover {
+    background-color: var(--color-surface-sunk);
+    color: var(--color-ink);
+  }
+
+  .btn-thai-ghost:active {
+    transform: scale(0.98);
   }
 
   .btn-accent {
     @apply inline-flex items-center justify-center gap-2 px-6 py-3;
-    @apply font-medium text-white bg-gradient-to-r from-accent-500 to-accent-600;
-    @apply rounded-full shadow-soft transition-all duration-300;
-    @apply hover:shadow-lg hover:from-accent-600 hover:to-accent-700;
-    @apply active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-accent-300;
+    @apply font-medium text-white rounded-full;
+    background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%);
+    box-shadow: 0 4px 14px 0 rgba(20, 184, 166, 0.25);
+    transition: box-shadow var(--duration-base) var(--ease-standard),
+                filter var(--duration-base) var(--ease-standard),
+                transform var(--duration-fast) var(--ease-standard);
   }
 
-  /* Badge styles */
+  .btn-accent:hover {
+    box-shadow: 0 10px 30px 0 rgba(20, 184, 166, 0.3);
+    filter: brightness(1.05);
+    transform: translateY(-1px);
+  }
+
+  .btn-accent:active {
+    transform: scale(0.98);
+  }
+
+  /* ─── Badge family ──────────────────────────────────────────────────── */
+
   .badge-thai {
-    @apply inline-flex items-center gap-1.5 px-3 py-1 text-sm font-medium;
-    @apply bg-primary-100 text-primary-700 rounded-full;
+    @apply inline-flex items-center gap-1.5 px-3 py-1 text-sm font-medium rounded-full;
+    background-color: #fef3c7;   /* brand-100 */
+    color: var(--color-brand-deep);
   }
 
   .badge-tip {
-    @apply inline-flex items-center gap-1.5 px-3 py-1 text-sm font-medium;
-    @apply bg-blue-100 text-blue-700 rounded-full;
+    @apply inline-flex items-center gap-1.5 px-3 py-1 text-sm font-medium rounded-full;
+    background-color: #dbeafe;   /* royal-100 */
+    color: #1d4ed8;              /* royal-700 */
   }
 
   .badge-note {
-    @apply inline-flex items-center gap-1.5 px-3 py-1 text-sm font-medium;
-    @apply bg-gray-100 text-gray-700 rounded-full;
+    @apply inline-flex items-center gap-1.5 px-3 py-1 text-sm font-medium rounded-full;
+    background-color: var(--color-surface-sunk);
+    color: var(--color-ink-muted);
   }
 
   .badge-warning {
-    @apply inline-flex items-center gap-1.5 px-3 py-1 text-sm font-medium;
-    @apply bg-amber-100 text-amber-700 rounded-full;
+    @apply inline-flex items-center gap-1.5 px-3 py-1 text-sm font-medium rounded-full;
+    background-color: #ffedd5;   /* coral-100 */
+    color: #c2410c;              /* coral-700 */
   }
 
   .badge-critical {
-    @apply inline-flex items-center gap-1.5 px-3 py-1 text-sm font-medium;
-    @apply bg-red-100 text-red-700 rounded-full;
+    @apply inline-flex items-center gap-1.5 px-3 py-1 text-sm font-medium rounded-full;
+    @apply bg-red-100 text-red-700;
   }
 
   .badge-pro {
-    @apply inline-flex items-center gap-1.5 px-3 py-1 text-sm font-semibold;
-    @apply bg-gradient-to-r from-primary-500 to-accent-500 text-white rounded-full;
+    @apply inline-flex items-center gap-1.5 px-3 py-1 text-sm font-semibold rounded-full text-white;
+    background: linear-gradient(135deg, #f59e0b 0%, #14b8a6 100%);
   }
 
-  /* Section styles */
+  /* ─── Section layout ────────────────────────────────────────────────── */
+
   .section-thai {
     @apply py-16 md:py-24;
   }
@@ -119,22 +242,52 @@
   }
 
   .section-title {
-    @apply text-3xl md:text-4xl font-bold text-gray-900 mb-4;
+    font-size: 28px;
+    line-height: 1.2;
+    font-weight: 700;
+    color: var(--color-ink);
+    margin-bottom: 1rem;
+  }
+
+  @media (min-width: 768px) {
+    .section-title {
+      font-size: 36px;
+      line-height: 1.15;
+    }
   }
 
   .section-subtitle {
-    @apply text-lg text-gray-600 max-w-2xl mx-auto;
+    font-size: 18px;
+    line-height: 1.6;
+    color: var(--color-ink-muted);
+    max-width: 42ch;
+    margin-left: auto;
+    margin-right: auto;
   }
 
-  /* Input styles */
+  /* ─── Input ─────────────────────────────────────────────────────────── */
+
   .input-thai {
-    @apply w-full px-4 py-3 bg-white border border-gray-200 rounded-xl;
-    @apply text-gray-800 placeholder-gray-400;
-    @apply transition-all duration-200;
-    @apply focus:outline-none focus:border-primary-300 focus:ring-2 focus:ring-primary-100;
+    @apply w-full px-4 py-3 rounded-xl;
+    background-color: var(--color-surface-raised, #ffffff);
+    border: 1px solid var(--color-edge);
+    color: var(--color-ink);
+    transition: border-color var(--duration-fast) var(--ease-standard),
+                box-shadow var(--duration-fast) var(--ease-standard);
   }
 
-  /* Thai-inspired decorative elements */
+  .input-thai::placeholder {
+    color: var(--color-ink-faint, #a8a29e);
+  }
+
+  .input-thai:focus {
+    outline: none;
+    border-color: #fbbf24;     /* brand-400 */
+    box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.12);
+  }
+
+  /* ─── Thai divider / decorative ──────────────────────────────────────── */
+
   .thai-divider {
     @apply flex items-center gap-4 my-8;
   }
@@ -142,52 +295,70 @@
   .thai-divider::before,
   .thai-divider::after {
     content: '';
-    @apply flex-1 h-px bg-gradient-to-r from-transparent via-primary-200 to-transparent;
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(to right, transparent, var(--color-edge), transparent);
   }
 
   .thai-accent {
-    @apply w-2 h-2 rounded-full bg-primary-400;
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 999px;
+    background-color: #fbbf24;   /* brand-400 */
   }
 
-  /* Gradient text */
+  /* ─── Gradient text ──────────────────────────────────────────────────── */
+
+  /* Works against both warm-white surface and dark backgrounds */
   .text-gradient-thai {
-    @apply bg-gradient-to-r from-primary-600 via-primary-500 to-accent-500;
-    @apply bg-clip-text text-transparent;
+    background: linear-gradient(135deg, #d97706 0%, #f59e0b 40%, #14b8a6 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
   }
 
-  /* Step indicator */
+  /* ─── Step indicator ─────────────────────────────────────────────────── */
+
   .step-indicator {
     @apply flex items-center gap-3;
   }
 
   .step-circle {
-    @apply w-10 h-10 rounded-full flex items-center justify-center;
-    @apply text-sm font-semibold transition-all duration-300;
+    @apply w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold;
+    transition: all var(--duration-base) var(--ease-standard);
   }
 
   .step-circle-active {
-    @apply bg-gradient-to-br from-primary-500 to-primary-600 text-white shadow-thai;
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    color: #ffffff;
+    box-shadow: 0 4px 14px 0 rgba(245, 158, 11, 0.3);
   }
 
   .step-circle-completed {
-    @apply bg-accent-500 text-white;
+    background-color: var(--color-accent-cool);
+    color: #ffffff;
   }
 
   .step-circle-pending {
-    @apply bg-gray-100 text-gray-400;
+    background-color: var(--color-surface-sunk);
+    color: var(--color-ink-muted);
   }
 
-  /* Severity indicator colors */
+  /* ─── Severity / alert cards ─────────────────────────────────────────── */
+
   .severity-tip {
-    @apply border-l-4 border-blue-400 bg-blue-50;
+    @apply border-l-4 border-blue-400;
+    background-color: #eff6ff;
   }
 
   .severity-note {
-    @apply border-l-4 border-gray-400 bg-gray-50;
+    border-left: 4px solid var(--color-edge-strong, #c9bfb0);
+    background-color: var(--color-surface-sunk);
   }
 
   .severity-warning {
-    @apply border-l-4 border-amber-400 bg-amber-50;
+    @apply border-l-4 border-amber-400;
+    background-color: #fffbeb;
   }
 
   .severity-critical {
@@ -196,23 +367,34 @@
 }
 
 @layer utilities {
-  .animate-delay-100 {
-    animation-delay: 100ms;
+  /* Animation delays */
+  .animate-delay-100 { animation-delay: 100ms; }
+  .animate-delay-200 { animation-delay: 200ms; }
+  .animate-delay-300 { animation-delay: 300ms; }
+  .animate-delay-500 { animation-delay: 500ms; }
+
+  /* Text helpers */
+  .text-balance { text-wrap: balance; }
+  .text-pretty  { text-wrap: pretty; }
+
+  /* Warm ink text utilities */
+  .text-ink       { color: var(--color-ink); }
+  .text-ink-muted { color: var(--color-ink-muted); }
+  .text-ink-faint { color: var(--color-ink-faint, #a8a29e); }
+
+  /* Surface background utilities */
+  .bg-surface      { background-color: var(--color-surface); }
+  .bg-surface-raised { background-color: var(--color-surface-raised, #ffffff); }
+  .bg-surface-sunk { background-color: var(--color-surface-sunk); }
+
+  /* Hover lift — standard micro-interaction */
+  .hover-lift {
+    transition: transform var(--duration-base) var(--ease-standard);
+  }
+  .hover-lift:hover {
+    transform: translateY(-3px);
   }
 
-  .animate-delay-200 {
-    animation-delay: 200ms;
-  }
-
-  .animate-delay-300 {
-    animation-delay: 300ms;
-  }
-
-  .animate-delay-500 {
-    animation-delay: 500ms;
-  }
-
-  .text-balance {
-    text-wrap: balance;
-  }
+  /* Edge border utility */
+  .border-edge { border-color: var(--color-edge); }
 }

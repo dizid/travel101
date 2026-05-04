@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none">
+  <title>Lotus</title>
+  <!-- Water -->
+  <ellipse cx="100" cy="172" rx="68" ry="14" fill="#f0fdfa" stroke="#14b8a6" stroke-width="3" opacity="0.7"/>
+  <path d="M32 172 Q60 164 100 168 Q140 164 168 172" stroke="#14b8a6" stroke-width="2" stroke-linecap="round" fill="none" opacity="0.5"/>
+  <!-- Stem -->
+  <path d="M100 172 L100 145" stroke="#4ade80" stroke-width="5" stroke-linecap="round"/>
+  <!-- Back petals (behind) -->
+  <path d="M100 145 Q72 110 76 85 Q90 72 100 95 Q110 72 124 85 Q128 110 100 145 Z" fill="#fde8f4" stroke="#1c1917" stroke-width="3.5" stroke-linejoin="round"/>
+  <!-- Mid petals left -->
+  <path d="M100 148 Q56 118 52 88 Q64 68 82 88 Q94 106 100 148 Z" fill="#f9a8d4" stroke="#1c1917" stroke-width="3.5" stroke-linejoin="round"/>
+  <!-- Mid petals right -->
+  <path d="M100 148 Q144 118 148 88 Q136 68 118 88 Q106 106 100 148 Z" fill="#f9a8d4" stroke="#1c1917" stroke-width="3.5" stroke-linejoin="round"/>
+  <!-- Front petals -->
+  <path d="M100 148 Q64 130 58 105 Q68 82 88 105 Q96 122 100 148 Z" fill="#fce7f3" stroke="#1c1917" stroke-width="3"/>
+  <path d="M100 148 Q136 130 142 105 Q132 82 112 105 Q104 122 100 148 Z" fill="#fce7f3" stroke="#1c1917" stroke-width="3"/>
+  <!-- Center -->
+  <circle cx="100" cy="130" r="16" fill="#fbbf24" stroke="#1c1917" stroke-width="3.5"/>
+  <!-- Stamen dots -->
+  <circle cx="94"  cy="126" r="3" fill="#d97706"/>
+  <circle cx="106" cy="126" r="3" fill="#d97706"/>
+  <circle cx="100" cy="122" r="3" fill="#d97706"/>
+  <circle cx="97"  cy="133" r="2.5" fill="#d97706"/>
+  <circle cx="103" cy="133" r="2.5" fill="#d97706"/>
+</svg>

@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none">
+  <title>Pad thai</title>
+  <!-- Wok / bowl -->
+  <ellipse cx="100" cy="148" rx="72" ry="22" fill="#1c1917"/>
+  <ellipse cx="100" cy="142" rx="72" ry="22" fill="#fef3c7" stroke="#1c1917" stroke-width="4"/>
+  <path d="M28 142 Q28 110 100 110 Q172 110 172 142 L172 148 Q172 155 100 155 Q28 155 28 148 Z" fill="#fde68a" stroke="#1c1917" stroke-width="4" stroke-linejoin="round"/>
+  <!-- Noodles — wavy strands -->
+  <path d="M48 136 Q60 126 72 136 Q84 146 96 136 Q108 126 120 136 Q132 146 144 136" stroke="#f59e0b" stroke-width="4.5" stroke-linecap="round" fill="none"/>
+  <path d="M52 142 Q64 132 76 142 Q88 152 100 142 Q112 132 124 142 Q136 152 148 142" stroke="#b45309" stroke-width="3.5" stroke-linecap="round" fill="none"/>
+  <path d="M44 130 Q56 120 68 130 Q80 140 92 130 Q104 120 116 130" stroke="#fbbf24" stroke-width="3" stroke-linecap="round" fill="none"/>
+  <!-- Bean sprouts -->
+  <ellipse cx="68"  cy="124" rx="5"  ry="10" fill="#d1fae5" stroke="#1c1917" stroke-width="2" transform="rotate(-20, 68, 124)"/>
+  <ellipse cx="130" cy="122" rx="5"  ry="10" fill="#d1fae5" stroke="#1c1917" stroke-width="2" transform="rotate(15, 130, 122)"/>
+  <!-- Lime wedge -->
+  <path d="M145 118 Q155 108 165 115 L155 130 Z" fill="#a3e635" stroke="#1c1917" stroke-width="2.5" stroke-linejoin="round"/>
+  <line x1="155" y1="108" x2="152" y2="130" stroke="#1c1917" stroke-width="1.5"/>
+  <!-- Chopsticks -->
+  <line x1="82" y1="60" x2="95"  y2="138" stroke="#b45309" stroke-width="4" stroke-linecap="round"/>
+  <line x1="90" y1="58" x2="105" y2="134" stroke="#b45309" stroke-width="4" stroke-linecap="round"/>
+  <!-- Peanuts -->
+  <circle cx="112" cy="128" r="5" fill="#d97706" stroke="#1c1917" stroke-width="2"/>
+  <circle cx="122" cy="132" r="4" fill="#d97706" stroke="#1c1917" stroke-width="2"/>
+  <!-- Chili flakes -->
+  <ellipse cx="80"  cy="132" rx="3" ry="5" fill="#ef4444" stroke="#1c1917" stroke-width="1.5" transform="rotate(-30, 80, 132)"/>
+  <ellipse cx="105" cy="138" rx="3" ry="5" fill="#ef4444" stroke="#1c1917" stroke-width="1.5" transform="rotate(20, 105, 138)"/>
+</svg>

@@ -1,22 +1,26 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+  <title>HappyRoam</title>
   <defs>
-    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#fbbf24;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#f97316;stop-opacity:1" />
+    <linearGradient id="fav-bg" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#fbbf24"/>
+      <stop offset="100%" stop-color="#d97706"/>
     </linearGradient>
   </defs>
-  <rect width="100" height="100" rx="20" fill="url(#grad)"/>
-  <!-- Palm tree trunk -->
-  <path d="M50 88 Q45 70 48 55 Q50 45 52 55 Q55 70 50 88 Z" fill="white"/>
-  <!-- Palm fronds -->
-  <path d="M50 52 Q35 45 18 50 Q32 40 50 45 Z" fill="white"/>
-  <path d="M50 52 Q30 35 15 28 Q30 30 50 42 Z" fill="white"/>
-  <path d="M50 52 Q45 30 40 12 Q50 28 54 42 Z" fill="white"/>
-  <path d="M50 52 Q55 30 60 12 Q50 28 46 42 Z" fill="white"/>
-  <path d="M50 52 Q70 35 85 28 Q70 30 50 42 Z" fill="white"/>
-  <path d="M50 52 Q65 45 82 50 Q68 40 50 45 Z" fill="white"/>
-  <!-- Coconuts -->
-  <circle cx="46" cy="50" r="4" fill="white"/>
-  <circle cx="54" cy="50" r="4" fill="white"/>
-  <circle cx="50" cy="54" r="4" fill="white"/>
+
+  <!-- Rounded square background -->
+  <rect width="32" height="32" rx="7" fill="url(#fav-bg)"/>
+
+  <!-- H letterform — scaled to 32×32 viewport -->
+  <rect x="4" y="7"  width="3"  height="18" rx="0.8" fill="#1c1917"/>
+  <rect x="13" y="7" width="3"  height="18" rx="0.8" fill="#1c1917"/>
+  <rect x="4"  y="14" width="12" height="3" rx="0.8" fill="#1c1917"/>
+
+  <!-- R letterform -->
+  <rect x="18" y="7" width="3" height="18" rx="0.8" fill="#1c1917"/>
+  <!-- R bowl filled -->
+  <path d="M21 7 Q28.5 7 28.5 12 Q28.5 17 21 17 L21 7 Z" fill="#1c1917"/>
+  <!-- R bowl counter cutout -->
+  <ellipse cx="25" cy="12" rx="3" ry="4.5" fill="url(#fav-bg)"/>
+  <!-- R leg -->
+  <path d="M21 17 L27 25" stroke="#1c1917" stroke-width="3" stroke-linecap="round"/>
 </svg>

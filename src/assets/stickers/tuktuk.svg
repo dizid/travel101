@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none">
+  <title>Tuk-tuk</title>
+  <!-- Body -->
+  <rect x="30" y="80" width="130" height="65" rx="14" fill="#fef3c7" stroke="#1c1917" stroke-width="5" stroke-linejoin="round"/>
+  <!-- Roof -->
+  <path d="M50 80 L40 50 Q42 40 60 38 L145 38 Q158 40 160 50 L150 80 Z" fill="#f59e0b" stroke="#1c1917" stroke-width="5" stroke-linejoin="round"/>
+  <!-- Windshield -->
+  <path d="M62 80 L68 52 L135 52 L138 80 Z" fill="#dbeafe" stroke="#1c1917" stroke-width="3" stroke-linejoin="round"/>
+  <!-- Side window -->
+  <rect x="35" y="90" width="28" height="28" rx="6" fill="#dbeafe" stroke="#1c1917" stroke-width="3"/>
+  <!-- Seat back -->
+  <rect x="72" y="90" width="60" height="36" rx="6" fill="#fbbf24" stroke="#1c1917" stroke-width="3"/>
+  <!-- Wheels -->
+  <circle cx="65"  cy="152" r="22" fill="#1c1917"/>
+  <circle cx="65"  cy="152" r="12" fill="#fef3c7"/>
+  <circle cx="65"  cy="152" r="5"  fill="#1c1917"/>
+  <circle cx="145" cy="152" r="22" fill="#1c1917"/>
+  <circle cx="145" cy="152" r="12" fill="#fef3c7"/>
+  <circle cx="145" cy="152" r="5"  fill="#1c1917"/>
+  <!-- Exhaust -->
+  <path d="M160 130 Q175 128 178 138 Q175 148 162 145" stroke="#1c1917" stroke-width="4" stroke-linecap="round"/>
+  <!-- Decoration dots on roof -->
+  <circle cx="80"  cy="44" r="4" fill="#1c1917"/>
+  <circle cx="100" cy="42" r="4" fill="#1c1917"/>
+  <circle cx="120" cy="44" r="4" fill="#1c1917"/>
+</svg>
