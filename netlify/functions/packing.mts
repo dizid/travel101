@@ -1,8 +1,16 @@
 import type { Context, Config } from '@netlify/functions'
 import Anthropic from '@anthropic-ai/sdk'
 import { getDb } from './lib/db.mts'
-import { checkAndIncrementUsage } from './lib/usage.mts'
+import { checkAndIncrementUsage, checkAndIncrementAnonUsage } from './lib/usage.mts'
 import { optionalAuth } from './lib/auth.mts'
+import { validateAppSecret } from './lib/security.mts'
+import { checkRateLimit, getClientIp } from './lib/rate-limit.mts'
+
+// Max combined length of user-supplied text fields, enforced before any DB
+// or Claude API call to keep an oversized payload from running up token costs.
+const MAX_DESTINATIONS = 20
+const MAX_ACTIVITIES = 20
+const MAX_FIELD_LENGTH = 200
 
 interface PackingRequest {
   destinations: string[]
@@ -89,6 +97,27 @@ export default async (req: Request, context: Context) => {
     })
   }
 
+  // Shared-secret check (cheap, no I/O). Honest limitation documented in
+  // validateAppSecret(): stops casual/scripted abuse, not a determined
+  // attacker. Fails open if APP_SHARED_SECRET is not configured.
+  if (!validateAppSecret(req)) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401,
+      headers: { 'Content-Type': 'application/json' },
+    })
+  }
+
+  // IP-based rate limit (cheap, no I/O). Per-instance only, see
+  // lib/rate-limit.mts. Second layer on top of the DB-backed quota below.
+  const clientIp = getClientIp(req, context)
+  const rateLimit = checkRateLimit(`${clientIp}:packing`, 10, 60_000)
+  if (!rateLimit.allowed) {
+    return new Response(JSON.stringify({ error: 'Too many requests, please slow down' }), {
+      status: 429,
+      headers: { 'Content-Type': 'application/json' },
+    })
+  }
+
   const apiKey = Netlify.env.get('ANTHROPIC_API_KEY')
   if (!apiKey) {
     return new Response(JSON.stringify({ error: 'AI service not configured' }), {
@@ -108,26 +137,46 @@ export default async (req: Request, context: Context) => {
       })
     }
 
-    // Check usage limits for authenticated users
+    // Max-length cap on user-supplied text fields, before any DB or API call.
+    if (
+      destinations.length > MAX_DESTINATIONS ||
+      destinations.some(d => typeof d !== 'string' || d.length > MAX_FIELD_LENGTH) ||
+      (activities && (
+        activities.length > MAX_ACTIVITIES ||
+        activities.some(a => typeof a !== 'string' || a.length > MAX_FIELD_LENGTH)
+      ))
+    ) {
+      return new Response(JSON.stringify({ error: 'Destinations or activities exceed allowed length' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    }
+
+    // Usage quota check - applies to EVERYONE now, authenticated or not.
+    // This is the real fix: previously this whole block only ran `if (userId)`,
+    // so anonymous callers bypassed the quota entirely and got unlimited free
+    // Claude API calls. Anonymous callers now get their own (lower) quota
+    // tracked by IP.
     const userId = await optionalAuth(req)
-    if (userId) {
-      const db = await getDb()
-      const usageCheck = await checkAndIncrementUsage(db, userId, 'packing')
-      if (!usageCheck.allowed) {
-        return new Response(JSON.stringify({
-          error: 'Daily packing list limit reached',
-          code: 'LIMIT_REACHED',
-          usage: {
-            current: usageCheck.currentUsage,
-            limit: usageCheck.limit,
-            remaining: 0,
-          },
-          upgradeUrl: '/dashboard#pro',
-        }), {
-          status: 429,
-          headers: { 'Content-Type': 'application/json' },
-        })
-      }
+    const db = await getDb()
+    const usageCheck = userId
+      ? await checkAndIncrementUsage(db, userId, 'packing')
+      : await checkAndIncrementAnonUsage(db, clientIp, 'packing')
+
+    if (!usageCheck.allowed) {
+      return new Response(JSON.stringify({
+        error: 'Daily packing list limit reached',
+        code: 'LIMIT_REACHED',
+        usage: {
+          current: usageCheck.currentUsage,
+          limit: usageCheck.limit,
+          remaining: 0,
+        },
+        upgradeUrl: '/dashboard#pro',
+      }), {
+        status: 429,
+        headers: { 'Content-Type': 'application/json' },
+      })
     }
 
     const anthropic = new Anthropic({ apiKey })
@@ -149,7 +198,7 @@ Weather forecast:
 `
 
     const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-haiku-4-5-20251001',
       max_tokens: 2048,
       system: PACKING_PROMPT,
       messages: [

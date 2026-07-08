@@ -1,6 +1,9 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { createMockRequest, parseResponse } from './helpers.js'
 import { setMockEnv, clearMockEnv } from './setup.js'
+import '../__mocks__/db'
+import { clearMockResults } from '../__mocks__/db'
+import { resetRateLimitsForTests } from '../lib/rate-limit.mts'
 
 // Mock Anthropic
 const mockCreate = vi.fn()
@@ -43,6 +46,8 @@ describe('packing function', () => {
   beforeEach(() => {
     clearMockEnv()
     vi.clearAllMocks()
+    clearMockResults()
+    resetRateLimitsForTests()
   })
 
   describe('method validation', () => {
@@ -225,7 +230,7 @@ describe('packing function', () => {
 
       expect(mockCreate).toHaveBeenCalledWith(
         expect.objectContaining({
-          model: 'claude-sonnet-4-20250514',
+          model: 'claude-haiku-4-5-20251001',
           max_tokens: 2048,
           messages: expect.arrayContaining([
             expect.objectContaining({

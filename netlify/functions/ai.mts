@@ -1,8 +1,14 @@
 import type { Context, Config } from '@netlify/functions'
 import Anthropic from '@anthropic-ai/sdk'
 import { getDb } from './lib/db.mts'
-import { checkAndIncrementUsage } from './lib/usage.mts'
+import { checkAndIncrementUsage, checkAndIncrementAnonUsage } from './lib/usage.mts'
 import { optionalAuth } from './lib/auth.mts'
+import { validateAppSecret } from './lib/security.mts'
+import { checkRateLimit, getClientIp } from './lib/rate-limit.mts'
+
+// Max length for the user-supplied chat message, enforced before any DB or
+// Claude API call to keep an oversized payload from running up token costs.
+const MAX_MESSAGE_LENGTH = 4000
 
 function requirePro(
   db: ReturnType<typeof getDb> extends Promise<infer U> ? U : never,
@@ -170,6 +176,28 @@ export default async (req: Request, context: Context) => {
     })
   }
 
+  // Shared-secret check (cheap, no I/O). See validateAppSecret() for the
+  // honest limitation: this stops casual/scripted abuse, not a determined
+  // attacker inspecting network requests. Fails open if not configured.
+  if (!validateAppSecret(req)) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401,
+      headers: { 'Content-Type': 'application/json' },
+    })
+  }
+
+  // IP-based rate limit (cheap, no I/O). See lib/rate-limit.mts for the
+  // honest limitation: per-instance only, resets on cold start. Second
+  // layer on top of the DB-backed quota below, not the sole control.
+  const clientIp = getClientIp(req, context)
+  const rateLimit = checkRateLimit(`${clientIp}:ai`, 10, 60_000)
+  if (!rateLimit.allowed) {
+    return new Response(JSON.stringify({ error: 'Too many requests, please slow down' }), {
+      status: 429,
+      headers: { 'Content-Type': 'application/json' },
+    })
+  }
+
   const apiKey = Netlify.env.get('ANTHROPIC_API_KEY')
   if (!apiKey) {
     return new Response(JSON.stringify({ error: 'AI service not configured' }), {
@@ -189,30 +217,46 @@ export default async (req: Request, context: Context) => {
       })
     }
 
-    // Check usage limits for authenticated users
-    if (userId) {
-      try {
-        const db = await getDb()
-        const usageCheck = await checkAndIncrementUsage(db, userId, 'general_chat')
-        if (!usageCheck.allowed) {
-          return new Response(JSON.stringify({
-            error: 'Daily AI chat limit reached',
-            code: 'LIMIT_REACHED',
-            usage: {
-              current: usageCheck.currentUsage,
-              limit: usageCheck.limit,
-              remaining: 0,
-            },
-            upgradeUrl: '/dashboard#pro',
-          }), {
-            status: 429,
-            headers: { 'Content-Type': 'application/json' },
-          })
-        }
-      } catch (usageError) {
-        // Log error but continue with request - fail open for better UX
-        console.error('Usage check failed:', usageError)
+    if (typeof message !== 'string' || message.length > MAX_MESSAGE_LENGTH) {
+      return new Response(JSON.stringify({
+        error: `Message must be a string under ${MAX_MESSAGE_LENGTH} characters`,
+      }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    }
+
+    // Usage quota check - applies to EVERYONE now, authenticated or not.
+    // This is the real fix: previously this whole block only ran `if (userId)`,
+    // so anonymous callers (no x-user-id header, no valid JWT) bypassed the
+    // quota entirely and got unlimited free Claude API calls. Anonymous
+    // callers now get their own (lower) quota tracked by IP.
+    try {
+      const db = await getDb()
+      const usageCheck = userId
+        ? await checkAndIncrementUsage(db, userId, 'general_chat')
+        : await checkAndIncrementAnonUsage(db, clientIp, 'general_chat')
+
+      if (!usageCheck.allowed) {
+        return new Response(JSON.stringify({
+          error: 'Daily AI chat limit reached',
+          code: 'LIMIT_REACHED',
+          usage: {
+            current: usageCheck.currentUsage,
+            limit: usageCheck.limit,
+            remaining: 0,
+          },
+          upgradeUrl: '/dashboard#pro',
+        }), {
+          status: 429,
+          headers: { 'Content-Type': 'application/json' },
+        })
       }
+    } catch (usageError) {
+      // Log error but continue with request - fail open for better UX.
+      // The rate limiter above and shared-secret check still apply even if
+      // this fails, so this is not the sole layer of protection.
+      console.error('Usage check failed:', usageError)
     }
 
     const anthropic = new Anthropic({ apiKey })
@@ -235,7 +279,7 @@ export default async (req: Request, context: Context) => {
     ]
 
     const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-haiku-4-5-20251001',
       max_tokens: 1024,
       system: SYSTEM_PROMPT + userContext,
       messages,

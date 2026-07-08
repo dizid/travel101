@@ -3,6 +3,12 @@ import Anthropic from '@anthropic-ai/sdk'
 import { getDb } from './lib/db.mts'
 import { checkAndIncrementUsage, type FeatureType } from './lib/usage.mts'
 import { optionalAuth } from './lib/auth.mts'
+import { validateAppSecret } from './lib/security.mts'
+import { checkRateLimit, getClientIp } from './lib/rate-limit.mts'
+
+// Max length for the user-supplied chat message, enforced before any DB or
+// Claude API call to keep an oversized payload from running up token costs.
+const MAX_MESSAGE_LENGTH = 4000
 
 interface UserPrefs {
   nationality?: string
@@ -74,7 +80,25 @@ export default async (req: Request, context: Context) => {
     return json({ error: 'Method not allowed' }, 405)
   }
 
-  // Auth check - require user to be logged in
+  // Shared-secret check (cheap, no I/O). Honest limitation documented in
+  // validateAppSecret(): stops casual/scripted abuse, not a determined
+  // attacker. Fails open if APP_SHARED_SECRET is not configured.
+  if (!validateAppSecret(req)) {
+    return json({ error: 'Unauthorized' }, 401)
+  }
+
+  // IP-based rate limit (cheap, no I/O). Per-instance only, see
+  // lib/rate-limit.mts. Second layer on top of the DB-backed quota below.
+  const clientIp = getClientIp(req, context)
+  const rateLimit = checkRateLimit(`${clientIp}:attraction-ai`, 10, 60_000)
+  if (!rateLimit.allowed) {
+    return json({ error: 'Too many requests, please slow down' }, 429)
+  }
+
+  // Auth check - require user to be logged in. This endpoint has always
+  // required auth (no anonymous path to begin with), so the quota check
+  // below already covers every caller -- no unconditional-quota change is
+  // needed here, unlike ai.mts/packing.mts.
   const userId = await optionalAuth(req)
   if (!userId) {
     return json({ error: 'Unauthorized - login required for AI features' }, 401)
@@ -91,6 +115,10 @@ export default async (req: Request, context: Context) => {
 
     if (!action || !attractionSlug) {
       return json({ error: 'action and attractionSlug are required' }, 400)
+    }
+
+    if (message !== undefined && (typeof message !== 'string' || message.length > MAX_MESSAGE_LENGTH)) {
+      return json({ error: `Message must be a string under ${MAX_MESSAGE_LENGTH} characters` }, 400)
     }
 
     // Fetch attraction from database
@@ -178,7 +206,7 @@ Best for: ${formatCategories(attraction.categories)}
 Write 2-3 sentences explaining why this destination is perfect for this specific traveler. Start with "This is perfect for you because..." or similar personalized opener.`
 
   const response = await anthropic.messages.create({
-    model: 'claude-sonnet-4-20250514',
+    model: 'claude-haiku-4-5-20251001',
     max_tokens: 300,
     system: systemPrompt,
     messages: [{ role: 'user', content: userMessage }],
@@ -233,7 +261,7 @@ ${tipsText}
 Rewrite each tip to be more relevant for this traveler. If they're on a budget, emphasize money-saving aspects. If they're traveling with family, add family-friendly advice. If they're interested in culture, highlight cultural aspects. Keep the same [type] labels. Be specific and actionable.`
 
   const response = await anthropic.messages.create({
-    model: 'claude-sonnet-4-20250514',
+    model: 'claude-haiku-4-5-20251001',
     max_tokens: 1000,
     system: systemPrompt,
     messages: [{ role: 'user', content: userMessage }],
@@ -292,7 +320,7 @@ Only mention partners when it genuinely helps answer the question — do not add
   ]
 
   const response = await anthropic.messages.create({
-    model: 'claude-sonnet-4-20250514',
+    model: 'claude-haiku-4-5-20251001',
     max_tokens: 500,
     system: systemPrompt,
     messages,

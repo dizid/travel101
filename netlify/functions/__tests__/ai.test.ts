@@ -5,6 +5,7 @@ import { setMockQueryResult, clearMockResults, wasQueryMade } from '../__mocks__
 import { mockAnthropic, setMockAIResponse, setMockAIError, resetAnthropicMocks } from '../__mocks__/anthropic'
 import { setMockEnv, clearMockEnv } from './setup.js'
 import { createMockRequest, parseResponse } from './helpers.js'
+import { resetRateLimitsForTests } from '../lib/rate-limit.mts'
 
 import aiHandler from '../ai.mts'
 
@@ -19,6 +20,7 @@ describe('ai function', () => {
     clearMockEnv()
     vi.clearAllMocks()
     resetAnthropicMocks()
+    resetRateLimitsForTests()
 
     // Set required env vars
     setMockEnv('DATABASE_URL', 'postgresql://test:test@localhost/test')
@@ -422,7 +424,7 @@ describe('ai function', () => {
       )
     })
 
-    it('should use claude-sonnet model', async () => {
+    it('should use claude-haiku model', async () => {
       setMockAIResponse('Response')
 
       const req = createMockRequest('POST', '/api/ai', {
@@ -434,7 +436,7 @@ describe('ai function', () => {
 
       expect(mockAnthropic.messages.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          model: 'claude-sonnet-4-20250514',
+          model: 'claude-haiku-4-5-20251001',
           max_tokens: 1024,
         })
       )

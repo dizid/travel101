@@ -2,6 +2,13 @@ import type { Context, Config } from '@netlify/functions'
 import Anthropic from '@anthropic-ai/sdk'
 import { getDb } from './lib/db.mts'
 import { validateAdminKey } from './lib/security.mts'
+import { checkRateLimit, getClientIp } from './lib/rate-limit.mts'
+
+// Max length for the placeId field, enforced before any DB or Claude API
+// call. This endpoint is admin-key gated, but the cap still protects
+// against a misbehaving caller (or a leaked key) running up costs via an
+// oversized/malformed payload.
+const MAX_PLACE_ID_LENGTH = 200
 
 // All category dimensions for scoring
 const ALL_CATEGORIES = [
@@ -213,7 +220,7 @@ async function scorePlace(anthropic: Anthropic, place: Place): Promise<Enrichmen
   const prompt = buildScoringPrompt(place)
 
   const response = await anthropic.messages.create({
-    model: 'claude-sonnet-4-20250514',
+    model: 'claude-haiku-4-5-20251001',
     max_tokens: 1000,
     messages: [{ role: 'user', content: prompt }],
   })
@@ -377,9 +384,20 @@ export default async (req: Request, context: Context) => {
     return json({ error: 'Method not allowed' }, 405)
   }
 
-  // Admin-only authentication with timing-safe comparison
+  // Admin-only authentication with timing-safe comparison. This is already
+  // a stronger gate than the shared-secret check used on the public AI
+  // endpoints, so we don't layer validateAppSecret() on top here.
   if (!validateAdminKey(req)) {
     return json({ error: 'Unauthorized' }, 401)
+  }
+
+  // IP-based rate limit (cheap, no I/O). Defense-in-depth even behind the
+  // admin key (e.g. a leaked key or a buggy automated caller). Per-instance
+  // only, see lib/rate-limit.mts for the honest limitation.
+  const clientIp = getClientIp(req, context)
+  const rateLimit = checkRateLimit(`${clientIp}:enrich-place`, 10, 60_000)
+  if (!rateLimit.allowed) {
+    return json({ error: 'Too many requests, please slow down' }, 429)
   }
 
   const apiKey = Netlify.env.get('ANTHROPIC_API_KEY')
@@ -390,6 +408,10 @@ export default async (req: Request, context: Context) => {
   try {
     const body: RequestBody = await req.json()
     const { action, placeId, limit = 10 } = body
+
+    if (placeId !== undefined && (typeof placeId !== 'string' || placeId.length > MAX_PLACE_ID_LENGTH)) {
+      return json({ error: `placeId must be a string under ${MAX_PLACE_ID_LENGTH} characters` }, 400)
+    }
 
     const db = await getDb()
     const anthropic = new Anthropic({ apiKey })
