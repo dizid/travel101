@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
-import { RouterLink, useRoute } from 'vue-router'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@stores/userStore'
 import { useSubscription } from '@/composables/useSubscription'
 import { useAIUsage } from '@/composables/useAIUsage'
@@ -21,6 +21,7 @@ import UsageMeter from '@components/ui/UsageMeter.vue'
 
 const userStore = useUserStore()
 const route = useRoute()
+const router = useRouter()
 const { loading: subLoading, subscriptionStatus, nextBillingDate, startCheckout, openPortal, fetchStatus } = useSubscription()
 const { chatUsage, introUsage, attractionChatUsage, packingUsage, fetchUsage, isPro: isProUsage } = useAIUsage()
 
@@ -29,8 +30,21 @@ onMounted(async () => {
     await fetchStatus()
     fetchUsage()
   }
-  if (route.query.upgrade === 'success') {
+
+  // Capture and clear the upgrade query param up front so a page refresh
+  // doesn't re-trigger success handling or a duplicate checkout attempt.
+  const upgradeParam = route.query.upgrade
+  if (upgradeParam) {
+    router.replace({ query: {} })
+  }
+
+  if (upgradeParam === 'success') {
     userStore.setPro(true)
+  } else if (upgradeParam === 'true' && userStore.isAuthenticated) {
+    // Resume the "Start Free Trial" click that was interrupted by the sign-in
+    // redirect (see useSubscription.startCheckout) so the user doesn't have
+    // to click it again after logging in.
+    await startCheckout()
   }
 })
 

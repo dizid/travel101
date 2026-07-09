@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
-import { RouterLink } from 'vue-router'
 import { useOnwardTicket } from '@/composables/useOnwardTicket'
 import type { FlightOffer, PassengerDetails } from '@/composables/useOnwardTicket'
 import { useUserStore } from '@stores/userStore'
+import { useAuth } from '@/composables/useAuth'
 import { generateBookingPdf } from '@/utils/booking-pdf'
 import { THAI_AIRPORTS, POPULAR_DESTINATIONS, SERVICE_FEE_CENTS } from '@/data/exit-routes'
 import { loadStripe } from '@stripe/stripe-js'
@@ -21,6 +21,7 @@ import {
 } from '@ant-design/icons-vue'
 
 const userStore = useUserStore()
+const { signIn } = useAuth()
 
 const {
   step,
@@ -397,10 +398,10 @@ function downloadPdf() {
           We need an account to deliver your PNR and support refunds if needed.
           Booking takes about 2 minutes once you're signed in.
         </p>
-        <RouterLink to="/dashboard" class="btn-thai inline-flex items-center gap-2">
+        <button type="button" @click="signIn('/onward-ticket')" class="btn-thai inline-flex items-center gap-2">
           Sign in to continue
           <RightOutlined class="text-xs" />
-        </RouterLink>
+        </button>
         <p class="mt-6 text-sm text-gray-500">
           Pro members get 2 free reservations per month.<br />
           Non-Pro pay a $12 service fee per booking.
