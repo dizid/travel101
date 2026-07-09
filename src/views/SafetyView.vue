@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
+import { RouterLink } from 'vue-router'
+import { useUserStore } from '@stores/userStore'
 import { useSafety, type NewScamReport } from '@/composables/useSafety'
 import ScamAlert from '@components/features/ScamAlert.vue'
 import ProBadge from '@components/ui/ProBadge.vue'
@@ -13,9 +15,13 @@ import {
   CheckOutlined,
   CloseOutlined,
   EnvironmentOutlined,
+  LockOutlined,
 } from '@ant-design/icons-vue'
 import BreadcrumbNav from '@components/ui/BreadcrumbNav.vue'
 import { useBreadcrumbs, useRouteSeo } from '@/composables/useSeo'
+
+const userStore = useUserStore()
+const isPro = computed(() => userStore.isPro)
 
 const {
   loading,
@@ -247,6 +253,23 @@ onMounted(() => {
         </div>
       </div>
 
+      <!-- Pro gate: scam reports, safety guide, and reporting are Pro features.
+           Emergency numbers above stay free (also available at /emergency). -->
+      <div v-if="!isPro" class="card-thai text-center py-12">
+        <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-red-50 flex items-center justify-center">
+          <LockOutlined class="text-2xl text-red-600" />
+        </div>
+        <h2 class="text-xl font-semibold text-gray-900 mb-2">Pro Feature</h2>
+        <p class="text-gray-500 mb-6 max-w-md mx-auto">
+          Access verified scam alerts, province safety ratings, and the full Thailand safety guide.
+        </p>
+        <RouterLink to="/dashboard?upgrade=true" class="btn-thai">
+          Upgrade to Pro
+        </RouterLink>
+      </div>
+
+      <!-- Pro content -->
+      <div v-else>
       <!-- Stats & Actions Row -->
       <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
         <div class="flex items-center gap-6 text-sm text-gray-600">
@@ -457,6 +480,7 @@ onMounted(() => {
 
       <!-- Last updated -->
       <p class="text-xs text-gray-400 mt-6 text-center">Last updated: March 2026</p>
+      </div>
     </div>
 
     <!-- Report Modal -->
