@@ -145,6 +145,93 @@ describe('ai function', () => {
     })
   })
 
+  describe('POST /api/ai cost-abuse protections', () => {
+    it('should return 401 when APP_SHARED_SECRET is set but x-app-secret header is missing', async () => {
+      setMockEnv('APP_SHARED_SECRET', 'test-shared-secret')
+
+      const req = createMockRequest('POST', '/api/ai', {
+        headers: {},
+        body: { message: 'Hello' },
+      })
+
+      const response = await aiHandler(req, mockContext as never)
+      const data = await parseResponse(response)
+
+      expect(response.status).toBe(401)
+      expect(data.error).toBe('Unauthorized')
+    })
+
+    it('should return 401 when x-app-secret header does not match APP_SHARED_SECRET', async () => {
+      setMockEnv('APP_SHARED_SECRET', 'test-shared-secret')
+
+      const req = createMockRequest('POST', '/api/ai', {
+        headers: { 'x-app-secret': 'wrong-secret' },
+        body: { message: 'Hello' },
+      })
+
+      const response = await aiHandler(req, mockContext as never)
+      const data = await parseResponse(response)
+
+      expect(response.status).toBe(401)
+      expect(data.error).toBe('Unauthorized')
+    })
+
+    it('should return 429 after exceeding the per-IP rate limit', async () => {
+      setMockAIResponse('AI response')
+
+      // Bucket capacity is 10 requests/minute per `${ip}:ai` key (see ai.mts).
+      // Fire 11 identical requests from the same mocked IP (mockContext.ip) —
+      // the 11th should be rejected before it ever reaches the Anthropic call.
+      let lastResponse: Response | undefined
+      for (let i = 0; i < 11; i++) {
+        const req = createMockRequest('POST', '/api/ai', {
+          headers: {},
+          body: { message: `Request number ${i}` },
+        })
+        lastResponse = await aiHandler(req, mockContext as never)
+      }
+
+      const data = await parseResponse(lastResponse!)
+
+      expect(lastResponse!.status).toBe(429)
+      expect(data.error).toBe('Too many requests, please slow down')
+    })
+
+    it('should allow a first-time anonymous caller through the anon usage quota', async () => {
+      setMockAIResponse('AI response')
+
+      // No x-user-id header -> checkAndIncrementAnonUsage path. Default mock
+      // DB result (empty) simulates no existing usage row for today.
+      const req = createMockRequest('POST', '/api/ai', {
+        headers: {},
+        body: { message: 'First anonymous message' },
+      })
+      const response = await aiHandler(req, mockContext as never)
+
+      expect(response.status).toBe(200)
+      expect(wasQueryMade('ai_anon_usage')).toBe(true)
+    })
+
+    it('should return 429 with LIMIT_REACHED when an anonymous caller has already used today\'s anon quota', async () => {
+      setMockAIResponse('AI response')
+
+      // ANON_LIMITS.general_chat = 1/day (see lib/usage.mts). Simulate a usage
+      // row already at the day's limit so the check blocks before any
+      // Anthropic call is made.
+      setMockQueryResult('ai_anon_usage', [{ usage_count: 1 }])
+
+      const req = createMockRequest('POST', '/api/ai', {
+        headers: {},
+        body: { message: 'Second anonymous message, same day' },
+      })
+      const response = await aiHandler(req, mockContext as never)
+      const data = await parseResponse(response)
+
+      expect(response.status).toBe(429)
+      expect(data.code).toBe('LIMIT_REACHED')
+    })
+  })
+
   describe('POST /api/ai', () => {
     it('should return 500 when ANTHROPIC_API_KEY is missing', async () => {
       clearMockEnv()

@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { createMockRequest, parseResponse } from './helpers.js'
 import { setMockEnv, clearMockEnv } from './setup.js'
 import '../__mocks__/db'
-import { clearMockResults } from '../__mocks__/db'
+import { clearMockResults, setMockQueryResult } from '../__mocks__/db'
 import { resetRateLimitsForTests } from '../lib/rate-limit.mts'
 
 // Mock Anthropic
@@ -72,6 +72,67 @@ describe('packing function', () => {
       const response = await packingHandler(req, mockContext as never)
 
       expect(response.status).toBe(405)
+    })
+  })
+
+  describe('cost-abuse protections', () => {
+    beforeEach(() => {
+      setMockEnv('ANTHROPIC_API_KEY', 'test-key')
+      mockCreate.mockResolvedValue({
+        content: [{ type: 'text', text: JSON.stringify(mockPackingListResponse) }],
+        usage: { input_tokens: 500, output_tokens: 800 },
+      })
+    })
+
+    it('should return 401 when APP_SHARED_SECRET is set but x-app-secret header is missing', async () => {
+      setMockEnv('APP_SHARED_SECRET', 'test-shared-secret')
+
+      const req = createMockRequest('POST', '/api/packing', {
+        headers: {},
+        body: { destinations: ['Bangkok'], duration: 7, activities: ['temples'] },
+      })
+
+      const response = await packingHandler(req, mockContext as never)
+      const data = await parseResponse(response)
+
+      expect(response.status).toBe(401)
+      expect(data.error).toBe('Unauthorized')
+    })
+
+    it('should return 429 after exceeding the per-IP rate limit', async () => {
+      // Bucket capacity is 10 requests/minute per `${ip}:packing` key.
+      // Fire 11 identical requests from the same mocked IP — the 11th should
+      // be rejected before it ever reaches the Anthropic call.
+      let lastResponse: Response | undefined
+      for (let i = 0; i < 11; i++) {
+        const req = createMockRequest('POST', '/api/packing', {
+          headers: {},
+          body: { destinations: ['Bangkok'], duration: 7, activities: ['temples'] },
+        })
+        lastResponse = await packingHandler(req, mockContext as never)
+      }
+
+      const data = await parseResponse(lastResponse!)
+
+      expect(lastResponse!.status).toBe(429)
+      expect(data.error).toBe('Too many requests, please slow down')
+    })
+
+    it('should return 429 with LIMIT_REACHED when an anonymous caller has already used today\'s anon quota', async () => {
+      // ANON_LIMITS.packing = 1/day (see lib/usage.mts). Simulate a usage row
+      // already at the day's limit so the check blocks before any Anthropic call.
+      setMockQueryResult('ai_anon_usage', [{ usage_count: 1 }])
+
+      const req = createMockRequest('POST', '/api/packing', {
+        headers: {},
+        body: { destinations: ['Bangkok'], duration: 7, activities: ['temples'] },
+      })
+
+      const response = await packingHandler(req, mockContext as never)
+      const data = await parseResponse(response)
+
+      expect(response.status).toBe(429)
+      expect(data.code).toBe('LIMIT_REACHED')
     })
   })
 

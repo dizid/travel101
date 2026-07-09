@@ -61,6 +61,49 @@ describe('attraction-ai function', () => {
     })
   })
 
+  describe('cost-abuse protections', () => {
+    it('should return 401 when APP_SHARED_SECRET is set but x-app-secret header is missing', async () => {
+      setMockEnv('APP_SHARED_SECRET', 'test-shared-secret')
+
+      const req = createMockRequest('POST', '/api/attraction-ai', {
+        headers: { 'x-user-id': 'user-123' },
+        body: { action: 'personalized_intro', attractionSlug: 'wat-phra-kaew' },
+      })
+
+      const response = await attractionAiHandler(req, mockContext as never)
+      const data = await parseResponse(response)
+
+      expect(response.status).toBe(401)
+      expect(data.error).toBe('Unauthorized')
+    })
+
+    it('should return 429 after exceeding the per-IP rate limit', async () => {
+      setMockQueryResult('SELECT id, slug', [mockAttraction])
+      setMockAIResponse('Personalized response')
+
+      // Bucket capacity is 10 requests/minute per `${ip}:attraction-ai` key.
+      // Fire 11 identical requests from the same mocked IP — the 11th should
+      // be rejected before it ever reaches the auth check or Anthropic call.
+      let lastResponse: Response | undefined
+      for (let i = 0; i < 11; i++) {
+        const req = createMockRequest('POST', '/api/attraction-ai', {
+          headers: { 'x-user-id': 'user-123' },
+          body: {
+            action: 'personalized_intro',
+            attractionSlug: 'wat-phra-kaew',
+            userProfile: mockUserProfile,
+          },
+        })
+        lastResponse = await attractionAiHandler(req, mockContext as never)
+      }
+
+      const data = await parseResponse(lastResponse!)
+
+      expect(lastResponse!.status).toBe(429)
+      expect(data.error).toBe('Too many requests, please slow down')
+    })
+  })
+
   describe('method validation', () => {
     it('should return 405 for GET method', async () => {
       const req = createMockRequest('GET', '/api/attraction-ai', {
