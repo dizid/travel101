@@ -10,6 +10,21 @@ interface NeonUser {
   image?: string
 }
 
+// Pure navigation helpers — no composable state needed, so they're exported
+// standalone. Importing them directly (rather than destructuring from
+// useAuth()) avoids triggering useAuth's onMounted checkSession() a second
+// time in components that just need to redirect to sign-in/sign-up (App.vue
+// already calls useAuth() once at the root for the real session check).
+export function signIn(redirectUrl?: string) {
+  const url = redirectUrl ? `/auth/sign-in?redirect=${encodeURIComponent(redirectUrl)}` : '/auth/sign-in'
+  window.location.href = url
+}
+
+export function signUp(redirectUrl?: string) {
+  const url = redirectUrl ? `/auth/sign-up?redirect=${encodeURIComponent(redirectUrl)}` : '/auth/sign-up'
+  window.location.href = url
+}
+
 export function useAuth() {
   const userStore = useUserStore()
   const { post, put } = useApi()
@@ -62,16 +77,6 @@ export function useAuth() {
     } catch (error) {
       console.error('Failed to save preferences:', error)
     }
-  }
-
-  function signIn(redirectUrl?: string) {
-    const url = redirectUrl ? `/auth/sign-in?redirect=${encodeURIComponent(redirectUrl)}` : '/auth/sign-in'
-    window.location.href = url
-  }
-
-  function signUp(redirectUrl?: string) {
-    const url = redirectUrl ? `/auth/sign-up?redirect=${encodeURIComponent(redirectUrl)}` : '/auth/sign-up'
-    window.location.href = url
   }
 
   async function signOut() {

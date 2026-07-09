@@ -1,7 +1,7 @@
 import { ref, computed } from 'vue'
 import { useApi } from './useApi'
 import { useUserStore } from '@/stores/userStore'
-import { useAuth } from './useAuth'
+import { signIn } from './useAuth'
 
 interface SubscriptionStatus {
   isPro: boolean
@@ -15,7 +15,6 @@ interface SubscriptionStatus {
 export function useSubscription() {
   const { get, post, loading, error } = useApi()
   const userStore = useUserStore()
-  const { signIn } = useAuth()
   const subscriptionStatus = ref<SubscriptionStatus | null>(null)
 
   async function fetchStatus() {

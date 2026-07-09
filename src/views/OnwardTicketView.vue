@@ -3,7 +3,7 @@ import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { useOnwardTicket } from '@/composables/useOnwardTicket'
 import type { FlightOffer, PassengerDetails } from '@/composables/useOnwardTicket'
 import { useUserStore } from '@stores/userStore'
-import { useAuth } from '@/composables/useAuth'
+import { signIn } from '@/composables/useAuth'
 import { generateBookingPdf } from '@/utils/booking-pdf'
 import { THAI_AIRPORTS, POPULAR_DESTINATIONS, SERVICE_FEE_CENTS } from '@/data/exit-routes'
 import { loadStripe } from '@stripe/stripe-js'
@@ -21,7 +21,6 @@ import {
 } from '@ant-design/icons-vue'
 
 const userStore = useUserStore()
-const { signIn } = useAuth()
 
 const {
   step,

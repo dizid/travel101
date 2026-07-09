@@ -1,5 +1,46 @@
 import { test, expect } from '@playwright/test'
 
+// Helper: fake a logged-in Neon Auth session. OnwardTicketView gates its
+// entire booking wizard behind userStore.isAuthenticated (DB requires
+// user_id NOT NULL on bookings — see OnwardTicketView.vue), so every test in
+// this file needs a session or it only ever sees the signed-out gate.
+// get-session is a cross-origin request to VITE_NEON_AUTH_URL, and its raw
+// (unwrapped) response is `null` when signed out, or `{ session, user }`
+// when signed in — confirmed against the real endpoint.
+async function mockAuthenticatedSession(page: import('@playwright/test').Page) {
+  await page.route('**/auth/get-session', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        session: {
+          id: 'e2e-session',
+          userId: 'e2e-test-user',
+          expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+        },
+        user: {
+          id: 'e2e-test-user',
+          email: 'e2e@happyroam.travel',
+          name: 'E2E Traveler',
+        },
+      }),
+    })
+  })
+
+  // useAuth.checkSession() fires a fire-and-forget POST to /api/user
+  // (syncProfile) right after a session resolves. Dev/preview/production all
+  // share one Neon database here, so this must be mocked — otherwise every
+  // authenticated test run inserts a real user_profiles row for the fake
+  // e2e-test-user into the live database.
+  await page.route('**/api/user', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ success: true }),
+    })
+  })
+}
+
 // Helper: pick a date in an Ant DatePicker via the calendar popup
 async function pickDate(page: import('@playwright/test').Page, pickerIndex: number, isoDate: string) {
   await page.locator('.onward-datepicker').nth(pickerIndex).click()
@@ -36,6 +77,18 @@ async function fillPassenger(page: import('@playwright/test').Page, data: {
   await phoneInput.scrollIntoViewIfNeeded()
   await phoneInput.fill(data.phone)
 }
+
+// A date far enough ahead to never go stale, but within pickDate's forward-
+// navigation limit (6 months). Previously hardcoded to '2026-04-15', which
+// silently broke every test that searched flights once that date passed —
+// pickDate's calendar can only click "next month", never backward, so a
+// past target date makes it spin until the 30s test timeout.
+function futureDateStr(daysFromNow: number): string {
+  const d = new Date()
+  d.setDate(d.getDate() + daysFromNow)
+  return d.toISOString().split('T')[0]
+}
+const SEARCH_DATE = futureDateStr(10)
 
 // Helper: mock the onward-ticket status API for non-Pro user
 async function mockStatusNonPro(page: import('@playwright/test').Page) {
@@ -82,8 +135,8 @@ async function mockStatusAndSearch(page: import('@playwright/test').Page) {
                 airlineCode: 'AK',
                 price: '35.00',
                 currency: 'USD',
-                departureTime: '2026-04-15T08:00:00',
-                arrivalTime: '2026-04-15T11:30:00',
+                departureTime: `${SEARCH_DATE}T08:00:00`,
+                arrivalTime: `${SEARCH_DATE}T11:30:00`,
                 duration: 'PT3H30M',
                 stops: 0,
               },
@@ -93,8 +146,8 @@ async function mockStatusAndSearch(page: import('@playwright/test').Page) {
                 airlineCode: 'TG',
                 price: '85.00',
                 currency: 'USD',
-                departureTime: '2026-04-15T14:00:00',
-                arrivalTime: '2026-04-15T17:30:00',
+                departureTime: `${SEARCH_DATE}T14:00:00`,
+                arrivalTime: `${SEARCH_DATE}T17:30:00`,
                 duration: 'PT3H30M',
                 stops: 0,
               },
@@ -108,6 +161,12 @@ async function mockStatusAndSearch(page: import('@playwright/test').Page) {
     }
   })
 }
+
+// Applies to every test in this file: OnwardTicketView shows a signed-out
+// gate instead of the booking wizard unless userStore.isAuthenticated.
+test.beforeEach(async ({ page }) => {
+  await mockAuthenticatedSession(page)
+})
 
 test.describe('Onward Ticket Page', () => {
   test.beforeEach(async ({ page }) => {
@@ -124,7 +183,11 @@ test.describe('Onward Ticket Page', () => {
   })
 
   test('shows Onward Ticket pill badge', async ({ page }) => {
-    await expect(page.getByText('Onward Ticket')).toBeVisible()
+    // exact: true — a plain substring match also catches "Sign in to book
+    // your onward ticket" (the signed-out gate's heading, case-insensitively
+    // containing "onward ticket"), which can still be in the DOM for a beat
+    // during the mocked-session hydration race.
+    await expect(page.getByText('Onward Ticket', { exact: true })).toBeVisible()
   })
 
   test('displays 4 benefits in grid', async ({ page }) => {
@@ -242,7 +305,7 @@ test.describe('Onward Ticket - Flight Search', () => {
     await page.goto('/onward-ticket')
 
     // Fill date and search
-    await pickDate(page, 0, '2026-04-15')
+    await pickDate(page, 0, SEARCH_DATE)
     await page.getByRole('button', { name: /search flights/i }).click()
 
     // Wait for results
@@ -258,7 +321,7 @@ test.describe('Onward Ticket - Flight Search', () => {
     await mockStatusAndSearch(page)
     await page.goto('/onward-ticket')
 
-    await pickDate(page, 0, '2026-04-15')
+    await pickDate(page, 0, SEARCH_DATE)
     await page.getByRole('button', { name: /search flights/i }).click()
     await expect(page.getByText('AirAsia')).toBeVisible({ timeout: 10000 })
     await page.getByText('AirAsia').click()
@@ -270,7 +333,7 @@ test.describe('Onward Ticket - Flight Search', () => {
     await mockStatusAndSearch(page)
     await page.goto('/onward-ticket')
 
-    await pickDate(page, 0, '2026-04-15')
+    await pickDate(page, 0, SEARCH_DATE)
     await page.getByRole('button', { name: /search flights/i }).click()
     await expect(page.getByText('AirAsia')).toBeVisible({ timeout: 10000 })
     await page.getByText('AirAsia').click()
@@ -288,7 +351,7 @@ test.describe('Onward Ticket - Flight Search', () => {
     await mockStatusAndSearch(page)
     await page.goto('/onward-ticket')
 
-    await pickDate(page, 0, '2026-04-15')
+    await pickDate(page, 0, SEARCH_DATE)
     await page.getByRole('button', { name: /search flights/i }).click()
     await expect(page.getByText('AirAsia')).toBeVisible({ timeout: 10000 })
     await page.getByText('AirAsia').click()
@@ -302,7 +365,7 @@ test.describe('Onward Ticket - Flight Search', () => {
     await mockStatusAndSearch(page)
     await page.goto('/onward-ticket')
 
-    await pickDate(page, 0, '2026-04-15')
+    await pickDate(page, 0, SEARCH_DATE)
     await page.getByRole('button', { name: /search flights/i }).click()
     await expect(page.getByText('AirAsia')).toBeVisible({ timeout: 10000 })
     await page.getByText('AirAsia').click()
@@ -335,7 +398,7 @@ test.describe('Onward Ticket - Flight Search', () => {
     })
 
     await page.goto('/onward-ticket')
-    await pickDate(page, 0, '2026-04-15')
+    await pickDate(page, 0, SEARCH_DATE)
     await page.getByRole('button', { name: /search flights/i }).click()
 
     // Page should not crash — search form remains visible (mock returns 500, so no flight results)
@@ -366,7 +429,7 @@ test.describe('Onward Ticket - Flight Search', () => {
     })
 
     await page.goto('/onward-ticket')
-    await pickDate(page, 0, '2026-04-15')
+    await pickDate(page, 0, SEARCH_DATE)
     await page.getByRole('button', { name: /search flights/i }).click()
 
     // Empty response returns no offers — "flights found" text should not appear
@@ -428,8 +491,8 @@ test.describe('Onward Ticket - Full Booking Flow (Pro)', () => {
     airline: 'AirAsia',
     origin: 'BKK',
     destination: 'KUL',
-    departureTime: '2026-04-15T08:00:00',
-    arrivalTime: '2026-04-15T11:30:00',
+    departureTime: `${SEARCH_DATE}T08:00:00`,
+    arrivalTime: `${SEARCH_DATE}T11:30:00`,
     expiresAt: '2026-04-17T08:00:00',
     passengerName: 'Test Traveler',
   }
@@ -461,8 +524,8 @@ test.describe('Onward Ticket - Full Booking Flow (Pro)', () => {
                   airlineCode: 'AK',
                   price: '35.00',
                   currency: 'USD',
-                  departureTime: '2026-04-15T08:00:00',
-                  arrivalTime: '2026-04-15T11:30:00',
+                  departureTime: `${SEARCH_DATE}T08:00:00`,
+                  arrivalTime: `${SEARCH_DATE}T11:30:00`,
                   duration: '3h 30m',
                   stops: 0,
                 },
@@ -472,8 +535,8 @@ test.describe('Onward Ticket - Full Booking Flow (Pro)', () => {
                   airlineCode: 'TG',
                   price: '85.00',
                   currency: 'USD',
-                  departureTime: '2026-04-15T14:00:00',
-                  arrivalTime: '2026-04-15T17:30:00',
+                  departureTime: `${SEARCH_DATE}T14:00:00`,
+                  arrivalTime: `${SEARCH_DATE}T17:30:00`,
                   duration: '3h 30m',
                   stops: 0,
                 },
@@ -521,7 +584,7 @@ test.describe('Onward Ticket - Full Booking Flow (Pro)', () => {
     await expect(destSelect).toHaveValue('KUL')
 
     // Pick departure date
-    await pickDate(page, 0, '2026-04-15')
+    await pickDate(page, 0, SEARCH_DATE)
 
     // Search flights
     await page.getByRole('button', { name: /search flights/i }).click()
@@ -572,7 +635,7 @@ test.describe('Onward Ticket - Full Booking Flow (Pro)', () => {
     await page.goto('/onward-ticket')
 
     // Fast-track to confirmation
-    await pickDate(page, 0, '2026-04-15')
+    await pickDate(page, 0, SEARCH_DATE)
     await page.getByRole('button', { name: /search flights/i }).click()
     await expect(page.getByText('AirAsia')).toBeVisible({ timeout: 10000 })
     await page.getByText('AirAsia').click()
@@ -594,7 +657,7 @@ test.describe('Onward Ticket - Full Booking Flow (Pro)', () => {
     await page.goto('/onward-ticket')
 
     // Fast-track to confirmation
-    await pickDate(page, 0, '2026-04-15')
+    await pickDate(page, 0, SEARCH_DATE)
     await page.getByRole('button', { name: /search flights/i }).click()
     await expect(page.getByText('AirAsia')).toBeVisible({ timeout: 10000 })
     await page.getByText('AirAsia').click()
@@ -638,8 +701,8 @@ test.describe('Onward Ticket - Full Booking Flow (Pro)', () => {
                 airlineCode: 'AK',
                 price: '35.00',
                 currency: 'USD',
-                departureTime: '2026-04-15T08:00:00',
-                arrivalTime: '2026-04-15T11:30:00',
+                departureTime: `${SEARCH_DATE}T08:00:00`,
+                arrivalTime: `${SEARCH_DATE}T11:30:00`,
                 duration: '3h 30m',
                 stops: 0,
               }],
@@ -660,7 +723,7 @@ test.describe('Onward Ticket - Full Booking Flow (Pro)', () => {
     })
 
     await page.goto('/onward-ticket')
-    await pickDate(page, 0, '2026-04-15')
+    await pickDate(page, 0, SEARCH_DATE)
     await page.getByRole('button', { name: /search flights/i }).click()
     await expect(page.getByText('AirAsia')).toBeVisible({ timeout: 10000 })
     await page.getByText('AirAsia').click()
@@ -709,8 +772,8 @@ test.describe('Onward Ticket - Full Booking Flow (Pro)', () => {
                 airlineCode: 'FA',
                 price: '20.00',
                 currency: 'USD',
-                departureTime: '2026-04-15T10:00:00',
-                arrivalTime: '2026-04-15T13:00:00',
+                departureTime: `${SEARCH_DATE}T10:00:00`,
+                arrivalTime: `${SEARCH_DATE}T13:00:00`,
                 duration: '3h',
                 stops: 0,
               }],
@@ -730,7 +793,7 @@ test.describe('Onward Ticket - Full Booking Flow (Pro)', () => {
     })
 
     await page.goto('/onward-ticket')
-    await pickDate(page, 0, '2026-04-15')
+    await pickDate(page, 0, SEARCH_DATE)
     await page.getByRole('button', { name: /search flights/i }).click()
     await expect(page.getByText('FailAir')).toBeVisible({ timeout: 10000 })
     await page.getByText('FailAir').click()
