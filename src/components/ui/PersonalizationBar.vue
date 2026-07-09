@@ -2,6 +2,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import { useUserStore } from '@stores/userStore'
+import { useProfileCompleteness } from '@/composables/useProfileCompleteness'
 import {
   EditOutlined,
   CloseOutlined,
@@ -114,15 +115,7 @@ const activeTags = computed(() => {
 })
 
 // Profile completeness
-const profileProgress = computed(() => {
-  const prefs = userStore.profile.prefs
-  let score = 0
-  if (prefs.nationality) score += 25
-  if (prefs.travelStyle.length > 0) score += 25
-  if (prefs.interests.length > 0) score += 25
-  if (prefs.tripType) score += 25
-  return score
-})
+const { profileCompleteness: profileProgress } = useProfileCompleteness()
 </script>
 
 <template>

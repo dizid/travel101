@@ -3,6 +3,11 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useCurrency } from '@/composables/useCurrency'
 import { LoadingOutlined, SwapOutlined, DollarOutlined } from '@ant-design/icons-vue'
 
+defineProps<{
+  /** Skip the outer card-thai wrapper when embedding inside a parent card. */
+  bare?: boolean
+}>()
+
 const {
   loading,
   fetchRates,
@@ -53,7 +58,7 @@ const quickAmounts = [100, 500, 1000, 5000]
 </script>
 
 <template>
-  <div class="card-thai">
+  <div :class="bare ? '' : 'card-thai'">
     <!-- Header -->
     <div class="flex items-center justify-between mb-4">
       <h3 class="font-semibold text-gray-900 flex items-center gap-2">

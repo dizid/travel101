@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { onMounted } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@stores/userStore'
 import { useSubscription } from '@/composables/useSubscription'
 import { useAIUsage } from '@/composables/useAIUsage'
+import { useProfileCompleteness } from '@/composables/useProfileCompleteness'
 import {
   UserOutlined,
   CrownOutlined,
@@ -72,15 +73,7 @@ const allProFeatures = [
   { icon: '📱', label: 'Setup Guide', description: 'SIM cards, banking & essentials', path: '/setup-guide', new: true },
 ]
 
-const profileCompleteness = computed(() => {
-  const prefs = userStore.profile.prefs
-  let score = 0
-  if (prefs.nationality) score += 25
-  if (prefs.travelStyle.length > 0) score += 25
-  if (prefs.interests.length > 0) score += 25
-  if (prefs.tripType) score += 25
-  return score
-})
+const { profileCompleteness } = useProfileCompleteness()
 </script>
 
 <template>
@@ -128,26 +121,43 @@ const profileCompleteness = computed(() => {
       <div class="grid lg:grid-cols-3 gap-8">
         <!-- Main content -->
         <div class="lg:col-span-2 space-y-8">
-          <!-- Profile completeness -->
-          <div v-if="profileCompleteness < 100" class="card-thai">
-            <div class="flex items-center justify-between mb-4">
-              <h2 class="font-semibold text-gray-900">Complete Your Profile</h2>
-              <span class="text-sm font-medium text-primary-600">{{ profileCompleteness }}%</span>
+          <!-- Profile completeness: one compact row, not a full card -->
+          <RouterLink
+            v-if="profileCompleteness < 100"
+            to="/profile"
+            class="card-thai flex items-center gap-4 group"
+          >
+            <div class="relative w-10 h-10 flex-shrink-0">
+              <svg class="w-10 h-10 -rotate-90" viewBox="0 0 36 36">
+                <circle cx="18" cy="18" r="15" fill="none" stroke="#e5e7eb" stroke-width="3" />
+                <circle
+                  cx="18" cy="18" r="15"
+                  fill="none"
+                  stroke="url(#dashboard-progress-gradient)"
+                  stroke-width="3"
+                  stroke-linecap="round"
+                  :stroke-dasharray="`${profileCompleteness * 0.94} 100`"
+                  class="transition-all duration-500"
+                />
+                <defs>
+                  <linearGradient id="dashboard-progress-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stop-color="#f59e0b" />
+                    <stop offset="100%" stop-color="#fb923c" />
+                  </linearGradient>
+                </defs>
+              </svg>
+              <span class="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-gray-600">
+                {{ profileCompleteness }}%
+              </span>
             </div>
-            <div class="h-2 bg-gray-100 rounded-full overflow-hidden mb-4">
-              <div
-                class="h-full bg-gradient-to-r from-primary-500 to-accent-500 transition-all"
-                :style="{ width: `${profileCompleteness}%` }"
-              />
+            <div class="flex-1 min-w-0">
+              <h3 class="font-medium text-gray-900 group-hover:text-primary-600 transition-colors">
+                Complete your profile
+              </h3>
+              <p class="text-sm text-gray-500">Get personalized recommendations</p>
             </div>
-            <p class="text-sm text-gray-600 mb-4">
-              Complete your profile to get personalized recommendations.
-            </p>
-            <RouterLink to="/profile" class="btn-thai text-sm">
-              Complete Profile
-              <RightOutlined class="text-xs" />
-            </RouterLink>
-          </div>
+            <RightOutlined class="text-gray-300 group-hover:text-primary-500 transition-colors flex-shrink-0" />
+          </RouterLink>
 
           <!-- Quick links -->
           <div>
@@ -295,17 +305,10 @@ const profileCompleteness = computed(() => {
 
           <!-- AI Usage (free users) -->
           <div v-if="!isProUsage" class="card-thai">
-            <h3 class="font-semibold text-gray-900 mb-1 flex items-center gap-2">
+            <h3 class="font-semibold text-gray-900 mb-3 flex items-center gap-2">
               <ThunderboltOutlined class="text-primary-500" />
               Today's AI Usage
             </h3>
-            <p class="text-xs text-gray-500 mt-1 mb-3">
-              Free accounts include daily AI credits.
-              <RouterLink to="/dashboard#pro" class="text-primary-600 font-medium hover:underline">
-                Upgrade to Pro
-              </RouterLink>
-              for unlimited access.
-            </p>
 
             <div class="space-y-4">
               <div>
@@ -346,9 +349,9 @@ const profileCompleteness = computed(() => {
             </p>
           </div>
 
-          <!-- Saved country -->
+          <!-- Trip Tools: destination, booking, weather, currency grouped under
+               one card instead of 4 separately-bordered cards -->
           <div class="card-thai">
-            <h3 class="font-semibold text-gray-900 mb-3">Your Destination</h3>
             <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
               <span class="text-3xl">🇹🇭</span>
               <div>
@@ -356,21 +359,24 @@ const profileCompleteness = computed(() => {
                 <p class="text-sm text-gray-500">Land of Smiles</p>
               </div>
             </div>
+
+            <div class="border-t border-gray-100 mt-4 pt-4">
+              <AffiliateCard
+                context="dashboard"
+                destination="Thailand"
+                compact
+                :show-availability="true"
+              />
+            </div>
+
+            <div class="border-t border-gray-100 mt-4 pt-4">
+              <WeatherWidget location="Bangkok" compact bare />
+            </div>
+
+            <div class="border-t border-gray-100 mt-4 pt-4">
+              <CurrencyCalculator bare />
+            </div>
           </div>
-
-          <!-- Book Your Trip -->
-          <AffiliateCard
-            context="dashboard"
-            destination="Thailand"
-            compact
-            :show-availability="true"
-          />
-
-          <!-- Weather Widget -->
-          <WeatherWidget location="Bangkok" />
-
-          <!-- Currency Calculator -->
-          <CurrencyCalculator />
         </div>
       </div>
     </div>

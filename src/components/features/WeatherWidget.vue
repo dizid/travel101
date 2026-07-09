@@ -6,6 +6,8 @@ import { LoadingOutlined, CloudOutlined } from '@ant-design/icons-vue'
 const props = defineProps<{
   location?: string
   compact?: boolean
+  /** Skip the outer card-thai wrapper when embedding inside a parent card. */
+  bare?: boolean
 }>()
 
 const {
@@ -34,7 +36,7 @@ function formatDate(dateStr: string) {
 </script>
 
 <template>
-  <div class="card-thai">
+  <div :class="bare ? '' : 'card-thai'">
     <!-- Loading state -->
     <div v-if="loading" class="flex items-center justify-center py-8">
       <LoadingOutlined class="text-2xl text-primary-500 animate-spin" />

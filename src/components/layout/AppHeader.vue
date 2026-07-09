@@ -2,6 +2,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import { useUserStore } from '@stores/userStore'
+import { useProfileCompleteness } from '@/composables/useProfileCompleteness'
 import {
   MenuOutlined,
   CloseOutlined,
@@ -15,16 +16,11 @@ const userStore = useUserStore()
 const isMobileMenuOpen = ref(false)
 const isPlanDropdownOpen = ref(false)
 
-// Profile completeness for the chip
-const profileProgress = computed(() => {
-  const prefs = userStore.profile.prefs
-  let score = 0
-  if (prefs.nationality) score += 25
-  if (prefs.travelStyle.length > 0) score += 25
-  if (prefs.interests.length > 0) score += 25
-  if (prefs.tripType) score += 25
-  return score
-})
+// Profile completeness for the unified header chip (see template: shows a
+// progress ring until the profile is complete, then "Go Pro"/"Pro" —
+// previously this and the "Go Pro" pill were two separate chips shown
+// side by side regardless of each other's state.
+const { profileCompleteness: profileProgress } = useProfileCompleteness()
 
 const primaryNav = [
   { name: 'Places', path: '/attractions', icon: '🗺️' },
@@ -198,9 +194,36 @@ onUnmounted(() => {
 
         <!-- Right side actions -->
         <div class="flex items-center gap-3">
-          <!-- Pro Badge / Upgrade -->
+          <!-- Unified status chip: one slot instead of two side-by-side chips.
+               Profile incomplete -> progress ring (regardless of Pro status).
+               Profile complete + not Pro -> "Go Pro". Profile complete + Pro -> "Pro". -->
           <RouterLink
-            v-if="!userStore.isPro"
+            v-if="!userStore.hasProfile"
+            to="/profile"
+            class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gray-100 hover:bg-gray-200 transition-all"
+            title="Complete your profile"
+          >
+            <svg class="w-5 h-5 -rotate-90" viewBox="0 0 36 36">
+              <circle
+                cx="18" cy="18" r="14"
+                fill="none"
+                stroke="#e5e7eb"
+                stroke-width="3"
+              />
+              <circle
+                cx="18" cy="18" r="14"
+                fill="none"
+                stroke="#f43f5e"
+                stroke-width="3"
+                stroke-linecap="round"
+                :stroke-dasharray="`${profileProgress * 0.88} 100`"
+                class="transition-all duration-300"
+              />
+            </svg>
+            <span class="text-xs font-medium text-gray-600">{{ profileProgress }}%</span>
+          </RouterLink>
+          <RouterLink
+            v-else-if="!userStore.isPro"
             to="/dashboard"
             class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-primary-500 to-accent-500 text-white text-sm font-medium rounded-full hover:shadow-lg transition-shadow"
           >
@@ -214,46 +237,6 @@ onUnmounted(() => {
             <CrownOutlined class="text-xs" />
             <span>Pro</span>
           </div>
-
-          <!-- Profile Status Chip -->
-          <RouterLink
-            to="/profile"
-            class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-all"
-            :class="[
-              userStore.hasProfile
-                ? 'bg-gradient-to-r from-rose-50 to-amber-50 border border-rose-200/50 hover:border-rose-300'
-                : 'bg-gray-100 hover:bg-gray-200'
-            ]"
-            :title="userStore.hasProfile ? 'Your preferences are active' : 'Complete your profile'"
-          >
-            <!-- Profile complete: sparkle indicator -->
-            <template v-if="userStore.hasProfile">
-              <span class="text-sm">✨</span>
-              <span class="text-xs font-medium text-rose-700">Personalized</span>
-            </template>
-
-            <!-- Profile incomplete: progress ring -->
-            <template v-else>
-              <svg class="w-5 h-5 -rotate-90" viewBox="0 0 36 36">
-                <circle
-                  cx="18" cy="18" r="14"
-                  fill="none"
-                  stroke="#e5e7eb"
-                  stroke-width="3"
-                />
-                <circle
-                  cx="18" cy="18" r="14"
-                  fill="none"
-                  stroke="#f43f5e"
-                  stroke-width="3"
-                  stroke-linecap="round"
-                  :stroke-dasharray="`${profileProgress * 0.88} 100`"
-                  class="transition-all duration-300"
-                />
-              </svg>
-              <span class="text-xs font-medium text-gray-600">{{ profileProgress }}%</span>
-            </template>
-          </RouterLink>
 
           <!-- Saved Places -->
           <RouterLink

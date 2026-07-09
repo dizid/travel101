@@ -141,20 +141,41 @@ describe('AppHeader', () => {
     })
   })
 
-  describe('Pro badge', () => {
-    it('shows Go Pro button for non-Pro users', () => {
+  describe('unified status chip', () => {
+    // The header shows one chip slot: a profile-completion progress ring
+    // takes priority while the profile is incomplete (regardless of Pro
+    // status), then "Go Pro" or "Pro" once the profile is done.
+    it('shows profile-completion progress for a non-Pro user with an incomplete profile', () => {
+      const wrapper = mountHeader()
+
+      expect(wrapper.text()).toContain('%')
+      expect(wrapper.text()).not.toContain('Go Pro')
+    })
+
+    it('shows Go Pro once the profile is complete for a non-Pro user', () => {
+      const userStore = useUserStore()
+      userStore.updatePreferences({
+        nationality: 'US',
+        travelStyle: ['adventure'],
+        interests: ['temples'],
+      })
       const wrapper = mountHeader()
 
       expect(wrapper.text()).toContain('Go Pro')
     })
 
-    it('renders Pro-related UI elements', async () => {
+    it('shows Pro badge once the profile is complete for a Pro user', () => {
+      const userStore = useUserStore()
+      userStore.updatePreferences({
+        nationality: 'US',
+        travelStyle: ['adventure'],
+        interests: ['temples'],
+      })
+      userStore.setPro(true)
       const wrapper = mountHeader()
-      await flushPromises()
 
-      // The header should render with Pro/Go Pro UI
-      const text = wrapper.text()
-      expect(text.includes('Pro') || text.includes('Go Pro')).toBe(true)
+      expect(wrapper.text()).toContain('Pro')
+      expect(wrapper.text()).not.toContain('Go Pro')
     })
   })
 
