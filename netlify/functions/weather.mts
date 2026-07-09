@@ -57,6 +57,10 @@ function getPackingTips(forecast: WeatherData['forecast'], isMonsoon: boolean): 
   const avgTemp = forecast.reduce((sum, day) => sum + day.maxtemp_c, 0) / forecast.length
   const maxRainChance = Math.max(...forecast.map(d => d.chance_of_rain))
 
+  // Temple tips (always relevant for Thailand) — pushed first so the slice(0, 5)
+  // cap below can never drop it, regardless of how many other tips fire.
+  tips.push('Cover shoulders & knees for temple visits')
+
   // Temperature-based tips
   if (avgTemp > 32) {
     tips.push('Pack light, breathable clothing - it\'s hot!')
@@ -72,9 +76,6 @@ function getPackingTips(forecast: WeatherData['forecast'], isMonsoon: boolean): 
     tips.push('Waterproof bag for electronics recommended')
     tips.push('Quick-dry clothing is essential')
   }
-
-  // Temple tips (always relevant for Thailand)
-  tips.push('Cover shoulders & knees for temple visits')
 
   // Monsoon-specific
   if (isMonsoon) {
