@@ -31,6 +31,14 @@ export function useApi() {
         headers['x-user-id'] = userStore.authUserId
       }
 
+      // Speed-bump shared secret expected by the AI endpoints' validateAppSecret()
+      // check (see netlify/functions/lib/security.mts). Harmless to send on every
+      // request — the server only checks it on the AI-calling functions.
+      const appSecret = import.meta.env.VITE_APP_SHARED_SECRET
+      if (appSecret) {
+        headers['x-app-secret'] = appSecret
+      }
+
       const response = await fetch(`${API_BASE}${endpoint}`, {
         method,
         headers,

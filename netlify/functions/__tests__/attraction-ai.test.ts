@@ -5,6 +5,7 @@ import { setMockQueryResult, clearMockResults, wasQueryMade } from '../__mocks__
 import { setMockAIResponse, resetAnthropicMocks, setMockAIError, mockAnthropic } from '../__mocks__/anthropic'
 import { setMockEnv, clearMockEnv } from './setup.js'
 import { createMockRequest, parseResponse } from './helpers.js'
+import { resetRateLimitsForTests } from '../lib/rate-limit.mts'
 
 import attractionAiHandler from '../attraction-ai.mts'
 
@@ -40,6 +41,7 @@ describe('attraction-ai function', () => {
     clearMockEnv()
     vi.clearAllMocks()
     resetAnthropicMocks()
+    resetRateLimitsForTests()
     setMockEnv('DATABASE_URL', 'postgresql://test:test@localhost/test')
     setMockEnv('ANTHROPIC_API_KEY', 'sk-ant-test-123')
   })

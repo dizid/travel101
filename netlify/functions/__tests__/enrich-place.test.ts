@@ -16,6 +16,7 @@ import {
   setMockAIError,
   resetAnthropicMocks,
 } from '../__mocks__/anthropic.js'
+import { resetRateLimitsForTests } from '../lib/rate-limit.mts'
 
 // Mock Netlify.env
 vi.stubGlobal('Netlify', {
@@ -35,6 +36,7 @@ describe('enrich-place function', () => {
   beforeEach(() => {
     resetDbMocks()
     resetAnthropicMocks()
+    resetRateLimitsForTests()
   })
 
   describe('authentication', () => {
