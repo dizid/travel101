@@ -36,4 +36,6 @@ Follow-ups from PLAN.md. Items marked `[x]` were executed as part of this sessio
 ## Verification
 
 - `npm run build` — passes.
-- `npx vitest run` — 1306/1306 passing (was 1292/1306 at session start).
+- `npx vitest run` — 1316/1316 passing (was 1292/1306 at session start; +10 new
+  cost-abuse tests, +1 net from the weather.mts fix).
+- All work committed (`70c669d` through `776a7d9`); working tree clean.
