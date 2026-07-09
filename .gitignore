@@ -52,3 +52,4 @@ vite.config.js
 .ssg-data/
 scripts/*.js
 scripts/*.d.ts
+.gstack/
