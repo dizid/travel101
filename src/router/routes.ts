@@ -200,6 +200,12 @@ const routes: RouteRecordRaw[] = [
     meta: { title: 'About HappyRoam', seoKey: 'about' },
   },
   {
+    path: '/ai-trip-planner-app-thailand',
+    name: 'ai-trip-planner',
+    component: () => import('@views/AiTripPlannerView.vue'),
+    meta: { title: 'AI Trip Planner for Thailand', seoKey: 'aiTripPlanner' },
+  },
+  {
     path: '/auth/sign-in',
     name: 'sign-in',
     component: () => import('@views/SignInView.vue'),

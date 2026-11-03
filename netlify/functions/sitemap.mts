@@ -52,6 +52,7 @@ export default async function handler(_req: Request, _context: Context) {
     { url: '/warnings', priority: '0.8', changefreq: 'weekly' },
     { url: '/safety', priority: '0.7', changefreq: 'monthly' },
     { url: '/itinerary', priority: '0.7', changefreq: 'weekly' },
+    { url: '/ai-trip-planner-app-thailand', priority: '0.8', changefreq: 'monthly' },
     { url: '/smart-match', priority: '0.7', changefreq: 'weekly' },
     { url: '/setup-guide', priority: '0.7', changefreq: 'monthly' },
     { url: '/cost-calculator', priority: '0.7', changefreq: 'monthly' },

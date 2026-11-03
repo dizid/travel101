@@ -514,6 +514,11 @@ export const pageMeta: Record<string, PageMeta> = {
     description: 'Learn about HappyRoam Thailand — your AI-powered travel guide with 400+ destinations, 50+ festivals, and personalized recommendations.',
     url: '/about',
   },
+  aiTripPlanner: {
+    title: 'AI Trip Planner for Thailand: Itinerary, Visa & Budget',
+    description: 'HappyRoam Thailand is a Thailand-only travel planner: AI multi-day itineraries with budget, a 60-second visa wizard, TDAC and 90-day help, cost calculator and 400+ places.',
+    url: '/ai-trip-planner-app-thailand',
+  },
   guides: {
     title: 'Thailand Travel Guides',
     description: 'In-depth travel guides for Thailand. Budget tips, destination guides, food recommendations, and practical advice from experienced travelers.',

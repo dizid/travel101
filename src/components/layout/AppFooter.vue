@@ -26,6 +26,7 @@ const footerLinks = {
   ],
   resources: [
     { name: 'Plan Your Trip', path: '/itinerary' },
+    { name: 'AI Trip Planner for Thailand', path: '/ai-trip-planner-app-thailand' },
     { name: 'Cost Calculator', path: '/cost-calculator' },
     { name: 'Digital Nomad Guide', path: '/attractions?category=nomad' },
     { name: 'Hidden Gems', path: '/attractions?hidden=true' },

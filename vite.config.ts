@@ -66,6 +66,7 @@ export default defineConfig(({ isSsrBuild }) => ({
         '/about', '/people', '/privacy', '/terms', '/contact',
         '/onward-ticket', '/itinerary', '/packing', '/safety', '/90-day',
         '/medical', '/cost-calculator', '/setup-guide',
+        '/ai-trip-planner-app-thailand',
       ]
 
       // Dynamic routes from pre-fetched data
