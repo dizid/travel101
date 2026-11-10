@@ -11,6 +11,8 @@ import type { Stripe, StripeElements } from '@stripe/stripe-js'
 import UpgradeModal from '@/components/ui/UpgradeModal.vue'
 import dayjs from 'dayjs'
 import type { Dayjs } from 'dayjs'
+// Local import (not global) so only this page downloads Ant Design's date picker
+import { DatePicker as ADatePicker } from 'ant-design-vue'
 import {
   SearchOutlined,
   CheckCircleFilled,
@@ -132,8 +134,9 @@ const serviceFee = computed(() => (SERVICE_FEE_CENTS / 100).toFixed(2))
 
 // Bridge dayjs <-> YYYY-MM-DD strings for Ant DatePicker
 const departureDateDayjs = computed({
-  get: () => departureDate.value ? dayjs(departureDate.value) : null,
-  set: (val: Dayjs | null) => {
+  // undefined (not null) = empty: matches the date picker's typed value prop
+  get: () => departureDate.value ? dayjs(departureDate.value) : undefined,
+  set: (val: Dayjs | null | undefined) => {
     departureDate.value = val ? val.format('YYYY-MM-DD') : ''
   },
 })

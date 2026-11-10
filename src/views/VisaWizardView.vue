@@ -4,6 +4,8 @@ import { useUserStore } from '@stores/userStore'
 import { useCountryStore } from '@stores/countryStore'
 import type { VisaWizardState, ChecklistItem, VisaRecommendation } from '@/types'
 import { countryOptions, filterCountry } from '@/data/countries'
+// Local import (not global) so only this page downloads Ant Design
+import { Select as ASelect, Slider as ASlider } from 'ant-design-vue'
 import {
   CheckCircleFilled,
   RightOutlined,

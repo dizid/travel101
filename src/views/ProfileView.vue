@@ -5,6 +5,8 @@ import { useUserStore } from '@stores/userStore'
 import { useAuth } from '@composables/useAuth'
 import type { TravelStyle, Interest, GroupType, BudgetLevel, TripType, AgeGroup, CourseInterest, DietaryRestriction } from '@/types'
 import { countryOptions, filterCountry } from '@/data/countries'
+// Local import (not global) so only this page downloads Ant Design
+import { Select as ASelect } from 'ant-design-vue'
 import {
   UserOutlined,
   CheckCircleFilled,

@@ -38,7 +38,9 @@ export default defineConfig(({ isSsrBuild }) => ({
         ...(isSsrBuild ? {} : {
           manualChunks: {
             'vendor-vue': ['vue', 'vue-router', 'pinia'],
-            'vendor-ui': ['ant-design-vue', '@ant-design/icons-vue'],
+            // Icons only: ant-design-vue is left out so it lands in the chunks of the 3 views
+            // that import it, instead of loading on every page (home was 243 KB heavier)
+            'vendor-ui': ['@ant-design/icons-vue'],
           },
         }),
       },
