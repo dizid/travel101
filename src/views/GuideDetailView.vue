@@ -11,6 +11,7 @@ import BreadcrumbNav from '@/components/ui/BreadcrumbNav.vue'
 import LoadingSpinner from '@/components/ui/LoadingSpinner.vue'
 import NewsletterSignup from '@/components/ui/NewsletterSignup.vue'
 import { useGuides, type Guide } from '@/composables/useGuides'
+import { useSSGState } from '@/lib/ssg-state'
 import { renderMarkdown, extractTOC } from '@/utils/markdown'
 import {
   generateBreadcrumbSchema,
@@ -23,8 +24,12 @@ const route = useRoute()
 const router = useRouter()
 const { fetchBySlug, fetchAll, getCategoryConfig, formatDate, loading, error } = useGuides()
 
-const guide = ref<Guide | null>(null)
-const relatedGuides = ref<Guide[]>([])
+// The prerender stores the guide it rendered in the page; the browser starts from it
+// instead of fetching it again (the content used to vanish for ~2 s while it re-fetched).
+const ssg = useSSGState()
+const prerendered = ssg.take<{ guide: Guide; related: Guide[] }>(`guide:${route.params.slug as string}`)
+const guide = ref<Guide | null>(prerendered?.guide ?? null)
+const relatedGuides = ref<Guide[]>(prerendered?.related ?? [])
 const showTOC = ref(false)
 
 // SEO — reactive, updates automatically when guide loads
@@ -105,6 +110,7 @@ async function loadGuide() {
       return bMatch - aMatch
     })
     .slice(0, 3)
+  ssg.put(`guide:${result.slug}`, { guide: result, related: relatedGuides.value })
 }
 
 function scrollToSection(id: string) {
@@ -120,7 +126,13 @@ onServerPrefetch(() => loadGuide())
 
 onMounted(() => {
   // Skip re-fetch if SSG already populated the data
-  if (!guide.value) loadGuide()
+  if (!guide.value) {
+    loadGuide()
+  } else if (prerendered) {
+    // Content came from the prerender; still send the request the page used to make,
+    // because the API counts guide views on it. The answer isn't needed.
+    fetch(`/api/guides/${encodeURIComponent(slug.value)}`).catch(() => {})
+  }
 })
 
 watch(slug, () => loadGuide())

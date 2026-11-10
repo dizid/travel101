@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useSSGState } from '@/lib/ssg-state'
 import BodyTeleport from '@/components/common/BodyTeleport.vue'
 import { ref, computed, onMounted, onServerPrefetch, watch } from 'vue'
 import { useRoute, RouterLink } from 'vue-router'
@@ -41,6 +42,14 @@ import { useGuides, type Guide } from '@/composables/useGuides'
 
 const route = useRoute()
 const countryStore = useCountryStore()
+
+// The prerender stores the attraction it rendered in the page; the browser starts from it,
+// so the content no longer vanishes while onMounted fetches the fresh (personalised) copy.
+const ssg = useSSGState()
+const prerenderedAttraction = ssg.take<NonNullable<typeof countryStore.currentAttraction>>(
+  `attraction:${route.params.id as string}`,
+)
+if (prerenderedAttraction) countryStore.currentAttraction = prerenderedAttraction
 const userStore = useUserStore()
 const { getPersonalizedIntro } = useAI()
 const { toggleFavorite, isFavorite } = useFavorites()
@@ -66,6 +75,7 @@ async function loadAttraction() {
   if (result?.matchInfo) {
     matchInfo.value = result.matchInfo
   }
+  if (result?.attraction) ssg.put(`attraction:${slug}`, result.attraction)
 }
 
 // SSG: pre-fetch data so HTML renders with real content

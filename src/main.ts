@@ -2,6 +2,7 @@ import { ViteSSG } from 'vite-ssg'
 import { createPinia } from 'pinia'
 import App from './App.vue'
 import routes from './router/routes'
+import { SSG_STATE } from './lib/ssg-state'
 
 // Fonts, served from our own domain (was Google Fonts: a render-blocking request to
 // another server). Same families and weights as before; each file only downloads
@@ -40,7 +41,9 @@ import './styles/main.css'
 // - the visitor has no saved profile/checklist/countdown in this browser (those change the
 //   first render: personalised header, home and visa checklist).
 // Everything else keeps rendering fresh, exactly as before.
-const NO_HYDRATION_ROUTES = /^\/(guides|attractions|festivals|heritage|visa-countdown)(\/|$)/
+// List pages still fetch their data in the browser. Detail pages (guide, attraction,
+// festival, heritage) get their data from the prerender (src/lib/ssg-state.ts) and hydrate.
+const NO_HYDRATION_ROUTES = /^\/((guides|attractions|festivals|heritage)$|visa-countdown$)/
 const PERSONAL_STORAGE_KEYS = ['user-profile', 'visa-checklist', 'happyroam_visa_countdown']
 
 function shouldHydrate(): boolean {
@@ -71,9 +74,11 @@ export const createApp = ViteSSG(
     },
   },
   // Custom setup function
-  ({ app }) => {
+  ({ app, initialState }) => {
     // Pinia store
     app.use(createPinia())
+    // Per-page data the prerender hands to the browser (see src/lib/ssg-state.ts)
+    app.provide(SSG_STATE, initialState)
   },
   // See shouldHydrate() above
   { hydration: shouldHydrate() },

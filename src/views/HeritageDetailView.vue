@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useSSGState } from '@/lib/ssg-state'
 import { ref, computed, onMounted, onServerPrefetch, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useApi } from '@/composables/useApi'
@@ -28,8 +29,12 @@ const router = useRouter()
 const { get } = useApi()
 
 // State
-const site = ref<HeritageDetail | null>(null)
-const loading = ref(true)
+// The prerender stores the site it rendered in the page; the browser starts from it
+// instead of fetching it again (the content used to vanish for ~2 s while it re-fetched).
+const ssg = useSSGState()
+const prerendered = ssg.take<HeritageDetail>(`heritage:${route.params.slug as string}`)
+const site = ref<HeritageDetail | null>(prerendered ?? null)
+const loading = ref(!prerendered)
 const error = ref<string | null>(null)
 const activeTab = ref<'overview' | 'history' | 'tips' | 'nearby'>('overview')
 
@@ -115,6 +120,7 @@ async function fetchSite() {
       const raw = getSSGHeritage(slug)
       if (raw) {
         site.value = raw as HeritageDetail
+        ssg.put(`heritage:${slug}`, raw)
       }
       return
     }
@@ -178,7 +184,17 @@ onServerPrefetch(() => fetchSite())
 
 onMounted(() => {
   // Skip re-fetch if SSG already populated the data
-  if (!site.value) fetchSite()
+  if (!site.value) {
+    fetchSite()
+  } else if (prerendered) {
+    // Quietly refresh what the prerender showed, without the loading screen
+    const slug = route.params.slug as string
+    get<{ site: HeritageDetail }>(`/heritage/${slug}`)
+      .then((response) => {
+        if (response?.site && route.params.slug === slug) site.value = response.site
+      })
+      .catch(() => {})
+  }
 })
 </script>
 

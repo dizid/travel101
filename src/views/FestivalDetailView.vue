@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useSSGState } from '@/lib/ssg-state'
 import { ref, computed, onMounted, onServerPrefetch, watch } from 'vue'
 import { useRoute, useRouter, RouterLink } from 'vue-router'
 import { useFestivals } from '@/composables/useFestivals'
@@ -34,11 +35,15 @@ const {
   getMonthName,
 } = useFestivals()
 
-const festival = ref<UpcomingFestival | null>(null)
+// The prerender stores the festival it rendered in the page; the browser starts from it
+// instead of fetching it again (the content used to vanish for ~2 s while it re-fetched).
+const ssg = useSSGState()
+const prerendered = ssg.take<{ festival: UpcomingFestival; related: Guide[] }>(`festival:${route.params.slug as string}`)
+const festival = ref<UpcomingFestival | null>(prerendered?.festival ?? null)
 
 // Related guides
 const { fetchAll: fetchAllGuides, getCategoryConfig: getGuideCategoryConfig } = useGuides()
-const relatedGuides = ref<Guide[]>([])
+const relatedGuides = ref<Guide[]>(prerendered?.related ?? [])
 
 // SEO: Event structured data
 const eventSchema = computed<EventSchema | null>(() => {
@@ -112,6 +117,7 @@ async function loadFestival() {
       return (priority[b.category] || 0) - (priority[a.category] || 0)
     })
     .slice(0, 2)
+  ssg.put(`festival:${slug}`, { festival: data, related: relatedGuides.value })
 }
 
 // Computed helpers
@@ -172,7 +178,19 @@ watch(() => route.params.slug, () => {
 
 onMounted(() => {
   // Skip re-fetch if SSG already populated the data
-  if (!festival.value) loadFestival()
+  if (!festival.value) {
+    loadFestival()
+  } else if (prerendered) {
+    // Quietly refresh what the prerender showed (dates and "starts in N days" are
+    // computed when the API answers), without the loading screen.
+    const slug = route.params.slug as string
+    fetch(`/api/festivals/${encodeURIComponent(slug)}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((fresh: UpcomingFestival | null) => {
+        if (fresh && route.params.slug === slug) festival.value = fresh
+      })
+      .catch(() => {})
+  }
 })
 </script>
 
