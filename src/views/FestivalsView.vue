@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useSSGState } from '@/lib/ssg-state'
 import { ref, computed, onMounted, onServerPrefetch, watch } from 'vue'
 import { useFestivals } from '@/composables/useFestivals'
 import { useGeolocation } from '@/composables/useGeolocation'
@@ -44,9 +45,13 @@ useBreadcrumbs([
 ])
 
 // State
-const festivals = ref<Festival[]>([])
+// The prerender stores the list it rendered in the page; the browser starts from it
+// instead of an empty list (the cards used to vanish for ~1 s while it re-fetched).
+const ssg = useSSGState()
+const prerendered = ssg.take<{ festivals: Festival[]; total: number }>('festivals-list')
+const festivals = ref<Festival[]>(prerendered?.festivals ?? [])
 const upcomingFestivals = ref<UpcomingFestival[]>([])
-const total = ref(0)
+const total = ref(prerendered?.total ?? 0)
 
 // Filter state
 const searchQuery = ref('')
@@ -107,10 +112,11 @@ const queryParams = computed(() => {
   return params
 })
 
-async function fetchFestivals() {
+// quiet: refresh what's already on screen without the loading skeleton
+async function fetchFestivals(quiet = false) {
   try {
     if (activeTab.value === 'upcoming') {
-      const upcoming = await fetchUpcoming(180)
+      const upcoming = await fetchUpcoming(180, quiet)
       upcomingFestivals.value = upcoming
       festivals.value = upcoming
       total.value = upcoming.length
@@ -128,7 +134,7 @@ async function fetchFestivals() {
         hidden: hiddenGemsOnly.value || activeTab.value === 'hidden',
         month: selectedMonth.value || undefined,
         search: searchQuery.value.trim() || undefined,
-      })
+      }, quiet)
       festivals.value = result.festivals
       total.value = result.total
     }
@@ -204,13 +210,16 @@ watch([queryParams, activeTab], () => {
 }, { deep: true })
 
 // SSG: pre-fetch festivals so list renders with real content
-onServerPrefetch(() => fetchFestivals())
+onServerPrefetch(async () => {
+  await fetchFestivals()
+  ssg.put('festivals-list', { festivals: festivals.value, total: total.value })
+})
 
 onMounted(() => {
-  fetchFestivals()
+  fetchFestivals(!!prerendered)
   fetchFilterOptions()
   // Also fetch upcoming for the banner (client-only)
-  fetchUpcoming(90).then(upcoming => {
+  fetchUpcoming(90, !!prerendered).then(upcoming => {
     upcomingFestivals.value = upcoming
   })
 })
@@ -412,7 +421,7 @@ onMounted(() => {
         <div class="text-5xl mb-4">😕</div>
         <p class="text-gray-600">{{ error }}</p>
         <button
-          @click="fetchFestivals"
+          @click="fetchFestivals()"
           class="mt-4 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
         >
           Try Again

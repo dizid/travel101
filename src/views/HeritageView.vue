@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useSSGState } from '@/lib/ssg-state'
 import { ref, computed, onMounted, onServerPrefetch, watch } from 'vue'
 import { useApi } from '@/composables/useApi'
 import type { HeritageSite, HeritageImage } from '@/types'
@@ -23,11 +24,17 @@ useBreadcrumbs([
 ])
 
 // State
-const sites = ref<(HeritageSite & { primaryImage?: HeritageImage; imageCount?: number; eventCount?: number })[]>([])
-const loading = ref(true)
+type HeritageListItem = HeritageSite & { primaryImage?: HeritageImage; imageCount?: number; eventCount?: number }
+
+// The prerender stores the list it rendered in the page; the browser starts from it
+// instead of an empty list (the cards used to vanish for ~1.5 s while it re-fetched).
+const ssg = useSSGState()
+const prerendered = ssg.take<{ sites: HeritageListItem[]; total: number; hasMore: boolean }>('heritage-list')
+const sites = ref<HeritageListItem[]>(prerendered?.sites ?? [])
+const loading = ref(!prerendered)
 const error = ref<string | null>(null)
-const total = ref(0)
-const hasMore = ref(false)
+const total = ref(prerendered?.total ?? 0)
+const hasMore = ref(prerendered?.hasMore ?? false)
 
 // Filters
 const selectedEra = ref<string | null>(null)
@@ -77,8 +84,9 @@ const queryParams = computed(() => {
   return params
 })
 
-async function fetchSites() {
-  loading.value = true
+// quiet: refresh what's already on screen without the loading skeleton
+async function fetchSites(quiet = false) {
+  if (!quiet) loading.value = true
   error.value = null
 
   try {
@@ -89,6 +97,7 @@ async function fetchSites() {
       sites.value = list
       total.value = list.length
       hasMore.value = false
+      ssg.put('heritage-list', { sites: list, total: list.length, hasMore: false })
       return
     }
 
@@ -161,7 +170,7 @@ watch([queryParams], () => {
 onServerPrefetch(() => fetchSites())
 
 onMounted(() => {
-  fetchSites()
+  fetchSites(!!prerendered)
   fetchFilterOptions()
 })
 </script>
@@ -294,7 +303,7 @@ onMounted(() => {
         <span class="text-4xl mb-4 block">😕</span>
         <p class="text-gray-600 mb-4">{{ error }}</p>
         <button
-          @click="fetchSites"
+          @click="fetchSites()"
           class="px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors"
         >
           Try Again

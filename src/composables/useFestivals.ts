@@ -71,10 +71,11 @@ function buildUrl(base: string, params: Record<string, string | number | boolean
 
 export function useFestivals() {
   // Fetch upcoming festivals (within N days)
-  async function fetchUpcoming(days = 60): Promise<UpcomingFestival[]> {
+  // quiet: don't flip the shared loading flag (refreshing a list that's already shown)
+  async function fetchUpcoming(days = 60, quiet = false): Promise<UpcomingFestival[]> {
     const festivals = await fetchApi<UpcomingFestival[]>(
       buildUrl('/api/festivals/upcoming', { days }),
-      { errorMessage: 'Failed to fetch upcoming festivals', extractKey: 'festivals', defaultValue: [] }
+      { setLoading: !quiet, errorMessage: 'Failed to fetch upcoming festivals', extractKey: 'festivals', defaultValue: [] }
     )
     upcomingFestivals.value = festivals
     return festivals
@@ -99,7 +100,8 @@ export function useFestivals() {
   }
 
   // Fetch festivals with filters — SSG-aware
-  async function fetchFiltered(filters: FestivalFilters): Promise<{ festivals: Festival[]; total: number; hasMore: boolean }> {
+  // quiet: don't flip the shared loading flag (refreshing a list that's already shown)
+  async function fetchFiltered(filters: FestivalFilters, quiet = false): Promise<{ festivals: Festival[]; total: number; hasMore: boolean }> {
     // During SSG: return all festivals (no filtering needed for initial render)
     if (import.meta.env.SSR) {
       const { getSSGFestivalList } = await import('@/lib/ssg-data')
@@ -118,7 +120,7 @@ export function useFestivals() {
 
     const data = await fetchApi<{ festivals: Festival[]; total?: number; count?: number; hasMore?: boolean }>(
       url,
-      { errorMessage: 'Failed to fetch festivals', defaultValue: { festivals: [] } }
+      { setLoading: !quiet, errorMessage: 'Failed to fetch festivals', defaultValue: { festivals: [] } }
     )
 
     return {

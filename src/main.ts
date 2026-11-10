@@ -41,10 +41,10 @@ import './styles/main.css'
 // - the visitor has no saved profile/checklist/countdown in this browser (those change the
 //   first render: personalised header, home and visa checklist).
 // Everything else keeps rendering fresh, exactly as before.
-// These list pages still fetch their data in the browser. Detail pages (guide, attraction,
-// festival, heritage) and /attractions get their data from the prerender
-// (src/lib/ssg-state.ts) and hydrate.
-const NO_HYDRATION_ROUTES = /^\/((guides|festivals|heritage)$|visa-countdown$)/
+// /guides still fetches its list in the browser. Detail pages (guide, attraction, festival,
+// heritage) and the /attractions, /festivals and /heritage lists get their data from the
+// prerender (src/lib/ssg-state.ts) and hydrate.
+const NO_HYDRATION_ROUTES = /^\/(guides$|visa-countdown$)/
 const PERSONAL_STORAGE_KEYS = ['user-profile', 'visa-checklist', 'happyroam_visa_countdown']
 
 function shouldHydrate(): boolean {

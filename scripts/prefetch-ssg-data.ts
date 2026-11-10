@@ -289,7 +289,10 @@ export async function prefetchSSGData(): Promise<PrefetchResult> {
       heritageList.push({
         ...a,
         heritageMetadata: a.metadata || {},
-        primaryImage: (imagesByAttraction[a.id] || []).find((img: { is_primary: boolean }) => img.is_primary) || null,
+        // Same pick and shape as GET /api/heritage: first image by is_primary DESC,
+        // display_order (the query's order), camelCase. It was the raw snake_case row, so
+        // HeritageCard (primaryImage.imageUrl) rendered the prerendered list without images.
+        primaryImage: imagesByAttraction[a.id]?.[0] ? transformHeritageImage(imagesByAttraction[a.id][0]) : null,
         imageCount: (imagesByAttraction[a.id] || []).length,
         eventCount: (eventsByAttraction[a.id] || []).length,
       })

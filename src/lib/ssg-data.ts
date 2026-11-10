@@ -108,7 +108,13 @@ export function getSSGAttractionFirstPage(): { attractions: any[]; total: number
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function getSSGHeritageList(): any[] {
-  return loadJSON('heritage-list.json') || []
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const list: any[] = loadJSON('heritage-list.json') || []
+  // Same order as GET /api/heritage without filters: UNESCO World Heritage sites first,
+  // then by name. The file is already sorted by name (SQL), and sort() is stable.
+  const rank = (site: { metadata?: { unescoStatus?: string } }) =>
+    site.metadata?.unescoStatus === 'world_heritage_site' ? 0 : 1
+  return [...list].sort((a, b) => rank(a) - rank(b))
 }
 
 /**
