@@ -10,6 +10,10 @@ import {
   LockOutlined,
   RightOutlined,
 } from '@ant-design/icons-vue'
+import { useRouteSeo } from '@/composables/useSeo'
+
+// Own title, description and canonical for this prerendered page
+useRouteSeo('setupGuide')
 
 const userStore = useUserStore()
 const isPro = computed(() => userStore.isPro)

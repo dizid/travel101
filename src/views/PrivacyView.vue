@@ -1,4 +1,9 @@
 <script setup lang="ts">
+import { useRouteSeo } from '@/composables/useSeo'
+
+// Own title, description and canonical for this prerendered page
+useRouteSeo('privacy')
+
 const lastUpdated = 'January 2026'
 </script>
 

@@ -3,6 +3,10 @@ import { ref, computed } from 'vue'
 import { useCountryStore } from '@stores/countryStore'
 import WarningCard from '@components/features/WarningCard.vue'
 import type { WarningCategory } from '@/types'
+import { useRouteSeo } from '@/composables/useSeo'
+
+// Own title, description and canonical for this prerendered page
+useRouteSeo('warnings')
 
 const countryStore = useCountryStore()
 

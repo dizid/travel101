@@ -32,6 +32,10 @@ import {
   BulbOutlined,
   CloseOutlined,
 } from '@ant-design/icons-vue'
+import { useRouteSeo } from '@/composables/useSeo'
+
+// Own title, description and canonical for this prerendered page
+useRouteSeo('itinerary')
 
 const route = useRoute()
 const router = useRouter()

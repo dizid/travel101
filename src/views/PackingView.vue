@@ -12,6 +12,10 @@ import {
 } from '@ant-design/icons-vue'
 import ProBadge from '@components/ui/ProBadge.vue'
 import ProGate from '@components/ui/ProGate.vue'
+import { useRouteSeo } from '@/composables/useSeo'
+
+// Own title, description and canonical for this prerendered page
+useRouteSeo('packing')
 
 interface PackingItem {
   item: string

@@ -118,7 +118,7 @@ const freeFeatures = [
   'Visa Wizard, TDAC, 90-Day, Visa Countdown',
   'Smart Match — view your matches',
   'AI Chat & tools — 1 use/day per feature',
-  'Onward Ticket — $0.99 per booking',
+  'Onward Ticket — $12 per booking',
   'Cost Calculator (basic) + Province Safety',
   '211-phrase Phrasebook, Medical, Emergency',
 ]

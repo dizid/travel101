@@ -11,6 +11,10 @@ import {
   ShoppingOutlined,
   LockOutlined,
 } from '@ant-design/icons-vue'
+import { useRouteSeo } from '@/composables/useSeo'
+
+// Own title, description and canonical for this prerendered page
+useRouteSeo('costCalculator')
 
 const userStore = useUserStore()
 const isPro = computed(() => userStore.isPro)

@@ -431,7 +431,7 @@ export const pageMeta: Record<string, PageMeta> = {
   },
   tdac: {
     title: 'Thailand Arrival Card Guide',
-    description: 'Step-by-step guide to filling out Thailand\'s TM6 arrival and departure card. What to write, common mistakes, and tips.',
+    description: 'How to fill in the Thailand Digital Arrival Card (TDAC), the online form that replaced the paper TM6: when to submit, every field explained, and common mistakes.',
     url: '/tdac',
   },
   warnings: {
@@ -501,7 +501,7 @@ export const pageMeta: Record<string, PageMeta> = {
   },
   people: {
     title: 'People & Culture in Thailand',
-    description: 'Meet the diverse communities of Thailand — locals, expats, digital nomads, and travelers living the Thai experience.',
+    description: 'Meet the people of Chiang Mai: Thai locals, Western expats, digital nomads and travelers, and what draws each of them to the city.',
     url: '/people',
   },
   contact: {
@@ -533,6 +533,16 @@ export const pageMeta: Record<string, PageMeta> = {
     title: 'Thai Phrasebook — 200+ Essential Phrases',
     description: 'Learn 200+ essential Thai phrases for travel. Greetings, ordering food, bargaining, directions, and emergencies — with Thai script and phonetic pronunciation.',
     url: '/phrasebook',
+  },
+  privacy: {
+    title: 'Privacy Policy',
+    description: 'How HappyRoam Thailand handles your data: what we collect, how we use it, cookies, the third-party services involved, and your rights, including deletion.',
+    url: '/privacy',
+  },
+  terms: {
+    title: 'Terms of Service',
+    description: 'The terms for using HappyRoam Thailand: what the service offers, your responsibilities, the Pro subscription, and the limits of our travel and visa information.',
+    url: '/terms',
   },
   visaCountdown: {
     title: 'Visa Countdown Timer',

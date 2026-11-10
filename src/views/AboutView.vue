@@ -1,5 +1,9 @@
 <script setup lang="ts">
 import { RouterLink } from 'vue-router'
+import { useRouteSeo } from '@/composables/useSeo'
+
+// Own title, description and canonical for this prerendered page
+useRouteSeo('about')
 
 const stats = [
   {
