@@ -1,13 +1,12 @@
 # HappyRoam Thailand
 
-> HappyRoam (https://happyroam.travel) is a Thailand-only travel guide and planner: 400+ places, festivals and UNESCO heritage sites, visa and arrival-card help, onward tickets, safety and medical information, plus AI tools for itineraries, packing and travel questions. Most of it is free; Pro ($10/month, 7-day free trial) unlocks unlimited AI use. Made by Dizid (https://dizid.com).
+> HappyRoam (https://happyroam.travel) is a Thailand-only travel guide and planner: 400+ places, festivals and UNESCO heritage sites, visa and arrival-card help, safety and medical information, plus AI tools for itineraries, packing and travel questions. Most of it is free; Pro ($10/month, 7-day free trial) unlocks unlimited AI use. Made by Dizid (https://dizid.com).
 
 ## Visa and entry
 - [Visa wizard](https://happyroam.travel/visa): find the right Thailand visa (visa exemption, tourist, DTV digital nomad, retirement, Elite) with requirements and timelines.
 - [TDAC guide](https://happyroam.travel/tdac): how to fill in the Thailand Digital Arrival Card, the online form that replaced the paper TM6; submit within 72 hours before arrival at tdac.immigration.go.th.
 - [90-day reporting](https://happyroam.travel/90-day): the TM47 report for long stays, deadlines, online reporting and immigration offices.
 - [Visa countdown](https://happyroam.travel/visa-countdown): track your permitted stay and reporting dates.
-- [Onward ticket](https://happyroam.travel/onward-ticket): a verified onward flight reservation (real airline PNR) as proof of onward travel for airlines and Thai immigration. $12 service fee per booking; Pro includes 2 bookings a month.
 
 ## Places and culture
 - [Attractions](https://happyroam.travel/attractions): 400+ beaches, temples, islands and hidden gems, each with tips on timing, transport, costs and crowds. URL pattern: /attractions/<slug>.
