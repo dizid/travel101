@@ -228,6 +228,10 @@ export async function prefetchSSGData(): Promise<PrefetchResult> {
       sql`SELECT * FROM heritage_events ORDER BY attraction_id, sort_order, event_year NULLS LAST`,
       sql`SELECT * FROM thai_festivals ORDER BY month_typical, name`,
       sql`SELECT * FROM travel_guides WHERE is_published = true ORDER BY published_at DESC`,
+      // /attractions shows the API's first page (netlify/functions/attractions.mts, no
+      // filters): same query, so the prerendered list is exactly what the browser shows
+      sql`SELECT * FROM attractions ORDER BY (CASE WHEN province IS NULL THEN 1 ELSE 0 END), name LIMIT 50`,
+      sql`SELECT COUNT(*) as total FROM attractions`,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     ]) as any[][]
   } catch (err) {
@@ -245,6 +249,8 @@ export async function prefetchSSGData(): Promise<PrefetchResult> {
     allHeritageEvents,
     allFestivals,
     allGuides,
+    attractionsFirstPage,
+    attractionsCount,
   ] = results
 
   // Group related data by attraction_id for fast lookup
@@ -322,6 +328,10 @@ export async function prefetchSSGData(): Promise<PrefetchResult> {
   writeJSON('festivals.json', festivalsBySlug)
   writeJSON('guides.json', guidesBySlug)
   writeJSON('attractions-list.json', attractionList)
+  writeJSON('attractions-first-page.json', {
+    attractions: attractionsFirstPage,
+    total: parseInt(attractionsCount[0]?.total ?? String(attractionsFirstPage.length), 10),
+  })
   writeJSON('heritage-list.json', heritageList)
   writeJSON('festivals-list.json', festivalList)
   writeJSON('guides-list.json', guideList)

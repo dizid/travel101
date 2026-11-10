@@ -41,9 +41,10 @@ import './styles/main.css'
 // - the visitor has no saved profile/checklist/countdown in this browser (those change the
 //   first render: personalised header, home and visa checklist).
 // Everything else keeps rendering fresh, exactly as before.
-// List pages still fetch their data in the browser. Detail pages (guide, attraction,
-// festival, heritage) get their data from the prerender (src/lib/ssg-state.ts) and hydrate.
-const NO_HYDRATION_ROUTES = /^\/((guides|attractions|festivals|heritage)$|visa-countdown$)/
+// These list pages still fetch their data in the browser. Detail pages (guide, attraction,
+// festival, heritage) and /attractions get their data from the prerender
+// (src/lib/ssg-state.ts) and hydrate.
+const NO_HYDRATION_ROUTES = /^\/((guides|festivals|heritage)$|visa-countdown$)/
 const PERSONAL_STORAGE_KEYS = ['user-profile', 'visa-checklist', 'happyroam_visa_countdown']
 
 function shouldHydrate(): boolean {
@@ -51,6 +52,10 @@ function shouldHydrate(): boolean {
   const renderedFor = document.getElementById('app')?.dataset.ssgRoute
   const path = window.location.pathname.replace(/\/+$/, '') || '/'
   if (renderedFor !== path || NO_HYDRATION_ROUTES.test(path)) return false
+  // Query strings can change the first render (e.g. /attractions?hidden=true filters the
+  // list); only tracking tags are safe.
+  const params = [...new URLSearchParams(window.location.search).keys()]
+  if (params.some(key => !/^(utm_|fbclid$|gclid$|ref$)/.test(key))) return false
   try {
     return PERSONAL_STORAGE_KEYS.every(key => localStorage.getItem(key) === null)
   } catch {

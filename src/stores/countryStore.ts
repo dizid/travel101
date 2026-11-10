@@ -537,11 +537,14 @@ export const useCountryStore = defineStore('country', () => {
     try {
       // During SSG: read from pre-fetched data
       if (import.meta.env.SSR) {
-        const { getSSGAttractionList } = await import('@/lib/ssg-data')
-        const list = getSSGAttractionList()
-        if (list.length) {
-          attractions.value = list.map(transformAttraction)
-          attractionsTotal.value = list.length
+        // The API's first page, not all ~1,100 attractions: prerendering every card made
+        // /attractions a 4.5 MB page that phones laid out for seconds before the app
+        // replaced it with these same 50.
+        const { getSSGAttractionFirstPage } = await import('@/lib/ssg-data')
+        const page = getSSGAttractionFirstPage()
+        if (page.attractions.length) {
+          attractions.value = page.attractions.map(transformAttraction)
+          attractionsTotal.value = page.total
           attractionsLoaded.value = true
         }
         return

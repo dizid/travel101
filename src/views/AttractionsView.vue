@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useSSGState } from '@/lib/ssg-state'
 import { ref, computed, onMounted, onServerPrefetch, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useCountryStore } from '@stores/countryStore'
@@ -51,16 +52,29 @@ function handleEditClick() {
 const { fetchUpcoming, getFestivalEmoji, formatFestivalDate } = useFestivals()
 const upcomingFestivals = ref<UpcomingFestival[]>([])
 
+// The prerender stores the list it rendered (the API's first page) in the page; the
+// browser starts from it instead of an empty list (the cards used to vanish while it
+// re-fetched).
+const ssg = useSSGState()
+const prerenderedList = ssg.take<{ attractions: typeof countryStore.attractions; total: number }>('attractions-list')
+if (prerenderedList && !countryStore.attractionsLoaded) {
+  countryStore.attractions = prerenderedList.attractions
+  countryStore.attractionsTotal = prerenderedList.total
+  countryStore.attractionsLoaded = true
+}
+
 // SSG: pre-fetch attractions so list renders with real content
 onServerPrefetch(async () => {
   if (!countryStore.attractionsLoaded) {
     await countryStore.fetchAttractions()
   }
+  ssg.put('attractions-list', { attractions: countryStore.attractions, total: countryStore.attractionsTotal })
 })
 
-// Client: fetch attractions on mount
+// Client: fetch attractions on mount (also when the list came from the prerender but the
+// visitor has a profile: their list is sorted by match)
 onMounted(async () => {
-  if (!countryStore.attractionsLoaded) {
+  if (!countryStore.attractionsLoaded || (prerenderedList && hasProfile.value)) {
     await countryStore.fetchAttractions({ personalized: hasProfile.value })
   }
   // Fetch upcoming festivals for sidebar (client-only)

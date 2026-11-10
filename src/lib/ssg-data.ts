@@ -84,6 +84,26 @@ export function getSSGAttractionList(): any[] {
 }
 
 /**
+ * The first page of /attractions exactly as the API returns it without filters
+ * (50 rows, province-then-name order, plus the total). The list page prerenders
+ * this instead of all ~1,100 attractions: the browser only ever shows this page.
+ * Older caches without the file fall back to the same order computed here.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function getSSGAttractionFirstPage(): { attractions: any[]; total: number } {
+  const page = loadJSON('attractions-first-page.json')
+  if (page?.attractions) return page
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const list: any[] = getSSGAttractionList()
+  const sorted = [...list].sort((a, b) => {
+    const aNoProvince = a.province ? 0 : 1
+    const bNoProvince = b.province ? 0 : 1
+    return aNoProvince - bNoProvince || String(a.name).localeCompare(String(b.name))
+  })
+  return { attractions: sorted.slice(0, 50), total: list.length }
+}
+
+/**
  * Get all heritage sites for list page.
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

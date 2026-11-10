@@ -253,6 +253,8 @@ The app uses `vite-ssg` for pre-rendering. At build time:
 
 **SSG-aware views**: AttractionsView, AttractionDetailView, FestivalsView, FestivalDetailView, GuidesView, GuideDetailView, HeritageView, HeritageDetailView
 
+**/attractions prerenders only the API's first page** (since 2026-11-10, T-0178): `scripts/prefetch-ssg-data.ts` also writes `attractions-first-page.json` with the same query as `GET /api/attractions` without filters (50 rows, province-then-name, plus the total). Prerendering all ~1,100 cards made a 4.5 MB page that phones spent ~9 s of main-thread work on, while the browser only ever shows these 50. All attraction detail pages are still prerendered and in the sitemap. If you change the API's default order or page size, change the prefetch query too, or the list will reshuffle after load.
+
 ### Hydration (since 2026-11-10, T-0170)
 vite-ssg's default is to throw the prerendered HTML away and render again in the browser (page drawn twice, hero animation replays, phone LCP ~2 s later). `src/main.ts` `shouldHydrate()` turns hydration on only when it's safe:
 - the page was prerendered for this exact path (`onPageRendered` in `vite.config.ts` stamps `data-ssg-route` on `#app`; Netlify's SPA fallback serves the home HTML for `/dashboard`, `/profile`, ...),
