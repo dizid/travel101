@@ -156,7 +156,7 @@ const proFeatures = [
           </div>
 
           <!-- Headline -->
-          <h1 class="text-5xl md:text-7xl lg:text-8xl font-display font-bold text-gray-900 mb-5 animate-slide-up">
+          <h1 class="text-5xl md:text-7xl lg:text-8xl font-display font-bold text-gray-900 mb-5 animate-rise-up">
             Thailand,
             <span class="text-gradient-thai">sorted.</span>
           </h1>

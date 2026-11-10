@@ -220,6 +220,10 @@ export default {
       animation: {
         'fade-in':   'fadeIn 0.3s ease-out',
         'slide-up':  'slideUp 0.4s ease-out',
+        // Home headline: the same slide-up without starting transparent. Phones count the
+        // headline as shown (LCP) only once it's fully visible, so the fade from opacity 0
+        // added ~0.4 s to the home page's load time.
+        'rise-up':   'riseUp 0.4s ease-out',
         'slide-down':'slideDown 0.3s ease-out',
         'scale-in':  'scaleIn 0.2s ease-out',
         'float':     'float 3s ease-in-out infinite',
@@ -232,6 +236,10 @@ export default {
         slideUp: {
           '0%':   { opacity: '0', transform: 'translateY(20px)' },
           '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+        riseUp: {
+          '0%':   { transform: 'translateY(20px)' },
+          '100%': { transform: 'translateY(0)' },
         },
         slideDown: {
           '0%':   { opacity: '0', transform: 'translateY(-10px)' },
