@@ -5,6 +5,7 @@ import {
   setMockNeonResult,
   setMockNeonError,
   resetNeonMocks,
+  getMockNeonQueryLog,
 } from '../__mocks__/neon.js'
 
 // Mock process.env
@@ -275,6 +276,21 @@ describe('sitemap function', () => {
       const context = createMockContext()
 
       await expect(handler(request, context)).rejects.toThrow()
+    })
+  })
+
+  // Heritage sites are pre-built only at /heritage/<slug>; under /attractions/ crawlers got
+  // the home page HTML, so the attractions list must leave them out (T-0233)
+  describe('heritage sites', () => {
+    it('leaves heritage sites out of the /attractions/ list', async () => {
+      const request = createMockRequest({ method: 'GET', url: '/api/sitemap' })
+      await handler(request, createMockContext())
+
+      const attractionsQuery = getMockNeonQueryLog()
+        .map((entry) => entry.query)
+        .find((query) => query.includes("verification_status != 'rejected'"))
+      expect(attractionsQuery).toBeDefined()
+      expect(attractionsQuery).toContain("(place_type IS NULL OR place_type != 'heritage')")
     })
   })
 })

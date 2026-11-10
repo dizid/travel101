@@ -10,11 +10,15 @@ export default async function handler(_req: Request, _context: Context) {
   }
   const sql = neon(databaseUrl)
 
-  // Get all attractions
+  // Get all attractions. Heritage sites live in the same table but have their own
+  // pages at /heritage/<slug> (below); only those are pre-built, so listing them under
+  // /attractions/ too sent crawlers to the home page HTML. Same filter as
+  // scripts/fetch-routes.ts.
   const attractions = await sql`
     SELECT slug, updated_at
     FROM attractions
     WHERE verification_status != 'rejected'
+      AND (place_type IS NULL OR place_type != 'heritage')
     ORDER BY updated_at DESC
   `
 
