@@ -11,6 +11,7 @@ declare module 'vite' {
       formatting?: 'minify' | 'prettify' | 'none'
       concurrency?: number
       includedRoutes?: (paths: string[]) => string[] | Promise<string[]>
+      onPageRendered?: (route: string, renderedHTML: string) => string | Promise<string>
     }
   }
 }
@@ -49,7 +50,8 @@ export default defineConfig(({ isSsrBuild }) => ({
   // vite-ssg options for static site generation
   ssgOptions: {
     script: 'async',
-    formatting: 'minify',
+    // No HTML minifying: it strips Vue's comment markers and whitespace, which breaks hydration
+    formatting: 'none',
     concurrency: 5,
     // Fetch all routes and pre-fetch content data for SSR rendering
     async includedRoutes(_paths: string[]) {
@@ -82,6 +84,15 @@ export default defineConfig(({ isSsrBuild }) => ({
       const allRoutes = [...staticRoutes, ...dynamicRoutes].filter(r => !skipRoutes.has(r))
       console.log(`[vite-ssg] ${staticRoutes.length} static + ${dynamicRoutes.length} dynamic = ${allRoutes.length} total routes`)
       return allRoutes
+    },
+    // Stamp each prerendered page with the route it was rendered for. src/main.ts only
+    // hydrates when this matches the URL; Netlify's SPA fallback serves the home HTML for
+    // routes that aren't prerendered (/dashboard, /profile, ...), and those must render fresh.
+    onPageRendered(route: string, renderedHTML: string) {
+      return renderedHTML.replace(
+        '<div id="app" data-server-rendered="true">',
+        `<div id="app" data-server-rendered="true" data-ssg-route="${route.replace(/"/g, '&quot;')}">`,
+      )
     },
   },
 }))

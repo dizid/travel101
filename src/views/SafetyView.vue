@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import BodyTeleport from '@/components/common/BodyTeleport.vue'
 import { ref, computed, onMounted, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import { useUserStore } from '@stores/userStore'
@@ -484,7 +485,7 @@ onMounted(() => {
     </div>
 
     <!-- Report Modal -->
-    <Teleport to="body">
+    <BodyTeleport>
       <div
         v-if="showReportModal"
         class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
@@ -604,7 +605,7 @@ onMounted(() => {
           </form>
         </div>
       </div>
-    </Teleport>
+    </BodyTeleport>
   </div>
 </template>
 

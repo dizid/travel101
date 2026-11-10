@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import BodyTeleport from '@/components/common/BodyTeleport.vue'
 import { ref, watch, computed } from 'vue'
 import { useUserStore } from '@stores/userStore'
 import { useAuth } from '@/composables/useAuth'
@@ -149,7 +150,7 @@ function handleKeydown(e: KeyboardEvent) {
 </script>
 
 <template>
-  <Teleport to="body">
+  <BodyTeleport>
     <Transition
       enter-active-class="transition duration-200 ease-out"
       enter-from-class="opacity-0"
@@ -332,5 +333,5 @@ function handleKeydown(e: KeyboardEvent) {
         </Transition>
       </div>
     </Transition>
-  </Teleport>
+  </BodyTeleport>
 </template>

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import BodyTeleport from '@/components/common/BodyTeleport.vue'
 import { ref, computed, onMounted, onServerPrefetch, watch } from 'vue'
 import { useRoute, RouterLink } from 'vue-router'
 import { useCountryStore } from '@stores/countryStore'
@@ -931,7 +932,7 @@ const gradientClass = computed(() => {
     />
 
     <!-- Match Score Share Modal -->
-    <Teleport to="body">
+    <BodyTeleport>
       <Transition
         enter-active-class="transition duration-200 ease-out"
         enter-from-class="opacity-0"
@@ -961,6 +962,6 @@ const gradientClass = computed(() => {
           </div>
         </div>
       </Transition>
-    </Teleport>
+    </BodyTeleport>
   </div>
 </template>

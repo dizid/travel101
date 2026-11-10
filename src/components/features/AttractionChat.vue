@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import BodyTeleport from '@/components/common/BodyTeleport.vue'
 import { ref, computed, watch, nextTick } from 'vue'
 import { useAI } from '@/composables/useAI'
 import { useUserStore } from '@/stores/userStore'
@@ -179,7 +180,7 @@ watch(() => props.isOpen, (isOpen) => {
 </script>
 
 <template>
-  <Teleport to="body">
+  <BodyTeleport>
     <Transition name="chat-backdrop">
       <div
         v-if="isOpen"
@@ -326,7 +327,7 @@ watch(() => props.isOpen, (isOpen) => {
         </div>
       </div>
     </Transition>
-  </Teleport>
+  </BodyTeleport>
 </template>
 
 <style scoped>

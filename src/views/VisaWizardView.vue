@@ -347,7 +347,9 @@ watch(
             <label class="block text-sm font-medium text-gray-700 mb-3">
               What's your nationality?
             </label>
+            <!-- Fixed id: otherwise Ant generates a different one on the server and in the browser -->
             <a-select
+              id="visa-nationality"
               v-model:value="wizardState.nationality"
               placeholder="Type to search your country..."
               class="w-full"

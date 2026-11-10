@@ -253,6 +253,13 @@ The app uses `vite-ssg` for pre-rendering. At build time:
 
 **SSG-aware views**: AttractionsView, AttractionDetailView, FestivalsView, FestivalDetailView, GuidesView, GuideDetailView, HeritageView, HeritageDetailView
 
+### Hydration (since 2026-11-10, T-0170)
+vite-ssg's default is to throw the prerendered HTML away and render again in the browser (page drawn twice, hero animation replays, phone LCP ~2 s later). `src/main.ts` `shouldHydrate()` turns hydration on only when it's safe:
+- the page was prerendered for this exact path (`onPageRendered` in `vite.config.ts` stamps `data-ssg-route` on `#app`; Netlify's SPA fallback serves the home HTML for `/dashboard`, `/profile`, ...),
+- the route isn't guides/attractions/festivals/heritage (they fetch their data again on the client, so the first client render can't match) or `/visa-countdown` (today's date in the form),
+- the browser has no `user-profile`, `visa-checklist` or `happyroam_visa_countdown` in localStorage (those change the first render).
+Rules that keep it working: `ssgOptions.formatting` must stay `'none'` (minify strips Vue's comment markers → every page mismatches); use `<BodyTeleport>` (`src/components/common/BodyTeleport.vue`), never a bare `<Teleport to="body">` (vite-ssg doesn't write teleported HTML, and hydrating one wipes the whole app); don't read localStorage/dates/random ids in a component's first render on a hydrated page (do it in `onMounted`, or add the key to `PERSONAL_STORAGE_KEYS`). To check: build, serve `dist`, and compare the prerendered `h1` node with the one after load (same node = hydrated); a production build logs "Hydration completed but contains mismatches." on any mismatch.
+
 ## Key Patterns
 
 **Composables**: Logic separation - useApi for HTTP, useAI for AI calls with caching, useMatcher for weighted scoring (interests 3x, styles 2.5x, budget 2x)

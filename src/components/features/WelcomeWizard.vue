@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import BodyTeleport from '@/components/common/BodyTeleport.vue'
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useUserStore } from '@stores/userStore'
 import type { TripType, TravelStyle, GroupType } from '@/types'
@@ -111,7 +112,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <Teleport to="body">
+  <BodyTeleport>
     <Transition name="wizard-backdrop">
       <div
         v-if="isOpen"
@@ -294,7 +295,7 @@ onBeforeUnmount(() => {
         </div>
       </div>
     </Transition>
-  </Teleport>
+  </BodyTeleport>
 </template>
 
 <style scoped>

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import BodyTeleport from '@/components/common/BodyTeleport.vue'
 import { ref, onMounted, onUnmounted } from 'vue'
 import { CloseOutlined, GiftOutlined, CheckCircleFilled } from '@ant-design/icons-vue'
 
@@ -107,7 +108,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <Teleport to="body">
+  <BodyTeleport>
     <Transition
       enter-active-class="transition duration-300 ease-out"
       enter-from-class="opacity-0"
@@ -231,5 +232,5 @@ onUnmounted(() => {
         </Transition>
       </div>
     </Transition>
-  </Teleport>
+  </BodyTeleport>
 </template>

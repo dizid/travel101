@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import BodyTeleport from '@/components/common/BodyTeleport.vue'
 import { useSubscription } from '@/composables/useSubscription'
 import {
   CrownFilled,
@@ -33,7 +34,7 @@ async function handleUpgrade() {
 </script>
 
 <template>
-  <Teleport to="body">
+  <BodyTeleport>
     <!-- Backdrop -->
     <Transition name="modal-backdrop">
       <div
@@ -121,7 +122,7 @@ async function handleUpgrade() {
         </div>
       </div>
     </Transition>
-  </Teleport>
+  </BodyTeleport>
 </template>
 
 <style scoped>

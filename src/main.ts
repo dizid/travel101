@@ -29,6 +29,32 @@ import './styles/main.css'
 // Ant Design Vue is NOT registered globally: only 3 views use it (a-select, a-slider,
 // a-date-picker) and import it locally, so the home and other pages don't download it.
 
+// Hydrate (reuse the prerendered HTML) instead of vite-ssg's default of throwing it away
+// and rendering again, which draws the page twice and replays the hero animation ~2 s
+// after the page first shows on phones. Only when:
+// - this HTML was prerendered for this exact path (Netlify serves the home HTML as SPA
+//   fallback for routes that aren't prerendered, e.g. /dashboard), and
+// - the page's content is fixed at build time. Guides, attractions, festivals and heritage
+//   pages fetch their data again in the browser, and the visa countdown page uses today's
+//   date in its form, so their first client render can't match the prerendered HTML, and
+// - the visitor has no saved profile/checklist/countdown in this browser (those change the
+//   first render: personalised header, home and visa checklist).
+// Everything else keeps rendering fresh, exactly as before.
+const NO_HYDRATION_ROUTES = /^\/(guides|attractions|festivals|heritage|visa-countdown)(\/|$)/
+const PERSONAL_STORAGE_KEYS = ['user-profile', 'visa-checklist', 'happyroam_visa_countdown']
+
+function shouldHydrate(): boolean {
+  if (typeof document === 'undefined') return false
+  const renderedFor = document.getElementById('app')?.dataset.ssgRoute
+  const path = window.location.pathname.replace(/\/+$/, '') || '/'
+  if (renderedFor !== path || NO_HYDRATION_ROUTES.test(path)) return false
+  try {
+    return PERSONAL_STORAGE_KEYS.every(key => localStorage.getItem(key) === null)
+  } catch {
+    return false // storage blocked: render fresh, as before
+  }
+}
+
 export const createApp = ViteSSG(
   App,
   // Vue Router options
@@ -49,4 +75,6 @@ export const createApp = ViteSSG(
     // Pinia store
     app.use(createPinia())
   },
+  // See shouldHydrate() above
+  { hydration: shouldHydrate() },
 )

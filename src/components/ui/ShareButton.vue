@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import BodyTeleport from '@/components/common/BodyTeleport.vue'
 import { ref, computed } from 'vue'
 import {
   ShareAltOutlined,
@@ -105,7 +106,7 @@ function close() {
     </button>
 
     <!-- Share Modal -->
-    <Teleport to="body">
+    <BodyTeleport>
       <Transition
         enter-active-class="transition duration-200 ease-out"
         enter-from-class="opacity-0"
@@ -174,6 +175,6 @@ function close() {
           </div>
         </div>
       </Transition>
-    </Teleport>
+    </BodyTeleport>
   </div>
 </template>

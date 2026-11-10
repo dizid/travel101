@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import BodyTeleport from '@/components/common/BodyTeleport.vue'
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import type { HeritageImage } from '@/types'
 import {
@@ -200,7 +201,7 @@ watch(currentIndex, (newIndex, oldIndex) => {
     </button>
 
     <!-- Lightbox Modal -->
-    <Teleport to="body">
+    <BodyTeleport>
       <Transition
         enter-active-class="transition duration-200 ease-out"
         enter-from-class="opacity-0"
@@ -350,7 +351,7 @@ watch(currentIndex, (newIndex, oldIndex) => {
           </div>
         </div>
       </Transition>
-    </Teleport>
+    </BodyTeleport>
   </div>
 
   <!-- Empty State -->
