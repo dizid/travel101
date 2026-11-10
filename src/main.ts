@@ -3,6 +3,7 @@ import { createPinia } from 'pinia'
 import App from './App.vue'
 import routes from './router/routes'
 import { SSG_STATE } from './lib/ssg-state'
+import { reloadOnStaleChunks } from './lib/stale-chunk-reload'
 
 // Fonts, served from our own domain (was Google Fonts: a render-blocking request to
 // another server). Same families and weights as before; each file only downloads
@@ -79,11 +80,13 @@ export const createApp = ViteSSG(
     },
   },
   // Custom setup function
-  ({ app, initialState }) => {
+  ({ app, router, initialState, isClient }) => {
     // Pinia store
     app.use(createPinia())
     // Per-page data the prerender hands to the browser (see src/lib/ssg-state.ts)
     app.provide(SSG_STATE, initialState)
+    // Tabs still open from before a deploy: reload the target page instead of a dead tap
+    if (isClient) reloadOnStaleChunks(router)
   },
   // See shouldHydrate() above
   { hydration: shouldHydrate() },
