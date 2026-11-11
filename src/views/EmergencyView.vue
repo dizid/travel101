@@ -74,7 +74,7 @@ const embassies = ref([
   {
     country: 'Netherlands',
     flag: '🇳🇱',
-    address: '15 Soi Tonson, Ploenchit, Bangkok',
+    address: 'Central Park Offices, 22nd Floor, 92 Rama IV Road, Silom, Bangkok', // moved Aug 2026 (netherlandsworldwide.nl)
     phone: '02-309-5200',
     emergencyPhone: '02-309-5200',
   },
@@ -89,15 +89,15 @@ const embassies = ref([
     country: 'South Korea',
     flag: '🇰🇷',
     address: '23 Thiam-Ruammit Road, Huai Khwang, Bangkok',
-    phone: '02-247-7537',
-    emergencyPhone: '02-247-7537',
+    phone: '02-481-6000', // main line per the Korean MOFA embassy page (02-247-7537 is the old number)
+    emergencyPhone: '02-481-6000',
   },
   {
     country: 'China',
     flag: '🇨🇳',
     address: '57 Ratchadaphisek Road, Din Daeng, Bangkok',
-    phone: '02-245-7032',
-    emergencyPhone: '02-245-7032',
+    phone: '02-245-7010', // Consular Assistance and Protection (th.china-embassy.gov.cn); 02-245-7032 is its fax
+    emergencyPhone: '02-245-7010',
   },
   {
     country: 'India',
@@ -109,7 +109,7 @@ const embassies = ref([
   {
     country: 'Sweden',
     flag: '🇸🇪',
-    address: '20th Floor, Pacific Place One, 140 Sukhumvit Rd',
+    address: '8th Floor, One Pacific Place, 140 Sukhumvit Rd (Soi 4-6)', // swedenabroad.se contact page
     phone: '02-263-7200',
     emergencyPhone: '02-263-7200',
   },
