@@ -86,6 +86,8 @@ Thailand-specific tips:
 - Mosquito protection for evenings
 - Reef-safe sunscreen for islands
 - Light jacket for AC in malls/transport
+- E-cigarettes and vape liquid are banned in Thailand (confiscated on arrival, tourists get arrested and fined): never list them as an item, and warn against bringing them
+- Never state a fine, quantity limit or price unless it is written in these instructions
 
 ONLY return valid JSON, no other text.`
 
@@ -315,8 +317,8 @@ function getDefaultPackingList(includeTemples: boolean, isMonsoon: boolean): Pac
       ...(isMonsoon ? ['Bring a waterproof bag for electronics during monsoon'] : []),
     ],
     warnings: [
-      'Do not pack more than 10 e-cigarettes (vaping is technically illegal in Thailand)',
-      'Prescription medications should have documentation',
+      'Do not bring e-cigarettes or vape liquid: Thailand bans them, they are confiscated on arrival and tourists have been arrested and fined',
+      'Carry prescription medicines in their original packaging with the prescription or a doctor\'s letter',
       'Avoid camouflage clothing (can be mistaken for military)',
     ],
   }
