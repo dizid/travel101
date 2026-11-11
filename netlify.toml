@@ -97,6 +97,17 @@
   status = 200
   force = true
 
+# Stripe webhook: the endpoint registered in Stripe is /api/webhook/stripe, but the
+# catch-all below would send it to a function named "webhook/stripe" (a 404), so Stripe
+# events never reached webhook-stripe.mts and Pro buyers were never marked Pro.
+# A rewrite (status 200) passes method, headers and raw body unchanged, so the
+# stripe-signature check still works.
+[[redirects]]
+  from = "/api/webhook/stripe"
+  to = "/.netlify/functions/webhook-stripe"
+  status = 200
+  force = true
+
 # Catch-all for other API routes (simple single-path functions)
 [[redirects]]
   from = "/api/*"
