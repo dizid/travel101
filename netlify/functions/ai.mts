@@ -38,36 +38,53 @@ Key facts about Thailand visas (VERIFIED 2026-11-11; rules in force from 15 Sept
 - If a nationality is not listed above, tell the user to check with the Thai embassy in their country
 
 **DIGITAL NOMADS:**
-- DTV (Destination Thailand Visa): 5-YEAR validity, 180 days per entry, extendable +180 days per entry
-  Requires 500,000 THB in bank (3 months) + proof of remote work. Cannot work for Thai companies.
+- DTV (Destination Thailand Visa): 5-year multiple-entry visa, up to 180 days per entry
+  One extension of +180 days per entry at local immigration (usual fee 1,900 THB); after that, leave and re-enter
+  Two routes: "workcation" (remote worker/digital nomad/freelancer, employer or clients OUTSIDE Thailand)
+  or soft power (Muay Thai, Thai cooking, medical treatment and similar)
+  Proof of at least 500,000 THB (bank statements for the last 3 months, or a sponsor letter)
+  Since 31 Aug 2026 also: proof of residence in the country where you apply + criminal record certificate
+  Apply online at thaievisa.go.th; fee and exact documents differ per embassy - check with the Thai embassy
+  Working for a Thai employer or Thai clients needs a work permit; the DTV alone does not allow it
 
-**LONG-TERM/RETIREMENT:**
-- Non-Immigrant O (Retirement): 1 YEAR validity (NOT 90 days!), renewable annually
-  Age 50+, requires 800,000 THB in Thai bank OR 65,000 THB/month pension
-  Health insurance mandatory (400,000 THB inpatient, 40,000 THB outpatient)
-- Non-Immigrant O (Marriage): 1 year, 400,000 THB requirement, for those married to Thai nationals
-- Thailand Elite/Privilege: 5-20 year membership, 650,000-5,000,000 THB depending on tier
+**LONG-TERM/RETIREMENT (VERIFIED 2026-11-11 on Thai embassy and immigration pages):**
+- Non-Immigrant O (Retirement), age 50+: the embassy visa is 90 days, single entry (NOT a 1-year visa)
+  Then extend for 1 year at local immigration, renewable every year (1,900 THB)
+  Money: 800,000 THB in the bank OR 65,000 THB/month income OR a mix totalling 800,000 THB/year
+  For the yearly extension the money must be in a Thai bank; how long it must sit there: check with immigration
+  Health insurance: most embassies don't require it for the 90-day Non-O, some do - check with the Thai embassy
+- Non-Immigrant O-A (Retirement): 1-year visa from the embassy, same 800,000 / 65,000 THB rules
+  Needs health insurance of at least 3,000,000 THB (USD 100,000) for the visa application
+  Extending an O-A stay in Thailand: Thai health insurance of at least 400,000 THB inpatient / 40,000 THB outpatient
+- Non-Immigrant O (Married to a Thai): the embassy visa is 90 days single entry, then a 1-year extension at immigration
+  Extension: 400,000 THB in a Thai bank for the past 2 months OR 40,000 THB/month income
+- Thailand Privilege (formerly Elite), one-time fee: Bronze 650,000 THB/5 yrs, Gold 900,000/5 yrs,
+  Platinum 1,500,000/10 yrs, Diamond 2,500,000/15 yrs, Reserve 5,000,000/20 yrs (invitation only)
 
-**CRITICAL - BORDER RUN CRACKDOWN (November 2025):**
-- Land border entries: MAX 2 per calendar year
-- Visa runs: Officers can deny entry after 2 visa-exempt entries per year
-- Land entries are NOT eligible for 30-day extension
-- 2,900+ foreigners denied entry this year under these rules
-- For long-term stays, always recommend proper visas (DTV, Non-O, Elite)
+**BORDER RUNS / REPEATED VISA-EXEMPT ENTRIES:**
+- Land (and sea) border: max 2 visa-exempt entries per calendar year
+  (does not apply to nationals of Malaysia, Brunei, Indonesia, Singapore)
+- Immigration (Nov 2025): more than 2 visa runs without a good reason can be refused, at airports too
+- Entry is always the officer's decision; for long stays recommend a proper visa (DTV, Non-O, O-A, Privilege)
+- Extending a visa-exempt stay: apply at local immigration before it ends, officer's discretion, 1,900 THB
 
 **90-DAY REPORTING (TM.47):**
-- Required for all long-stay visas (Non-O, Non-B extended, DTV)
-- FREE - just an address check-in, NOT a visa limit
-- Filing window: 15 days before to 7 days after due date
-- Online: tm47.immigration.go.th (after first in-person report)
-- Late fee: 2,000 THB
+- Required for anyone staying in Thailand more than 90 days in a row, on any visa (Non-O, O-A, Non-B, DTV, Privilege)
+- No fee - just an address report, NOT a visa extension
+- Window: 15 days before to 7 days after the due date
+- Online: tm47.immigration.go.th, only from 15 to 7 days before the due date
+  Late reports and the first report after a new passport: in person at immigration
+- Late (reported yourself): 2,000 THB fine; caught without reporting: up to 5,000 THB
 
 **DISCONTINUED:**
-- Special Tourist Visa (STV): Ended September 2022, do not recommend
+- Special Tourist Visa (STV): ended 30 September 2022, do not recommend
 
 **OTHER:**
-- TM30: Landlords must file within 24 hours of foreigner's arrival
-- Overstay: 500 THB/day, max 20,000 THB, potential entry bans
+- TM30: the house owner/landlord/hotel must report a foreign guest to immigration within 24 hours of arrival
+- Overstay: 500 THB/day, max 20,000 THB
+  Ban if you hand yourself in: over 90 days = 1 yr, over 1 yr = 3 yrs, over 3 yrs = 5 yrs, over 5 yrs = 10 yrs
+  Ban if arrested: up to 1 yr overstay = 5 yrs, over 1 yr = 10 yrs
+- Rules change often and differ per embassy: always tell users to check with the Thai embassy/immigration
 - TDAC: Required for all arrivals since May 2025
 
 Always provide accurate information and suggest proper long-term visas instead of visa runs.
