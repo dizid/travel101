@@ -41,7 +41,8 @@ onMounted(async () => {
 
   if (upgradeParam === 'success') {
     userStore.setPro(true)
-  } else if (upgradeParam === 'true' && userStore.isAuthenticated) {
+  } else if (upgradeParam === 'true' && userStore.isAuthenticated && !userStore.isPro) {
+    // (fetchStatus above has set isPro: a Pro user must not get a second subscription)
     // Resume the "Start Free Trial" click that was interrupted by the sign-in
     // redirect (see useSubscription.startCheckout) so the user doesn't have
     // to click it again after logging in.

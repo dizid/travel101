@@ -192,6 +192,28 @@ describe('subscription function', () => {
       expect(mockStripe.checkout.sessions.create).toHaveBeenCalled()
     })
 
+    it('should return 409 and open no checkout for a user who already has Pro', async () => {
+      const mockUser = {
+        user_id: 'user-123',
+        stripe_customer_id: 'cus_existing',
+        is_pro: true,
+      }
+      setMockQueryResult('SELECT * FROM user_profiles', [mockUser])
+
+      const req = createMockRequest('POST', '/api/subscription', {
+        headers: { 'x-user-id': 'user-123' },
+        body: { action: 'create-checkout', email: 'test@example.com' },
+      })
+
+      const response = await subscriptionHandler(req, mockContext as never)
+      const data = await parseResponse(response)
+
+      expect(response.status).toBe(409)
+      expect(data.alreadyPro).toBe(true)
+      expect(mockStripe.checkout.sessions.create).not.toHaveBeenCalled()
+      expect(mockStripe.customers.create).not.toHaveBeenCalled()
+    })
+
     it('should create customer if not exists', async () => {
       const mockUser = {
         user_id: 'user-123',

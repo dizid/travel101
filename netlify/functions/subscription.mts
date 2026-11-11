@@ -44,6 +44,16 @@ export default async (req: Request, context: Context) => {
           }
 
           const user = userResult[0]
+
+          // Already Pro: never open a second subscription (a new 7-day trial, then billed twice).
+          // Happens when a Pro user signs in through a 'Start Free Trial' / 'Upgrade' link.
+          if (user.is_pro) {
+            return new Response(JSON.stringify({ error: 'You already have HappyRoam Pro', alreadyPro: true }), {
+              status: 409,
+              headers: { 'Content-Type': 'application/json' },
+            })
+          }
+
           let customerId = user.stripe_customer_id
 
           if (!customerId) {
