@@ -98,7 +98,7 @@ const capabilities: Capability[] = [
   {
     icon: '💰',
     title: 'Cost & Safety',
-    blurb: 'Budget calculator for 6 cities + province safety',
+    blurb: 'Budget calculator for 5 cities + province safety',
     route: '/cost-calculator',
     iconBg: 'bg-rose-50',
     iconText: 'text-rose-600',

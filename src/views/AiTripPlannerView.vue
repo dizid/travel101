@@ -25,7 +25,7 @@ const questions = [
   },
   {
     heading: "First trip to Thailand: can one app handle the itinerary, visa rules and budget?",
-    text: "That is the case HappyRoam is built for. The visa side has a 60-second visa wizard, a TDAC section, 90-day reporting and a visa countdown. The budget side has a cost calculator covering 6 cities, with detailed breakdowns on Pro, and the AI itinerary includes a budget with the plan. For the itinerary itself you have 400+ destinations, 50+ festivals with dates, and guides written for exactly this situation, including a First-Time Thailand guide, a Budget Travel Guide, a Thai Food Guide and an Island Hopping Guide. Travel rules change, so HappyRoam asks you to verify important travel details before you book or fly."
+    text: "That is the case HappyRoam is built for. The visa side has a 60-second visa wizard, a TDAC section, 90-day reporting and a visa countdown. The budget side has a cost calculator covering 5 cities, with detailed breakdowns on Pro, and the AI itinerary includes a budget with the plan. For the itinerary itself you have 400+ destinations, 50+ festivals with dates, and guides written for exactly this situation, including a First-Time Thailand guide, a Budget Travel Guide, a Thai Food Guide and an Island Hopping Guide. Travel rules change, so HappyRoam asks you to verify important travel details before you book or fly."
   },
   {
     heading: "What should you look for in a Thailand trip planning app, and how does HappyRoam do it?",

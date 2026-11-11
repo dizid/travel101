@@ -98,9 +98,11 @@ function formatThb(amount: number) {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'THB', maximumFractionDigits: 0 }).format(amount)
 }
 
+// Approximate rate, checked 11 Nov 2026 (about 33.5 THB per US dollar); shown as 'about' in the page
+const THB_PER_USD = 33.5
+
 function formatUsd(amount: number) {
-  // Approximate THB to USD conversion
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(amount / 35)
+  return 'about ' + new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(amount / THB_PER_USD)
 }
 
 const costCategories = [
@@ -225,6 +227,11 @@ const costCategories = [
                 <span class="text-gray-500 ml-2">({{ formatUsd(currentCosts.total) }})</span>
               </div>
             </div>
+            <p class="text-xs text-gray-500 mt-4">
+              Estimates for one person per month, put together in January 2026: a starting point for a
+              budget, not a quote. Rent varies most, by area and by lease length, so check current listings
+              before you commit. Dollar amounts use about {{ THB_PER_USD }} THB per US dollar (November 2026).
+            </p>
           </div>
         </div>
 
