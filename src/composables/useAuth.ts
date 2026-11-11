@@ -58,10 +58,15 @@ export function useAuth() {
     if (!userStore.authUserId) return
 
     try {
-      await post('/user', {
+      const row = await post<{ is_pro?: boolean }>('/user', {
         email: userStore.profile.email,
         prefs: userStore.profile.prefs,
       })
+      // The server is the source of truth for Pro. Without this, Pro lived only in this
+      // browser's storage: a member who paid on another device saw locked Pro pages, and
+      // 'Upgrade' did nothing (checkout refuses a second subscription). Only switches Pro
+      // on, so a late Stripe webhook right after checkout can't hide Pro again.
+      if (row?.is_pro) userStore.setPro(true)
     } catch (error) {
       console.error('Failed to sync profile:', error)
     }

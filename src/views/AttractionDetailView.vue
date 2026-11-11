@@ -659,7 +659,8 @@ const gradientClass = computed(() => {
                       {{ secretTypeConfig[attraction.secrets[0].secretType]?.label || attraction.secrets[0].secretType }}
                     </span>
                     <h4 class="font-semibold text-gray-900 mt-1">{{ attraction.secrets[0].title }}</h4>
-                    <p class="text-gray-600 mt-2 text-sm">{{ attraction.secrets[0].content.substring(0, 100) }}...</p>
+                    <!-- Guests get no text for Pro-only secrets (content is null): a null here used to crash the page -->
+                    <p class="text-gray-600 mt-2 text-sm">{{ attraction.secrets[0].content ? attraction.secrets[0].content.substring(0, 100) + '...' : 'Pro members can read this insider tip and where to find it.' }}</p>
                   </div>
                   <div class="absolute inset-0 flex items-center justify-center">
                     <RouterLink to="/dashboard?upgrade=true" class="flex items-center gap-2 px-6 py-3 bg-white shadow-lg rounded-full text-gray-900 font-semibold hover:shadow-xl transition-shadow">

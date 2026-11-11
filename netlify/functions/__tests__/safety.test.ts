@@ -74,6 +74,21 @@ describe('safety function', () => {
       expect(data.emergencyNumbers).toBeDefined()
     })
 
+    it('never returns the reporter user_id on the public list (T-0447)', async () => {
+      setMockQueryResult('SELECT * FROM scam_reports', [
+        { id: 'r1', user_id: 'secret-user-id', title: 'Tuk-tuk gem scam', province: 'Bangkok', severity: 2 },
+      ])
+      setMockQueryResult('SELECT * FROM province_safety', mockProvinceSafety)
+      setMockQueryResult('SELECT', [{ total_reports: '1', verified_reports: '0', provinces_covered: '1' }])
+
+      const response = await safetyHandler(createMockRequest('GET', '/api/safety', { headers: {} }), mockContext as never)
+      const data = await parseResponse(response)
+
+      expect(data.scamReports[0].title).toBe('Tuk-tuk gem scam')
+      expect(data.scamReports[0]).not.toHaveProperty('user_id')
+      expect(JSON.stringify(data)).not.toContain('secret-user-id')
+    })
+
     it('should include emergency numbers', async () => {
       setMockQueryResult('SELECT * FROM scam_reports', [])
       setMockQueryResult('SELECT * FROM province_safety', [])

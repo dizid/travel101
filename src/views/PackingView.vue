@@ -90,7 +90,9 @@ async function generatePackingList() {
     } : undefined,
     travelStyle: userStore.profile.prefs.budget,
     includeTemples: includeTemples.value,
-  }, { requiresAuth: false })
+  })
+  // (No `requiresAuth: false` here: without the user header the server counted Pro users
+  // as anonymous visitors, 1 list per day per IP, so 'Regenerate' failed silently.)
 
   if (result?.packingList) {
     packingList.value = result.packingList

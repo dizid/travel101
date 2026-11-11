@@ -116,8 +116,12 @@ export default async (req: Request, context: Context) => {
         FROM scam_reports
       `
 
+      // Public endpoint: never send the reporter's user_id (the API identifies users by
+      // that id, so publishing it would let anyone act as the reporter).
+      const publicReports = scamReports.map(({ user_id: _reporter, ...report }) => report)
+
       return new Response(JSON.stringify({
-        scamReports,
+        scamReports: publicReports,
         provinceSafety,
         scamTypes: SCAM_TYPES,
         stats: stats[0],

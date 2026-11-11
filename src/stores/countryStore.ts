@@ -592,7 +592,9 @@ export const useCountryStore = defineStore('country', () => {
 
       const response = await get<AttractionDetailResponse>(
         `/attractions/${slug}?include=tips,secrets,recommendations`,
-        { headers, requiresAuth: false }
+        // Sends the signed-in user's id, so Pro members get the Pro-only secret text
+        // (with requiresAuth: false the server treated everyone as a guest and blanked it)
+        { headers }
       )
 
       if (response && response.attraction) {

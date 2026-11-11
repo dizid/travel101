@@ -222,7 +222,8 @@ export async function prefetchSSGData(): Promise<PrefetchResult> {
     results = await Promise.all([
       sql`SELECT * FROM attractions WHERE verification_status != 'rejected' ORDER BY name`,
       sql`SELECT id, attraction_id, tip_type, title, content, is_pro_only, sort_order, created_at FROM attraction_tips ORDER BY attraction_id, sort_order, created_at`,
-      sql`SELECT id, attraction_id, secret_type, title, content, location_hint, is_pro_only, sort_order, created_at FROM attraction_secrets ORDER BY attraction_id, sort_order, created_at`,
+      // Pro-only secret text stays out of the public HTML (same redaction as attractions.mts)
+      sql`SELECT id, attraction_id, secret_type, title, CASE WHEN is_pro_only THEN NULL ELSE content END AS content, CASE WHEN is_pro_only THEN NULL ELSE location_hint END AS location_hint, is_pro_only, sort_order, created_at FROM attraction_secrets ORDER BY attraction_id, sort_order, created_at`,
       sql`SELECT id, attraction_id, rec_type, name, description, why_special, price_range, google_maps_url, is_pro_only, sort_order, created_at FROM attraction_recommendations ORDER BY attraction_id, sort_order, created_at`,
       sql`SELECT * FROM heritage_images ORDER BY attraction_id, is_primary DESC, display_order`,
       sql`SELECT * FROM heritage_events ORDER BY attraction_id, sort_order, event_year NULLS LAST`,
