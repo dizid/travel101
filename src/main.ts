@@ -64,6 +64,26 @@ function shouldHydrate(): boolean {
   }
 }
 
+/** Resolves true once an element matching the URL hash exists (max ~1.5 s), false otherwise. */
+function waitForHashTarget(hash: string, timeoutMs = 1500): Promise<boolean> {
+  const exists = () => {
+    try {
+      return document.querySelector(hash) !== null
+    } catch {
+      return false // not a valid selector (e.g. '#/'): nothing to scroll to
+    }
+  }
+  return new Promise(resolve => {
+    const started = Date.now()
+    const check = () => {
+      if (exists()) return resolve(true)
+      if (Date.now() - started >= timeoutMs) return resolve(false)
+      setTimeout(check, 50)
+    }
+    check()
+  })
+}
+
 export const createApp = ViteSSG(
   App,
   // Vue Router options
@@ -74,7 +94,13 @@ export const createApp = ViteSSG(
         return savedPosition
       }
       if (to.hash) {
-        return { el: to.hash, behavior: 'smooth' }
+        // Lazy pages (e.g. the dashboard's #pro card behind every 'Go Pro' link) draw the target
+        // after this runs; scrolling to a missing element did nothing and left the page where it
+        // was (from the footer: still at the bottom). Wait for it briefly, else go to the top.
+        return waitForHashTarget(to.hash).then(found =>
+          // top: keep the target clear of the fixed header (~64 px)
+          found ? { el: to.hash, top: 80, behavior: 'smooth' } : { top: 0 },
+        )
       }
       return { top: 0, behavior: 'smooth' }
     },
