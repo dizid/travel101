@@ -101,6 +101,18 @@ describe('sitemap function', () => {
       expect(xml).toContain('<loc>https://happyroam.travel/terms</loc>')
     })
 
+    it('should leave out Pro-only screens that are not prerendered', async () => {
+      setMockNeonResult('SELECT slug, updated_at', [])
+
+      const request = createMockRequest({ method: 'GET', url: '/api/sitemap' })
+      const context = createMockContext()
+      const response = await handler(request, context)
+
+      const xml = await response.text()
+      expect(xml).not.toContain('/smart-match</loc>')
+      expect(xml).not.toContain('/dashboard</loc>')
+    })
+
     it('should include core static pages', async () => {
       setMockNeonResult('SELECT slug, updated_at', [])
 

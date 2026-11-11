@@ -57,7 +57,6 @@ export default async function handler(_req: Request, _context: Context) {
     { url: '/safety', priority: '0.7', changefreq: 'monthly' },
     { url: '/itinerary', priority: '0.7', changefreq: 'weekly' },
     { url: '/ai-trip-planner-app-thailand', priority: '0.8', changefreq: 'monthly' },
-    { url: '/smart-match', priority: '0.7', changefreq: 'weekly' },
     { url: '/setup-guide', priority: '0.7', changefreq: 'monthly' },
     { url: '/cost-calculator', priority: '0.7', changefreq: 'monthly' },
     { url: '/packing', priority: '0.7', changefreq: 'monthly' },
@@ -67,6 +66,8 @@ export default async function handler(_req: Request, _context: Context) {
     { url: '/about', priority: '0.6', changefreq: 'monthly' },
     { url: '/people', priority: '0.5', changefreq: 'monthly' },
     // /profile intentionally excluded — authenticated user-only page
+    // /smart-match excluded too: Pro-only screen, not prerendered (vite.config.ts skipRoutes),
+    // so its URL serves the home page's HTML and canonical (T-0388)
     { url: '/privacy', priority: '0.3', changefreq: 'yearly' },
     { url: '/terms', priority: '0.3', changefreq: 'yearly' },
     { url: '/contact', priority: '0.4', changefreq: 'yearly' },
