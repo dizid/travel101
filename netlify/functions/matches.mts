@@ -76,14 +76,20 @@ export default async (req: Request, context: Context) => {
           return json({ message: 'Already saved', id: existing[0].id })
         }
 
-        // Save the match
+        // Save the match. The table has match_score INTEGER NOT NULL (0-100) and match_reasons
+        // TEXT[]; the old insert named a non-existent match_reason column, so every save failed.
+        const rawScore = Number(body.matchScore)
+        const matchScore = Number.isFinite(rawScore) ? Math.max(0, Math.min(100, Math.round(rawScore))) : 0
+        const matchReasons = typeof body.matchReason === 'string' && body.matchReason.trim()
+          ? [body.matchReason.trim().slice(0, 300)]
+          : null
         const [saved] = await db`
-          INSERT INTO saved_matches (user_id, attraction_slug, match_score, match_reason, notes)
+          INSERT INTO saved_matches (user_id, attraction_slug, match_score, match_reasons, notes)
           VALUES (
             ${userId},
             ${slug},
-            ${body.matchScore || null},
-            ${body.matchReason || null},
+            ${matchScore},
+            ${matchReasons},
             ${body.notes || null}
           )
           RETURNING *

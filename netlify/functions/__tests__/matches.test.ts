@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import '../__mocks__/db'
-import { setMockQueryResult, clearMockResults, wasQueryMade } from '../__mocks__/db'
+import { setMockQueryResult, clearMockResults, wasQueryMade, getQueriesMatching } from '../__mocks__/db'
 import { setMockEnv, clearMockEnv } from './setup.js'
 import { createMockRequest, parseResponse } from './helpers.js'
 
@@ -209,6 +209,40 @@ describe('matches function', () => {
       expect(response.status).toBe(201)
       expect(data.match).toBeTruthy()
       expect(data.match.attraction_slug).toBe('phuket')
+    })
+
+    it('saves into the real columns: match_reasons (text[]) and an integer 0-100 score (T-0447)', async () => {
+      setMockQueryResult('SELECT slug FROM attractions', [{ slug: 'phuket' }])
+      setMockQueryResult('SELECT id FROM saved_matches', [])
+      setMockQueryResult('INSERT INTO saved_matches', [{ id: 'match-new' }])
+
+      const req = createMockRequest('POST', '/api/matches', {
+        headers: { 'x-user-id': 'user-123' },
+        body: { slug: 'phuket', matchScore: 87.6, matchReason: 'Beach lover' },
+      })
+      const response = await matchesHandler(req, mockContext as never)
+      expect(response.status).toBe(201)
+
+      const [insert] = getQueriesMatching('INSERT INTO saved_matches')
+      expect(insert.query).toContain('match_reasons')
+      expect(insert.query).not.toMatch(/match_reason[^s]/)
+      expect(insert.values[2]).toBe(88)
+      expect(insert.values[3]).toEqual(['Beach lover'])
+    })
+
+    it('stores score 0 and no reasons when the page sends none (score column is NOT NULL)', async () => {
+      setMockQueryResult('SELECT slug FROM attractions', [{ slug: 'phuket' }])
+      setMockQueryResult('SELECT id FROM saved_matches', [])
+      setMockQueryResult('INSERT INTO saved_matches', [{ id: 'match-new' }])
+
+      const req = createMockRequest('POST', '/api/matches', {
+        headers: { 'x-user-id': 'user-123' },
+        body: { slug: 'phuket' },
+      })
+      await matchesHandler(req, mockContext as never)
+      const [insert] = getQueriesMatching('INSERT INTO saved_matches')
+      expect(insert.values[2]).toBe(0)
+      expect(insert.values[3]).toBeNull()
     })
 
     it('should save match with notes', async () => {

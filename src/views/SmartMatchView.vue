@@ -141,17 +141,21 @@ async function toggleFavorite(slug: string, score?: number, reason?: string) {
   savingFavorite.value = slug
 
   try {
+    // Only change the heart when the server confirmed (the API returns null on failure),
+    // so a failed save doesn't look saved until the next reload.
     if (favorites.value.has(slug)) {
-      await del('/matches', { slug })
+      const removed = await del('/matches', { slug })
+      if (!removed) return
       favorites.value.delete(slug)
       // Trigger reactivity
       favorites.value = new Set(favorites.value)
     } else {
-      await post('/matches', {
+      const saved = await post('/matches', {
         slug,
         matchScore: score,
         matchReason: reason,
       })
+      if (!saved) return
       favorites.value.add(slug)
       // Trigger reactivity
       favorites.value = new Set(favorites.value)
