@@ -39,7 +39,7 @@ const embassies = ref([
   {
     country: 'UK',
     flag: '🇬🇧',
-    address: '14 Wireless Road, Lumpini, Bangkok',
+    address: 'AIA Sathorn Tower, Floor 12A, 11/1 South Sathorn Road, Bangkok',
     phone: '02-305-8333',
     emergencyPhone: '02-305-8333',
   },

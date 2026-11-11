@@ -294,7 +294,7 @@ const thailandWarnings: Warning[] = [
     countryId: 'thailand',
     category: 'drug_laws',
     title: 'Understanding Drug Laws',
-    content: 'Thailand has strict drug laws with serious consequences. The safest approach is complete avoidance - this keeps your trip worry-free. Note: While cannabis was decriminalized, public consumption is still restricted.',
+    content: 'Thailand has strict drug laws with serious consequences. The safest approach is complete avoidance - this keeps your trip worry-free. Note: since 23 June 2025 cannabis flower is a controlled herb again; tourists need a prescription issued in Thailand to buy or use it.',
     severity: 4,
     tags: ['law', 'safety'],
   },
