@@ -23,6 +23,11 @@ const STORAGE_KEY = 'happyroam_visa_countdown'
 const EXEMPTION_RULE_CHANGE_DATE = '2026-09-15'
 const LEGACY_EXEMPTION_DAYS = 60
 
+// 90-day report window: from 15 days before the due date to 7 days after it
+// (Immigration Bureau, immigration.go.th/?page_id=1666)
+export const REPORT_EARLY_WINDOW_DAYS = 15
+export const REPORT_LATE_WINDOW_DAYS = 7
+
 const VISA_BASE_DAYS: Record<VisaType, number> = {
   'visa-exemption': 30,
   'tourist-visa': 60,
@@ -133,41 +138,47 @@ export function useVisaCountdown() {
     return 'safe'
   })
 
-  // Next 90-day report due date (only meaningful when totalDays > 90)
+  // Next 90-day report due date (only meaningful when totalDays > 90).
+  // Chain model, per the Immigration Bureau (immigration.go.th/?page_id=1666): the first
+  // report is due 90 days after entry and each recorded report sets the next one.
+  // - Reported before or on the due date: next = report day + 90 (never later than the real date).
+  // - Reported up to 7 days late (still inside the window): next = due date + 90.
+  // - Reported later than that (a late, fined report): next = report day + 90.
+  // An unreported due date stays the next report, so a missed report shows as overdue
+  // instead of being skipped. The date on the user's own receipt is the official one.
   const next90DayReport = computed<string | null>(() => {
     if (!visaEntry.value || totalDays.value <= 90) return null
 
     const entry = visaEntry.value.entryDate
+    // Only reports made during this stay count, oldest first
     const reports = visaEntry.value.ninetyDayReports
+      .filter((reportDate) => daysBetween(entry, reportDate) >= 0)
+      .sort()
 
-    // Find how many 90-day cycles have passed since entry
-    const todayStr = todayISOString()
-    let cycle = 1
-
-    while (true) {
-      const dueDate = addDays(entry, 90 * cycle)
-      // If this due date is still upcoming or today, it's the next report
-      if (daysBetween(todayStr, dueDate) >= 0) {
-        // Check if this cycle has already been reported
-        const alreadyReported = reports.some((r) => {
-          const reportCycle = Math.ceil(daysBetween(entry, r) / 90)
-          return reportCycle === cycle
-        })
-        if (!alreadyReported) return dueDate
-      }
-      // Move to next cycle, but stop if we're past the visa expiry
-      const nextDue = addDays(entry, 90 * (cycle + 1))
-      if (daysBetween(todayStr, nextDue) < -90) break
-      cycle++
-      if (cycle > 20) break // safety guard
+    let dueDate = addDays(entry, 90)
+    for (const reportDate of reports) {
+      const daysLate = daysBetween(dueDate, reportDate)
+      const insideLateWindow = daysLate > 0 && daysLate <= REPORT_LATE_WINDOW_DAYS
+      dueDate = addDays(insideLateWindow ? dueDate : reportDate, 90)
     }
 
-    return null
+    // No report is needed once the permitted stay has ended
+    if (daysBetween(dueDate, expiryDate.value) <= 0) return null
+    return dueDate
   })
 
   const daysUntilNext90Day = computed<number | null>(() => {
     if (!next90DayReport.value) return null
     return daysBetween(todayISOString(), next90DayReport.value)
+  })
+
+  // The official window for the next report: 15 days before to 7 days after the due date
+  const next90DayWindow = computed<{ opens: string; closes: string } | null>(() => {
+    if (!next90DayReport.value) return null
+    return {
+      opens: addDays(next90DayReport.value, -REPORT_EARLY_WINDOW_DAYS),
+      closes: addDays(next90DayReport.value, REPORT_LATE_WINDOW_DAYS),
+    }
   })
 
   // Can apply extension: only visa-exemption / tourist-visa and not yet extended
@@ -220,6 +231,7 @@ export function useVisaCountdown() {
     urgency,
     next90DayReport,
     daysUntilNext90Day,
+    next90DayWindow,
     canExtend,
     // Methods
     setEntry,

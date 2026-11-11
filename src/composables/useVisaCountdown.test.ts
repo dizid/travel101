@@ -385,18 +385,86 @@ describe('useVisaCountdown', () => {
       expect(next90DayReport.value).toBeNull()
     })
 
-    it('skips cycles that have already been reported', () => {
+    it('counts the next report from an early report day (never later than the real date)', () => {
       const { setEntry, next90DayReport } = useVisaCountdown()
       // Entry 2026-01-01, retirement visa = 365 days
-      // First report due: 2026-04-01 (90 days), already reported
-      // Today = 2026-06-15
-      // Next due: 2026-06-30 (180 days) => this should be returned
+      // First report due: 2026-04-01 (90 days), reported 2 days early on 2026-03-30
+      // Next due: 2026-03-30 + 90 = 2026-06-28
       setEntry(makeEntry({
         entryDate: '2026-01-01',
         visaType: 'retirement-visa',
-        ninetyDayReports: ['2026-03-30'], // reported near cycle 1
+        ninetyDayReports: ['2026-03-30'],
       }))
-      expect(next90DayReport.value).toBe('2026-06-30')
+      expect(next90DayReport.value).toBe('2026-06-28')
+    })
+
+    it('keeps a missed due date as the next report (overdue) instead of skipping it', () => {
+      const { setEntry, next90DayReport, daysUntilNext90Day } = useVisaCountdown()
+      // Entry 2026-03-10 + 90 = due 2026-06-08; today 2026-06-15, nothing reported
+      setEntry(makeEntry({ entryDate: '2026-03-10', visaType: 'retirement-visa' }))
+      expect(next90DayReport.value).toBe('2026-06-08')
+      expect(daysUntilNext90Day.value).toBe(-7)
+    })
+
+    it('keeps the schedule for a report inside the 7-day late window', () => {
+      const { setEntry, next90DayReport } = useVisaCountdown()
+      // Due 2026-06-08, reported 4 days late on 2026-06-12 => next = 2026-06-08 + 90
+      setEntry(makeEntry({
+        entryDate: '2026-03-10',
+        visaType: 'retirement-visa',
+        ninetyDayReports: ['2026-06-12'],
+      }))
+      expect(next90DayReport.value).toBe('2026-09-06')
+    })
+
+    it('restarts the count from a report made after the late window', () => {
+      const { setEntry, next90DayReport } = useVisaCountdown()
+      // Entry 2026-03-01 => due 2026-05-30; reported 16 days late on 2026-06-15
+      setEntry(makeEntry({
+        entryDate: '2026-03-01',
+        visaType: 'retirement-visa',
+        ninetyDayReports: ['2026-06-15'],
+      }))
+      expect(next90DayReport.value).toBe('2026-09-13')
+    })
+
+    it('ignores reports dated before this entry', () => {
+      const { setEntry, next90DayReport } = useVisaCountdown()
+      setEntry(makeEntry({
+        entryDate: '2026-06-01',
+        visaType: 'dtv',
+        ninetyDayReports: ['2026-02-01'],
+      }))
+      expect(next90DayReport.value).toBe('2026-08-30')
+    })
+
+    it('returns null when the next due date falls on or after the end of the stay', () => {
+      const { setEntry, next90DayReport } = useVisaCountdown()
+      // DTV 180 days: entry 2026-06-01, expiry 2026-11-28; report 2026-08-30 => next 2026-11-28
+      vi.setSystemTime(new Date('2026-09-01T12:00:00Z'))
+      setEntry(makeEntry({
+        entryDate: '2026-06-01',
+        visaType: 'dtv',
+        ninetyDayReports: ['2026-08-30'],
+      }))
+      expect(next90DayReport.value).toBeNull()
+    })
+  })
+
+  // --- next90DayWindow ---
+
+  describe('next90DayWindow', () => {
+    it('opens 15 days before and closes 7 days after the due date', () => {
+      const { setEntry, next90DayWindow } = useVisaCountdown()
+      // Due 2026-08-30
+      setEntry(makeEntry({ entryDate: '2026-06-01', visaType: 'dtv' }))
+      expect(next90DayWindow.value).toEqual({ opens: '2026-08-15', closes: '2026-09-06' })
+    })
+
+    it('is null when no report is due', () => {
+      const { setEntry, next90DayWindow } = useVisaCountdown()
+      setEntry(makeEntry({ visaType: 'visa-exemption' }))
+      expect(next90DayWindow.value).toBeNull()
     })
   })
 
