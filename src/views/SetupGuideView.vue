@@ -27,69 +27,53 @@ const sections = [
   { id: 'exchange', label: 'Money Exchange', icon: SwapOutlined, emoji: '💱' },
 ]
 
+// Checked 11 Nov 2026 on the operators' own pages (ais.th tourist plans; true.th tourist SIM).
+// Only prices an official page shows are listed; monthly plans change too often: link instead.
 const simProviders = [
   {
     name: 'AIS',
     logo: '🔵',
     bestFor: 'Best coverage nationwide',
     touristPlans: [
-      { name: 'TRAVELLER SIM', data: '15GB/8 days', price: 299, calls: '100 mins' },
-      { name: 'TRAVELLER SIM', data: '30GB/15 days', price: 599, calls: '200 mins' },
+      { name: 'AIS Tourist SIM', data: 'Unlimited data, 8 days', price: 499, calls: '+100 THB bonus credit' },
+      { name: 'AIS Tourist SIM', data: 'Unlimited data, 15 days', price: 699, calls: '+100 THB bonus credit' },
     ],
-    monthlyPlans: [
-      { name: 'Max Speed', data: '20GB', price: 399, calls: 'Unlimited' },
-      { name: 'Max Speed', data: '50GB', price: 699, calls: 'Unlimited' },
-    ],
+    plansUrl: 'https://www.ais.th/en/consumers/package/international/tourist-plan',
+    monthlyNote: 'AIS also sells 1, 5, 30 and 60-day tourist SIMs and monthly plans; prices change, so compare on its own page.',
     pros: ['Best 4G/5G coverage', 'Most stores & kiosks', 'AIS Super WiFi hotspots'],
     cons: ['Slightly more expensive', 'Busy stores'],
   },
   {
-    name: 'DTAC',
-    logo: '🔷',
-    bestFor: 'Best value for tourists',
-    touristPlans: [
-      { name: 'Happy Tourist', data: '15GB/8 days', price: 269, calls: '100 mins' },
-      { name: 'Happy Tourist', data: '30GB/15 days', price: 549, calls: '200 mins' },
-    ],
-    monthlyPlans: [
-      { name: 'GO NO LIMIT', data: '20GB', price: 349, calls: 'Unlimited' },
-      { name: 'GO NO LIMIT', data: 'Unlimited', price: 599, calls: 'Unlimited' },
-    ],
-    pros: ['Cheapest tourist SIMs', 'Good urban coverage', 'Easy top-up'],
-    cons: ['Weaker in rural areas', 'Fewer 5G areas'],
-  },
-  {
-    name: 'True Move',
+    name: 'True & dtac',
     logo: '🔴',
-    bestFor: 'Best for True ecosystem (7-Eleven)',
+    bestFor: 'One company since 2023 (True Corporation); same tourist SIM in True and dtac shops',
     touristPlans: [
-      { name: 'Tourist SIM', data: '15GB/8 days', price: 299, calls: '100 mins' },
-      { name: 'Tourist SIM', data: 'Unlimited/15 days', price: 599, calls: 'Unlimited' },
+      { name: 'Thailand Tourist INFINITE SIM', data: 'Unlimited data, 8 days', price: 449, calls: '15 and 30-day versions: price on true.th' },
     ],
-    monthlyPlans: [
-      { name: 'True Unlimited', data: '20GB', price: 379, calls: 'Unlimited' },
-      { name: 'True Unlimited', data: 'Unlimited', price: 649, calls: 'Unlimited' },
-    ],
-    pros: ['Easy buy at 7-Eleven', 'True WiFi hotspots', 'Good promos'],
-    cons: ['Coverage varies', 'Can be confusing'],
+    plansUrl: 'https://www.true.th/prepaid/sim/tourist',
+    monthlyNote: 'True and dtac monthly plans change often; compare them on true.th and dtac.co.th.',
+    pros: ['Easy buy at 7-Eleven', 'True and dtac WiFi hotspots', 'Good promos'],
+    cons: ['Coverage varies', 'Two brand names for one network can be confusing'],
   },
 ]
 
 const bankingInfo = {
   requirements: [
     'Passport (original + copy)',
-    'Thai phone number (required)',
+    'A non-immigrant visa (work, retirement, education or marriage); some banks also ask for a work permit or a letter from your school',
     'Proof of address (hotel booking, rental contract)',
-    'Work permit OR 90-day visa OR retirement visa',
-    '฿500-1000 minimum deposit',
+    'Usually about ฿500 to open the account',
+    'A Thai phone number is usually needed for mobile banking',
   ],
   recommendedBanks: [
-    { name: 'Bangkok Bank', reason: 'Most foreigner-friendly, English service', fee: '฿200/year' },
-    { name: 'Kasikorn Bank (KBank)', reason: 'Best mobile app, easy ATMs', fee: '฿200/year' },
-    { name: 'SCB (Siam Commercial)', reason: 'Wide ATM network, good app', fee: '฿200/year' },
+    // No yearly account fee; the yearly fee is on the debit card (KBank fee list, 20 May 2026: ฿0-350 by card)
+    { name: 'Bangkok Bank', reason: 'Most foreigner-friendly, English service', fee: 'Debit card fee varies' },
+    { name: 'Kasikorn Bank (KBank)', reason: 'Best mobile app, easy ATMs', fee: 'Card ฿0-350/year' },
+    { name: 'SCB (Siam Commercial)', reason: 'Wide ATM network, good app', fee: 'Debit card fee varies' },
   ],
   tips: [
-    'Tourist visas usually cannot open accounts - need longer visa',
+    'Tourist visas, visa-exempt entry and the DTV are usually refused (KBank says so) - you need a non-immigrant visa',
+    'Rules differ by bank and branch: check the bank\'s own page before you go',
     'Some branches are more foreigner-friendly than others',
     'Bring extra passport copies to save time',
     'Mobile banking apps work great once set up',
@@ -101,7 +85,7 @@ const exchangeInfo = {
     'Airport rates are worst - exchange minimum for taxi only',
     'SuperRich (orange or green) has best rates in Bangkok',
     'Avoid hotel exchange - terrible rates',
-    'ATMs charge ฿220 foreign card fee - withdraw max amount',
+    'ATMs charge foreign cards about ฿250 per withdrawal (KBank: Visa ฿250, Mastercard ฿350), plus your own bank\'s fees - withdraw larger amounts',
     'Wise/Revolut cards have good rates, but ATM fee still applies',
   ],
   bestPlaces: [
@@ -111,9 +95,8 @@ const exchangeInfo = {
     { name: 'K79 Exchange', location: 'Khao San Road', rating: 'Good for tourists' },
   ],
   atmTips: [
-    'Aeon ATMs have NO foreign fee (rare but worth finding)',
+    'The screen shows the fee before you confirm - check it',
     'Always choose "without conversion" when prompted',
-    'Max withdrawal is usually ฿20,000-30,000',
     'Bangkok Bank ATMs are most reliable',
   ],
 }
@@ -192,20 +175,15 @@ const exchangeInfo = {
                       <span class="text-sm font-medium">{{ plan.data }}</span>
                       <span class="text-sm font-bold text-primary-600">฿{{ plan.price }}</span>
                     </div>
-                    <p class="text-xs text-gray-500">{{ plan.calls }} calls</p>
+                    <p class="text-xs text-gray-500">{{ plan.calls }}</p>
                   </div>
                 </div>
               </div>
               <div>
-                <h4 class="text-sm font-medium text-gray-700 mb-2">Monthly Plans</h4>
-                <div class="space-y-2">
-                  <div v-for="plan in provider.monthlyPlans" :key="plan.name + plan.data" class="p-3 bg-gray-50 rounded-lg">
-                    <div class="flex justify-between">
-                      <span class="text-sm font-medium">{{ plan.data }}</span>
-                      <span class="text-sm font-bold text-primary-600">฿{{ plan.price }}/mo</span>
-                    </div>
-                    <p class="text-xs text-gray-500">{{ plan.calls }} calls</p>
-                  </div>
+                <h4 class="text-sm font-medium text-gray-700 mb-2">Other plans</h4>
+                <div class="p-3 bg-gray-50 rounded-lg">
+                  <p class="text-sm text-gray-600 mb-1">{{ provider.monthlyNote }}</p>
+                  <a :href="provider.plansUrl" target="_blank" rel="noopener noreferrer" class="text-sm font-medium text-primary-600 hover:underline">See current prices</a>
                 </div>
               </div>
             </div>
