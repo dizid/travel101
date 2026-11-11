@@ -233,6 +233,37 @@ describe('currency function', () => {
       // Fallback rate should still work
     })
 
+    it('converts each currency with its own rate when the rate API answers with HTML (T-0447)', async () => {
+      // The old exchangerate.host URL now redirects to a docs page: .json() throws.
+      setMockQueryResult('SELECT data, created_at FROM ai_cache', [])
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => { throw new SyntaxError('Unexpected token <') },
+      } as unknown as Response)
+
+      const req = createMockRequest('GET', '/api/currency?base=JPY', { headers: {} })
+      const data = await parseResponse(await currencyHandler(req, mockContext as never))
+
+      // 1 JPY is a fraction of a baht, never the USD rate (the old catch-all said 35.5)
+      expect(data.thbRate).toBeGreaterThan(0.1)
+      expect(data.thbRate).toBeLessThan(0.5)
+      expect(data.budgetGuide.budget.min).toBeGreaterThan(1000) // 800 THB in yen
+      expect(data.error).toBe('Using fallback rates')
+    })
+
+    it('uses ECB rates from Frankfurter and refuses currencies it cannot price (T-0447)', async () => {
+      setMockQueryResult('SELECT data, created_at FROM ai_cache', [])
+      mockFetch.mockResolvedValueOnce(createMockResponse({ amount: 1, base: 'USD', date: '2026-11-11', rates: { THB: 33.69, GBP: 0.75149 } }))
+
+      const gbp = await parseResponse(await currencyHandler(createMockRequest('GET', '/api/currency?base=GBP', { headers: {} }), mockContext as never))
+      expect(mockFetch.mock.calls[0][0]).toContain('api.frankfurter.dev')
+      expect(gbp.thbRate).toBeCloseTo(33.69 / 0.75149, 4)
+
+      const rub = await currencyHandler(createMockRequest('GET', '/api/currency?base=RUB', { headers: {} }), mockContext as never)
+      expect(rub.status).toBe(400)
+    })
+
     it('should handle database errors gracefully', async () => {
       // Don't set any mock query results - will trigger error path
       mockFetch.mockRejectedValueOnce(new Error('Network error'))

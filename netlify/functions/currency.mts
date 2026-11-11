@@ -18,11 +18,41 @@ interface CurrencyResponse {
   }
 }
 
-// Common currencies for travelers
+// Common currencies for travelers. Rates are the European Central Bank's reference rates via
+// Frankfurter (free, no key). The ECB has published no RUB rate since March 2022, so RUB isn't
+// offered (better than showing a made-up rate).
 const SUPPORTED_CURRENCIES = [
   'USD', 'EUR', 'GBP', 'AUD', 'CAD', 'JPY', 'CNY', 'KRW',
-  'SGD', 'MYR', 'INR', 'RUB', 'CHF', 'NZD', 'HKD', 'SEK', 'NOK'
+  'SGD', 'MYR', 'INR', 'CHF', 'NZD', 'HKD', 'SEK', 'NOK', 'THB'
 ]
+
+const RATES_URL = 'https://api.frankfurter.dev/v1/latest?base=USD'
+
+// Last-resort rates if the rate API and the cache both fail: ECB reference rates of
+// 2026-11-11 (per 1 USD). Only used when nothing fresher is available.
+const FALLBACK_RATES: ExchangeRates = {
+  base: 'USD',
+  date: '2026-11-11',
+  rates: {
+    USD: 1, THB: 33.69, EUR: 0.89871, GBP: 0.75149, AUD: 1.4579, CAD: 1.4235, JPY: 159.23,
+    CNY: 6.6707, KRW: 1336.9, SGD: 1.2826, MYR: 4.0735, INR: 93.69, CHF: 0.82987,
+    NZD: 1.791, HKD: 7.8456, SEK: 9.9317, NOK: 9.5394,
+  },
+}
+
+/** Fresh USD-based rates, or null when the API fails or answers with something else. */
+async function fetchUsdRates(): Promise<ExchangeRates | null> {
+  try {
+    const response = await fetch(RATES_URL, { headers: { Accept: 'application/json' } })
+    if (!response.ok) return null
+    const data = await response.json()
+    if (typeof data?.rates?.THB !== 'number') return null
+    return { base: 'USD', date: String(data.date || ''), rates: { ...data.rates, USD: 1 } }
+  } catch {
+    // e.g. the old exchangerate.host URL now redirects to an HTML page: .json() throws
+    return null
+  }
+}
 
 // Daily budget guide in THB (approximate)
 const BUDGET_GUIDE = {
@@ -43,130 +73,100 @@ const BUDGET_GUIDE = {
   },
 }
 
-export default async (req: Request, context: Context) => {
-  const url = new URL(req.url)
-  const baseCurrency = url.searchParams.get('base')?.toUpperCase() || 'USD'
-  const amount = parseFloat(url.searchParams.get('amount') || '1')
-
-  try {
-    const db = await getDb()
-
-    // Check cache (rates update daily, cache for 6 hours)
-    const cacheKey = 'currency:rates'
-    const cached = await db`
-      SELECT data, created_at FROM ai_cache
-      WHERE cache_key = ${cacheKey}
-      AND created_at > NOW() - INTERVAL '6 hours'
-      LIMIT 1
-    `
-
-    let rates: ExchangeRates
-
-    if (cached.length > 0) {
-      rates = cached[0].data as ExchangeRates
-    } else {
-      // Fetch fresh rates from exchangerate.host (free, no API key required)
-      const apiUrl = `https://api.exchangerate.host/latest?base=USD&symbols=${SUPPORTED_CURRENCIES.join(',')},THB`
-      const response = await fetch(apiUrl)
-
-      if (!response.ok) {
-        // Fallback to approximate rates if API fails
-        rates = {
-          base: 'USD',
-          date: new Date().toISOString().split('T')[0],
-          rates: {
-            THB: 35.5,
-            EUR: 0.92,
-            GBP: 0.79,
-            AUD: 1.53,
-            CAD: 1.36,
-            JPY: 149.5,
-            CNY: 7.24,
-            KRW: 1320,
-            SGD: 1.34,
-            MYR: 4.47,
-            INR: 83.1,
-            RUB: 92.5,
-            CHF: 0.88,
-            NZD: 1.64,
-            HKD: 7.82,
-            SEK: 10.5,
-            NOK: 10.8,
-            USD: 1,
-          }
-        }
-      } else {
-        const data = await response.json()
-        rates = {
-          base: data.base || 'USD',
-          date: data.date || new Date().toISOString().split('T')[0],
-          rates: data.rates || {}
-        }
-      }
-
-      // Cache the rates
-      await db`
-        INSERT INTO ai_cache (cache_key, data, created_at)
-        VALUES (${cacheKey}, ${JSON.stringify(rates)}, NOW())
-        ON CONFLICT (cache_key) DO UPDATE SET
-          data = EXCLUDED.data,
-          created_at = NOW()
-      `
-    }
-
-    // Calculate THB rate for requested base currency
-    const usdToThb = rates.rates.THB || 35.5
-    const usdToBase = rates.rates[baseCurrency] || 1
-    const baseToThb = usdToThb / usdToBase
-
-    // Convert budget guide to user's currency
-    const budgetGuide = {
-      budget: {
-        min: Math.round(BUDGET_GUIDE.budget.min / baseToThb),
-        max: Math.round(BUDGET_GUIDE.budget.max / baseToThb),
-        description: BUDGET_GUIDE.budget.description,
-      },
-      mid: {
-        min: Math.round(BUDGET_GUIDE.mid.min / baseToThb),
-        max: Math.round(BUDGET_GUIDE.mid.max / baseToThb),
-        description: BUDGET_GUIDE.mid.description,
-      },
-      luxury: {
-        min: Math.round(BUDGET_GUIDE.luxury.min / baseToThb),
-        max: Math.round(BUDGET_GUIDE.luxury.max / baseToThb),
-        description: BUDGET_GUIDE.luxury.description,
-      },
-    }
-
-    const response_data: CurrencyResponse = {
-      thbRate: baseToThb,
-      rates: Object.fromEntries(
-        SUPPORTED_CURRENCIES.map(currency => [
-          currency,
-          rates.rates[currency] ? usdToThb / rates.rates[currency] : 0
-        ])
-      ),
-      lastUpdated: rates.date,
-      budgetGuide,
-    }
-
-    return new Response(JSON.stringify(response_data), {
-      headers: { 'Content-Type': 'application/json' },
-    })
-  } catch (error) {
-    console.error('Currency API error:', error)
-
-    // Return fallback rates on error
-    const fallbackRate = 35.5 // Approximate USD to THB
-    return new Response(JSON.stringify({
-      thbRate: fallbackRate,
-      rates: { USD: fallbackRate },
-      lastUpdated: new Date().toISOString().split('T')[0],
-      budgetGuide: BUDGET_GUIDE,
-      error: 'Using fallback rates',
-    }), {
-      headers: { 'Content-Type': 'application/json' },
-    })
+function convert(rates: ExchangeRates, baseCurrency: string): CurrencyResponse {
+  const usdToThb = rates.rates.THB
+  const baseToThb = usdToThb / rates.rates[baseCurrency]
+  const tier = (t: { min: number; max: number; description: string }) => ({
+    min: Math.round(t.min / baseToThb),
+    max: Math.round(t.max / baseToThb),
+    description: t.description,
+  })
+  return {
+    thbRate: baseToThb,
+    rates: Object.fromEntries(
+      SUPPORTED_CURRENCIES.map((currency) => [
+        currency,
+        rates.rates[currency] ? usdToThb / rates.rates[currency] : 0,
+      ])
+    ),
+    lastUpdated: rates.date,
+    // Budget guide converted to the user's currency
+    budgetGuide: {
+      budget: tier(BUDGET_GUIDE.budget),
+      mid: tier(BUDGET_GUIDE.mid),
+      luxury: tier(BUDGET_GUIDE.luxury),
+    },
   }
 }
 
+const jsonResponse = (data: unknown, status = 200) =>
+  new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } })
+
+export default async (req: Request, _context: Context) => {
+  const url = new URL(req.url)
+  const baseCurrency = url.searchParams.get('base')?.toUpperCase() || 'USD'
+
+  if (!SUPPORTED_CURRENCIES.includes(baseCurrency)) {
+    return jsonResponse({ error: `Currency not supported: ${baseCurrency}` }, 400)
+  }
+
+  const cacheKey = 'currency:rates'
+  let db: ReturnType<typeof getDb> | null = null
+  let cachedRates: ExchangeRates | null = null
+  let cacheIsFresh = false
+
+  // Cache read (rates update once a working day; fresh for 6 hours). A DB problem must not
+  // stop the calculator, so it only means "no cache".
+  try {
+    db = await getDb()
+    const cached = await db`
+      SELECT data, created_at FROM ai_cache
+      WHERE cache_key = ${cacheKey}
+      LIMIT 1
+    `
+    if (cached.length > 0 && typeof cached[0].data?.rates?.THB === 'number') {
+      const data = cached[0].data as ExchangeRates
+      cachedRates = { ...data, rates: { ...data.rates, USD: 1 } } // base is USD
+      cacheIsFresh = Date.now() - new Date(cached[0].created_at).getTime() < 6 * 60 * 60 * 1000
+    }
+  } catch (error) {
+    console.error('Currency cache read failed:', error)
+  }
+
+  let rates: ExchangeRates
+  let approximate = false
+  if (cachedRates && cacheIsFresh) {
+    rates = cachedRates
+  } else {
+    const fresh = await fetchUsdRates()
+    if (fresh) {
+      rates = fresh
+      if (db) {
+        try {
+          await db`
+            INSERT INTO ai_cache (cache_key, data, created_at)
+            VALUES (${cacheKey}, ${JSON.stringify(fresh)}, NOW())
+            ON CONFLICT (cache_key) DO UPDATE SET
+              data = EXCLUDED.data,
+              created_at = NOW()
+          `
+        } catch (error) {
+          console.error('Currency cache write failed:', error)
+        }
+      }
+    } else {
+      // API down: an older cached copy, else the dated fallback table (per-currency rates,
+      // never one rate for every currency)
+      rates = cachedRates || FALLBACK_RATES
+      approximate = true
+    }
+  }
+
+  if (!rates.rates[baseCurrency] || !rates.rates.THB) {
+    rates = FALLBACK_RATES
+    approximate = true
+  }
+
+  const body = convert(rates, baseCurrency)
+  return jsonResponse(approximate ? { ...body, error: 'Using fallback rates' } : body)
+}

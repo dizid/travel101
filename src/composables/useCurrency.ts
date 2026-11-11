@@ -30,7 +30,6 @@ const CURRENCY_SYMBOLS: Record<string, string> = {
   SGD: 'S$',
   MYR: 'RM',
   INR: '₹',
-  RUB: '₽',
   CHF: 'CHF',
   NZD: 'NZ$',
   HKD: 'HK$',
@@ -51,7 +50,7 @@ const CURRENCY_NAMES: Record<string, string> = {
   SGD: 'Singapore Dollar',
   MYR: 'Malaysian Ringgit',
   INR: 'Indian Rupee',
-  RUB: 'Russian Ruble',
+  // No RUB: the ECB (our rate source) has published no ruble rate since March 2022
   CHF: 'Swiss Franc',
   NZD: 'New Zealand Dollar',
   HKD: 'Hong Kong Dollar',
