@@ -1,6 +1,6 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import '../__mocks__/db'
-import { setMockQueryResult, clearMockResults, wasQueryMade, getQueriesMatching } from '../__mocks__/db'
+import { setMockQueryResult, clearMockResults, wasQueryMade, getQueriesMatching, getMockQueryLog } from '../__mocks__/db'
 import { setMockEnv, clearMockEnv } from './setup.js'
 import { createMockRequest, parseResponse } from './helpers.js'
 
@@ -465,6 +465,112 @@ describe('alerts function', () => {
 
       // Verify query includes user_id check
       expect(wasQueryMade('user_id')).toBe(true)
+    })
+  })
+
+  describe('visa tracking setup (facts + SQL, T-0447)', () => {
+    const setupRequest = (body: Record<string, unknown>) =>
+      createMockRequest('POST', '/api/alerts', {
+        headers: { 'x-user-id': 'user-123' },
+        body: { action: 'setup-visa', ...body },
+      })
+    const insertedAlerts = () =>
+      getMockQueryLog()
+        .filter((q) => q.query.includes('INSERT INTO user_alerts'))
+        .map((q) => ({ type: q.values[1] as string, message: q.values[3] as string, trigger: q.values[4] as string }))
+
+    beforeEach(() => {
+      vi.useFakeTimers({ toFake: ['Date'] })
+      vi.setSystemTime(new Date('2026-11-12T05:00:00Z'))
+      setMockQueryResult('SELECT is_pro', [{ is_pro: true }])
+      setMockQueryResult('INSERT INTO user_alerts', [{ id: 'a1' }])
+    })
+    afterEach(() => {
+      vi.useRealTimers()
+    })
+
+    it('never puts a query parameter inside a quoted SQL string (Postgres refuses the insert)', async () => {
+      await alertsHandler(setupRequest({ visaType: 'dtv', entryDate: '2026-11-01' }), mockContext as never)
+      const queries = getMockQueryLog().map((q) => q.query)
+      expect(queries.length).toBeGreaterThan(3)
+      for (const query of queries) {
+        expect(query).not.toMatch(/'[^']*\$\d+[^']*'/)
+      }
+    })
+
+    it('reminds about the 90-day report when its window opens, with the online and in-person windows', async () => {
+      const response = await alertsHandler(setupRequest({ visaType: 'dtv', entryDate: '2026-11-01' }), mockContext as never)
+      expect(response.status).toBe(201)
+      const reports = insertedAlerts().filter((a) => a.type === '90day_report')
+      // 180-day DTV entry: one report due 30 Jan 2027 (the next would fall on the last day of the stay)
+      expect(reports).toHaveLength(1)
+      expect(reports[0].trigger).toBe('2027-01-15')
+      expect(reports[0].message).toContain('due on 30 Jan 2027')
+      expect(reports[0].message).toContain('online at tm47.immigration.go.th until 23 Jan 2027')
+      expect(reports[0].message).toContain('in person at your immigration office until 6 Feb 2027')
+      expect(reports[0].message).toContain('2,000 THB fine')
+    })
+
+    it('still reminds today when the report window is already open', async () => {
+      // Due 2026-11-20: window opened 2026-11-05, online closed after 2026-11-13
+      await alertsHandler(
+        setupRequest({ visaType: 'retirement_visa', entryDate: '2026-08-22' }),
+        mockContext as never
+      )
+      const reports = insertedAlerts().filter((a) => a.type === '90day_report')
+      expect(reports[0].trigger).toBe('2026-11-12')
+      expect(reports[0].message).toContain('due on 20 Nov 2026')
+    })
+
+    it('lists current extension documents (TM.7, no TM.6) and the overstay fine', async () => {
+      await alertsHandler(setupRequest({ visaType: 'visa_exempt', entryDate: '2026-11-10' }), mockContext as never)
+      const alerts = insertedAlerts()
+      const extension = alerts.find((a) => a.type === 'visa_extension')!
+      expect(extension.message).toContain('form TM.7, one 4x6 cm photo and the 1,900 THB fee')
+      expect(extension.message).not.toContain('TM.6')
+      expect(extension.trigger).toBe('2026-11-26')
+      const expiry = alerts.find((a) => a.type === 'visa_expiry')!
+      expect(expiry.message).toContain('ends in 7 days, on 10 Dec 2026')
+      expect(expiry.message).toContain('500 THB per day')
+      const welcome = alerts.find((a) => a.type === 'travel_tip')!
+      expect(welcome.message).toContain('check it against the date on your entry stamp')
+    })
+
+    it.each(['visa_exempt_60', 'work_permit'])('asks for the stamp date for %s (no fixed length)', async (visaType) => {
+      const response = await alertsHandler(setupRequest({ visaType, entryDate: '2026-11-01' }), mockContext as never)
+      const data = await parseResponse(response)
+      expect(response.status).toBe(400)
+      expect(data.error).toContain('entry stamp')
+      expect(wasQueryMade('UPDATE user_profiles')).toBe(false)
+    })
+
+    it('accepts the stamp date for a bilateral 90-day exemption', async () => {
+      const response = await alertsHandler(
+        setupRequest({ visaType: 'visa_exempt_60', entryDate: '2026-11-01', visaExpiryDate: '2027-01-29' }),
+        mockContext as never
+      )
+      const data = await parseResponse(response)
+      expect(response.status).toBe(201)
+      expect(data.visaInfo.expiryDate).toBe('2027-01-29')
+    })
+
+    it('rejects an invalid entry date or an expiry before entry', async () => {
+      const bad = await alertsHandler(setupRequest({ visaType: 'dtv', entryDate: 'not-a-date' }), mockContext as never)
+      expect(bad.status).toBe(400)
+      const backwards = await alertsHandler(
+        setupRequest({ visaType: 'dtv', entryDate: '2026-11-01', visaExpiryDate: '2026-10-01' }),
+        mockContext as never
+      )
+      expect(backwards.status).toBe(400)
+    })
+
+    it('returns alerts in the camelCase shape the page reads', async () => {
+      setMockQueryResult('SELECT * FROM user_alerts', [
+        { id: 'x', alert_type: '90day_report', trigger_date: '2027-01-15', is_read: false, is_dismissed: false, priority: 3 },
+      ])
+      const req = createMockRequest('GET', '/api/alerts', { headers: { 'x-user-id': 'user-123' } })
+      const data = await parseResponse(await alertsHandler(req, mockContext as never))
+      expect(data.alerts[0]).toMatchObject({ id: 'x', alertType: '90day_report', triggerDate: '2027-01-15', isRead: false, priority: 3 })
     })
   })
 

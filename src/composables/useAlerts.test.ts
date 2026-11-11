@@ -369,7 +369,7 @@ describe('useAlerts', () => {
       const { VISA_LABELS } = useAlerts()
 
       expect(VISA_LABELS.visa_exempt).toBe('Visa Exempt (30 days)')
-      expect(VISA_LABELS.visa_exempt_60).toBe('Visa Exempt')
+      expect(VISA_LABELS.visa_exempt_60).toBe('Visa Exempt (15, 14 or 90 days)')
       expect(VISA_LABELS.tourist_visa_60).toBe('Tourist Visa')
       expect(VISA_LABELS.tourist_visa_90).toBe('Tourist Visa (90 days)')
       expect(VISA_LABELS.dtv).toBe('Destination Thailand Visa (DTV)')

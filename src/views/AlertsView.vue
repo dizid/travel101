@@ -20,7 +20,10 @@ const {
   visaInfo,
   loading,
   isPro,
+  error,
   VISA_LABELS,
+  SELECTABLE_VISA_TYPES,
+  EXPIRY_REQUIRED_TYPES,
   fetchAlerts,
   fetchUpcoming,
   fetchUnreadCount,
@@ -41,8 +44,13 @@ const setupForm = ref({
   expiryDate: '',
 })
 const settingUpVisa = ref(false)
+const setupError = ref<string | null>(null)
 
-const visaTypes = Object.entries(VISA_LABELS) as [VisaType, string][]
+const visaTypes = SELECTABLE_VISA_TYPES.map((type) => [type, VISA_LABELS[type]] as [VisaType, string])
+const expiryRequired = computed(() => EXPIRY_REQUIRED_TYPES.includes(setupForm.value.visaType))
+const canStartTracking = computed(
+  () => !!setupForm.value.entryDate && (!expiryRequired.value || !!setupForm.value.expiryDate)
+)
 
 onMounted(async () => {
   if (isPro.value) {
@@ -56,13 +64,19 @@ onMounted(async () => {
 
 async function handleSetupVisa() {
   settingUpVisa.value = true
+  setupError.value = null
   try {
-    await setupVisaTracking(
+    const result = await setupVisaTracking(
       setupForm.value.visaType,
       setupForm.value.entryDate,
       setupForm.value.expiryDate || undefined
     )
-    showSetupModal.value = false
+    // Keep the dialog open with the reason when the server refused (e.g. stamp date missing)
+    if (result) {
+      showSetupModal.value = false
+    } else {
+      setupError.value = error.value || 'Could not start visa tracking. Please try again.'
+    }
   } finally {
     settingUpVisa.value = false
   }
@@ -338,19 +352,27 @@ const upcomingNonUrgent = computed(() =>
               />
             </div>
 
-            <!-- Expiry Date (optional) -->
+            <!-- Expiry Date: optional, except for types without a fixed length -->
             <div class="mb-6">
               <label class="block text-sm font-medium text-gray-700 mb-2">
-                Visa Expiry Date <span class="text-gray-400">(optional)</span>
+                Permitted to stay until
+                <span v-if="expiryRequired" class="text-red-600">(required)</span>
+                <span v-else class="text-gray-400">(optional)</span>
               </label>
               <input
                 v-model="setupForm.expiryDate"
                 type="date"
                 class="input-thai w-full"
-                placeholder="Auto-calculated if empty"
+                :required="expiryRequired"
               />
-              <p class="text-xs text-gray-500 mt-1">Leave empty to auto-calculate based on visa type</p>
+              <p class="text-xs text-gray-500 mt-1">
+                The date on your passport entry stamp.
+                <template v-if="!expiryRequired">Leave empty to estimate it from your entry date.</template>
+                <template v-else>This visa type has no fixed length, so we need the stamp date.</template>
+              </p>
             </div>
+
+            <p v-if="setupError" class="mb-4 text-sm text-red-600" role="alert">{{ setupError }}</p>
 
             <!-- Actions -->
             <div class="flex gap-3">
@@ -359,7 +381,7 @@ const upcomingNonUrgent = computed(() =>
               </button>
               <button
                 @click="handleSetupVisa"
-                :disabled="settingUpVisa"
+                :disabled="settingUpVisa || !canStartTracking"
                 class="flex-1 btn-thai flex items-center justify-center gap-2"
               >
                 <LoadingOutlined v-if="settingUpVisa" class="animate-spin" />

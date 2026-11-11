@@ -37,14 +37,29 @@ export type VisaType =
 
 const VISA_LABELS: Record<VisaType, string> = {
   visa_exempt: 'Visa Exempt (30 days)',
-  visa_exempt_60: 'Visa Exempt', // key kept for stored alerts; length varies by nationality since 15 Sep 2026
+  visa_exempt_60: 'Visa Exempt (15, 14 or 90 days)', // key kept for stored alerts; length varies by nationality since 15 Sep 2026
   tourist_visa_60: 'Tourist Visa',
-  tourist_visa_90: 'Tourist Visa (90 days)',
+  tourist_visa_90: 'Tourist Visa (90 days)', // stored alerts only: Thailand has no 90-day tourist visa
   dtv: 'Destination Thailand Visa (DTV)',
   ed_visa: 'Education Visa (ED)',
   retirement_visa: 'Retirement Visa (O-A)',
   work_permit: 'Work Permit (Non-B)',
 }
+
+// Types offered in the setup form (tourist_visa_90 is not a real Thai visa)
+const SELECTABLE_VISA_TYPES: VisaType[] = [
+  'visa_exempt',
+  'visa_exempt_60',
+  'tourist_visa_60',
+  'dtv',
+  'ed_visa',
+  'retirement_visa',
+  'work_permit',
+]
+
+// Types whose length can't be worked out from the entry date: the stamp date is required
+// (must match the null durations in netlify/functions/alerts.mts)
+const EXPIRY_REQUIRED_TYPES: VisaType[] = ['visa_exempt_60', 'tourist_visa_90', 'work_permit']
 
 export function useAlerts() {
   const { get, post, put, del, loading, error } = useApi()
@@ -210,6 +225,8 @@ export function useAlerts() {
     isPro,
     // Constants
     VISA_LABELS,
+    SELECTABLE_VISA_TYPES,
+    EXPIRY_REQUIRED_TYPES,
     // Actions
     fetchAlerts,
     fetchUnreadCount,

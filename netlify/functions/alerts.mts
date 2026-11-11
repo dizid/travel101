@@ -30,6 +30,30 @@ interface SetVisaInfoRequest {
   visaExpiryDate?: string
 }
 
+// The page reads camelCase fields (src/composables/useAlerts.ts); the table is snake_case.
+function toAlert(row: Record<string, unknown>) {
+  const triggerDate = row.trigger_date instanceof Date
+    ? row.trigger_date.toISOString().split('T')[0]
+    : row.trigger_date
+  return {
+    id: row.id,
+    userId: row.user_id,
+    alertType: row.alert_type,
+    title: row.title,
+    message: row.message,
+    triggerDate,
+    referenceData: row.reference_data,
+    isRead: row.is_read,
+    isDismissed: row.is_dismissed,
+    isSent: row.is_sent,
+    priority: row.priority,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  }
+}
+
+const toAlerts = (rows: Record<string, unknown>[]) => rows.map(toAlert)
+
 export default async (req: Request, context: Context) => {
   const db = await getDb()
   let userId: string
@@ -66,7 +90,7 @@ export default async (req: Request, context: Context) => {
             AND trigger_date BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '30 days'
             ORDER BY trigger_date, priority DESC
           `
-          return json({ alerts })
+          return json({ alerts: toAlerts(alerts) })
         }
 
         // Get all alerts
@@ -87,7 +111,7 @@ export default async (req: Request, context: Context) => {
             LIMIT 50
           `
         }
-        return json({ alerts })
+        return json({ alerts: toAlerts(alerts) })
       }
 
       case 'POST': {
@@ -116,7 +140,7 @@ export default async (req: Request, context: Context) => {
           )
           RETURNING *
         `
-        return json({ alert }, 201)
+        return json({ alert: toAlert(alert) }, 201)
       }
 
       case 'PUT': {
@@ -162,7 +186,7 @@ export default async (req: Request, context: Context) => {
           return json({ error: 'Alert not found' }, 404)
         }
 
-        return json({ alert: updated })
+        return json({ alert: toAlert(updated) })
       }
 
       case 'DELETE': {
@@ -194,40 +218,109 @@ export default async (req: Request, context: Context) => {
   }
 }
 
+// Visa rules used for the reminders (checked 2026-11-12; same sources as countryStore.ts / ai.mts,
+// T-0381 + T-0445: Thai embassy/immigration pages; extension = form TM.7, one 4x6 cm photo and
+// 1,900 THB per thailand.go.th). duration = days of stay from the entry date, used only when the
+// user leaves the expiry date empty; null = no safe default, the stamp date is required.
+interface VisaConfig {
+  label: string
+  duration: number | null
+  extensible: boolean
+  reporting90: boolean
+}
+
+const VISA_CONFIGS: Record<string, VisaConfig> = {
+  // 30-day general visa exemption (since 15 Sep 2026)
+  visa_exempt: { label: 'visa-exempt stay', duration: 30, extensible: true, reporting90: false },
+  // Key kept for stored rows. The old 60-day exemption ended on 15 Sep 2026; other nationalities
+  // get 15 days or a bilateral 14, 30 or 90 days, so only the stamp date is reliable.
+  visa_exempt_60: { label: 'visa-exempt stay', duration: null, extensible: true, reporting90: false },
+  // Single-entry tourist visa (TR): usually 60 days; the visa states the permitted stay
+  tourist_visa_60: { label: 'tourist visa stay', duration: 60, extensible: true, reporting90: false },
+  // Key kept for stored rows only: Thailand has no 90-day tourist visa (not offered in the form)
+  tourist_visa_90: { label: 'tourist visa stay', duration: null, extensible: false, reporting90: true },
+  // DTV: up to 180 days per entry, one 180-day extension
+  dtv: { label: 'DTV stay', duration: 180, extensible: true, reporting90: true },
+  // Non-ED: 90 days on entry, then extensions
+  ed_visa: { label: 'education visa stay', duration: 90, extensible: true, reporting90: true },
+  // Non-O-A: 1 year per entry
+  retirement_visa: { label: 'retirement visa (O-A) stay', duration: 365, extensible: true, reporting90: true },
+  // Non-B: 90 days on entry, 1 year after an extension based on the work permit
+  work_permit: { label: 'Non-B / work permit stay', duration: null, extensible: true, reporting90: true },
+}
+
+const DEFAULT_VISA_CONFIG: VisaConfig = { label: 'stay', duration: 30, extensible: false, reporting90: false }
+
+const DAY_MS = 24 * 60 * 60 * 1000
+// 90-day report: from 15 days before the due date; online (TM.47 site) until 7 days before it,
+// in person until 7 days after it; later than that = 2,000 THB fine (immigration.go.th page_id=1666)
+const REPORT_OPENS_DAYS_BEFORE = 15
+const ONLINE_CLOSES_DAYS_BEFORE = 7
+const IN_PERSON_CLOSES_DAYS_AFTER = 7
+
+const addDays = (date: Date, days: number) => new Date(date.getTime() + days * DAY_MS)
+const isoDate = (date: Date) => date.toISOString().split('T')[0]
+// '12 Nov 2026': the same for every reader (toLocaleDateString() gave US-style 11/12/2026)
+const readableDate = (date: Date) =>
+  date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })
+
+function parseIsoDate(value: unknown): Date | null {
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null
+  const date = new Date(`${value}T00:00:00Z`)
+  return Number.isNaN(date.getTime()) || isoDate(date) !== value ? null : date
+}
+
 async function setupVisaAlerts(
   db: ReturnType<typeof getDb>,
   userId: string,
   request: SetVisaInfoRequest
 ) {
   const { visaType, entryDate, visaExpiryDate } = request
+  const config = VISA_CONFIGS[visaType] || DEFAULT_VISA_CONFIG
+
+  // Validate before anything is stored
+  const entryDateObj = parseIsoDate(entryDate)
+  if (!entryDateObj) {
+    return json({ error: 'Enter your entry date (YYYY-MM-DD).' }, 400)
+  }
+  let expiryDate: Date
+  if (visaExpiryDate) {
+    const parsedExpiry = parseIsoDate(visaExpiryDate)
+    if (!parsedExpiry || parsedExpiry <= entryDateObj) {
+      return json({ error: 'The expiry date must be a valid date after your entry date.' }, 400)
+    }
+    expiryDate = parsedExpiry
+  } else if (config.duration === null) {
+    return json({ error: 'For this visa type, enter the date on your entry stamp (permitted to stay until).' }, 400)
+  } else {
+    expiryDate = addDays(entryDateObj, config.duration)
+  }
+
+  const today = new Date(`${isoDate(new Date())}T00:00:00Z`)
+  const expiryText = readableDate(expiryDate)
+  const insertedRows: Record<string, unknown>[] = []
+
+  // Every text below is passed as one query parameter. A ${...} inside a quoted SQL string
+  // made Postgres refuse the whole insert ('bind message supplies N parameters'), so visa
+  // tracking could never be set up.
+  async function insertAlert(alertType: string, title: string, message: string, triggerDate: Date, referenceData: Record<string, unknown>, priority: number) {
+    const [row] = await db`
+      INSERT INTO user_alerts (user_id, alert_type, title, message, trigger_date, reference_data, priority)
+      VALUES (${userId}, ${alertType}, ${title}, ${message}, ${isoDate(triggerDate)}, ${JSON.stringify(referenceData)}, ${priority})
+      RETURNING *
+    `
+    if (row) insertedRows.push(row)
+  }
 
   // Update user profile with visa info
   await db`
     UPDATE user_profiles SET
       current_visa_type = ${visaType},
       entry_date = ${entryDate},
-      visa_expiry_date = ${visaExpiryDate || null},
+      visa_expiry_date = ${isoDate(expiryDate)},
       updated_at = NOW()
     WHERE user_id = ${userId}
   `
-
-  const alerts: Record<string, unknown>[] = []
-  const entryDateObj = new Date(entryDate)
-
-  // Visa-specific alerts based on type
-  const visaConfigs: Record<string, { duration: number; extensible: boolean; reporting90: boolean }> = {
-    visa_exempt: { duration: 30, extensible: true, reporting90: false },
-    visa_exempt_60: { duration: 60, extensible: true, reporting90: false },
-    tourist_visa_60: { duration: 60, extensible: true, reporting90: false },
-    tourist_visa_90: { duration: 90, extensible: false, reporting90: true },
-    dtv: { duration: 180, extensible: true, reporting90: true },
-    ed_visa: { duration: 90, extensible: true, reporting90: true },
-    retirement_visa: { duration: 365, extensible: true, reporting90: true },
-    work_permit: { duration: 365, extensible: true, reporting90: true },
-  }
-
-  const config = visaConfigs[visaType] || { duration: 30, extensible: false, reporting90: false }
-  const expiryDate = visaExpiryDate ? new Date(visaExpiryDate) : new Date(entryDateObj.getTime() + config.duration * 24 * 60 * 60 * 1000)
 
   // Clear existing visa alerts for this user
   await db`
@@ -236,103 +329,79 @@ async function setupVisaAlerts(
     AND alert_type IN ('visa_expiry', 'visa_extension', '90day_report')
   `
 
-  // 1. Visa expiry warning (7 days before)
-  const expiryWarningDate = new Date(expiryDate)
-  expiryWarningDate.setDate(expiryWarningDate.getDate() - 7)
+  const visaRef = { visaType, expiryDate: isoDate(expiryDate) }
 
-  const [expiryAlert] = await db`
-    INSERT INTO user_alerts (user_id, alert_type, title, message, trigger_date, reference_data, priority)
-    VALUES (
-      ${userId},
-      'visa_expiry',
-      'Visa Expiring Soon',
-      ${'Your ' + visaType.replace(/_/g, ' ') + ' expires in 7 days. ' + (config.extensible ? 'Consider applying for an extension at your local immigration office.' : 'Plan your departure or apply for a new visa.')},
-      ${expiryWarningDate.toISOString().split('T')[0]},
-      ${JSON.stringify({ visaType, expiryDate: expiryDate.toISOString().split('T')[0] })},
-      4
-    )
-    RETURNING *
-  `
-  alerts.push(expiryAlert)
+  // 1. Permitted stay ends in 7 days
+  await insertAlert(
+    'visa_expiry',
+    'Visa Expiring Soon',
+    `Your ${config.label} ends in 7 days, on ${expiryText}. ` +
+      (config.extensible
+        ? 'To stay longer, apply for an extension at an immigration office before that date. '
+        : 'Plan your departure or get a new visa before that date. ') +
+      'Staying past it is an overstay: 500 THB per day (up to 20,000 THB), and a ban from Thailand if you are caught.',
+    addDays(expiryDate, -7),
+    visaRef,
+    4
+  )
 
-  // 2. Extension reminder (14 days before expiry, if extensible)
+  // 2. Extension reminder (14 days before the stay ends, if it can be extended)
   if (config.extensible) {
-    const extensionReminderDate = new Date(expiryDate)
-    extensionReminderDate.setDate(extensionReminderDate.getDate() - 14)
-
-    const [extensionAlert] = await db`
-      INSERT INTO user_alerts (user_id, alert_type, title, message, trigger_date, reference_data, priority)
-      VALUES (
-        ${userId},
-        'visa_extension',
-        'Time to Extend Your Visa',
-        'Your visa expires in 2 weeks. Visit immigration to apply for an extension. Bring: passport, TM.6 card, 4x6cm photos, 1,900 THB fee.',
-        ${extensionReminderDate.toISOString().split('T')[0]},
-        ${JSON.stringify({ visaType, expiryDate: expiryDate.toISOString().split('T')[0] })},
-        3
-      )
-      RETURNING *
-    `
-    alerts.push(extensionAlert)
+    await insertAlert(
+      'visa_extension',
+      'Time to Extend Your Visa',
+      `Your ${config.label} ends in 2 weeks, on ${expiryText}. To stay longer, apply at your local immigration office before that date: ` +
+        'passport, form TM.7, one 4x6 cm photo and the 1,900 THB fee; other documents depend on your visa type. ' +
+        'An extension is at the immigration officer\'s discretion.',
+      addDays(expiryDate, -14),
+      visaRef,
+      3
+    )
   }
 
-  // 3. 90-day reporting reminders (if applicable)
+  // 3. 90-day reports: one alert per report, when its window opens (or today, if it is already open)
   if (config.reporting90) {
-    let reportDate = new Date(entryDateObj)
-    reportDate.setDate(reportDate.getDate() + 90)
-
-    while (reportDate < expiryDate) {
-      // Reminder 7 days before 90-day report is due
-      const reminderDate = new Date(reportDate)
-      reminderDate.setDate(reminderDate.getDate() - 7)
-
-      if (reminderDate > new Date()) {
-        const [reportAlert] = await db`
-          INSERT INTO user_alerts (user_id, alert_type, title, message, trigger_date, reference_data, priority)
-          VALUES (
-            ${userId},
-            '90day_report',
-            '90-Day Report Due Soon',
-            'Your 90-day report is due on ${reportDate.toLocaleDateString()}. Report online at https://tm47.immigration.go.th or visit your local immigration office.',
-            ${reminderDate.toISOString().split('T')[0]},
-            ${JSON.stringify({ dueDate: reportDate.toISOString().split('T')[0] })},
-            3
-          )
-          RETURNING *
-        `
-        alerts.push(reportAlert)
-      }
-
-      // Next 90-day report
-      reportDate.setDate(reportDate.getDate() + 90)
+    for (let dueDate = addDays(entryDateObj, 90); dueDate < expiryDate; dueDate = addDays(dueDate, 90)) {
+      const inPersonCloses = addDays(dueDate, IN_PERSON_CLOSES_DAYS_AFTER)
+      if (inPersonCloses < today) continue // past report: nothing to remind
+      const opens = addDays(dueDate, -REPORT_OPENS_DAYS_BEFORE)
+      const onlineCloses = addDays(dueDate, -ONLINE_CLOSES_DAYS_BEFORE)
+      const onlineText = onlineCloses >= today
+        ? `online at tm47.immigration.go.th until ${readableDate(onlineCloses)}, or `
+        : ''
+      await insertAlert(
+        '90day_report',
+        '90-Day Report Due Soon',
+        `Your 90-day report is due on ${readableDate(dueDate)}. You can report from ${readableDate(opens)}: ` +
+          `${onlineText}in person at your immigration office until ${readableDate(inPersonCloses)}. ` +
+          'Reporting later than that costs a 2,000 THB fine.',
+        opens > today ? opens : today,
+        { dueDate: isoDate(dueDate) },
+        3
+      )
     }
   }
 
-  // 4. Add a welcome/confirmation alert
-  const [welcomeAlert] = await db`
-    INSERT INTO user_alerts (user_id, alert_type, title, message, trigger_date, reference_data, priority)
-    VALUES (
-      ${userId},
-      'travel_tip',
-      'Visa Tracking Active',
-      'Your ${visaType.replace(/_/g, ' ')} is now being tracked. You''ll receive reminders for important dates. Your visa expires on ${expiryDate.toLocaleDateString()}.',
-      ${new Date().toISOString().split('T')[0]},
-      ${JSON.stringify({ visaType })},
-      1
-    )
-    RETURNING *
-  `
-  alerts.push(welcomeAlert)
+  // 4. Confirmation
+  await insertAlert(
+    'travel_tip',
+    'Visa Tracking Active',
+    `Your ${config.label} is now tracked: it ends on ${expiryText}` +
+      (visaExpiryDate ? '. ' : ' (worked out from your entry date; check it against the date on your entry stamp). ') +
+      'You will get reminders before each important date.',
+    today,
+    { visaType },
+    1
+  )
 
   return json({
     success: true,
-    alerts,
+    alerts: toAlerts(insertedRows),
     visaInfo: {
       type: visaType,
       entryDate,
-      expiryDate: expiryDate.toISOString().split('T')[0],
-      daysRemaining: Math.ceil((expiryDate.getTime() - Date.now()) / (24 * 60 * 60 * 1000)),
+      expiryDate: isoDate(expiryDate),
+      daysRemaining: Math.ceil((expiryDate.getTime() - Date.now()) / DAY_MS),
     },
   }, 201)
 }
-
