@@ -48,14 +48,15 @@ describe('db mock infrastructure', () => {
       expect(result[0]).toEqual({ name: 'Alice' })
     })
 
-    it('should return NeonQueryResult-like objects with .rows', async () => {
+    it('returns a plain array of rows like the real neon() driver (no .rows, no .sql)', async () => {
       setMockQueryResult('SELECT', [{ id: 1 }])
 
       const sql = getDb()
       const result = await sql`SELECT * FROM test`
 
-      expect(result.rows).toEqual([{ id: 1 }])
-      expect(result.rowCount).toBe(1)
+      expect(result).toEqual([{ id: 1 }])
+      expect((result as unknown as { rows?: unknown }).rows).toBeUndefined()
+      expect((sql as unknown as { sql?: unknown }).sql).toBeUndefined()
     })
 
     it('should return empty array for unmatched queries', async () => {
@@ -63,7 +64,6 @@ describe('db mock infrastructure', () => {
       const result = await sql`SELECT * FROM nonexistent`
 
       expect(result).toHaveLength(0)
-      expect(result.rows).toEqual([])
     })
 
     it('should throw when mockError is set', async () => {

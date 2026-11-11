@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import '../__mocks__/db'
 import '../__mocks__/anthropic'
-import { setMockQueryResult, clearMockResults, wasQueryMade } from '../__mocks__/db'
+import { setMockQueryResult, clearMockResults, wasQueryMade, getMockQueryLog } from '../__mocks__/db'
 import { mockAnthropic, setMockAIResponse, setMockAIError, resetAnthropicMocks } from '../__mocks__/anthropic'
 import { setMockEnv, clearMockEnv } from './setup.js'
 import { createMockRequest, parseResponse } from './helpers.js'
@@ -110,6 +110,24 @@ describe('ai function', () => {
       expect(data.conversation).toBeTruthy()
       expect(data.conversation.id).toBe('conv-123')
       expect(data.conversation.messages).toHaveLength(2)
+    })
+
+    it('types the context parameter in "IS NULL" (Postgres refuses a bare $n IS NULL, T-0447)', async () => {
+      setMockQueryResult('SELECT is_pro', [{ is_pro: true }])
+      setMockQueryResult('SELECT id, conversation_type', [])
+
+      const req = createMockRequest('GET', '/api/ai?type=general', {
+        headers: { 'x-user-id': 'user-123' },
+      })
+      const response = await aiHandler(req, mockContext as never)
+      expect(response.status).toBe(200)
+
+      const conversationQueries = getMockQueryLog().filter((q) => q.query.includes('FROM ai_conversations'))
+      expect(conversationQueries.length).toBeGreaterThan(0)
+      for (const q of conversationQueries) {
+        expect(q.query).not.toMatch(/\$\d+ IS NULL/)
+        expect(q.query).toMatch(/\$\d+::text IS NULL/)
+      }
     })
 
     it('should filter by conversation type and context', async () => {

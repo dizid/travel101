@@ -6,14 +6,12 @@ const mockQueryLog: Array<{ query: string; values: unknown[] }> = []
 let mockError: Error | null = null
 
 /**
- * Create a NeonQueryResult-like object that works both as an array
- * and has .rows property (for compatibility with both usage patterns)
+ * Like the real neon() HTTP driver: a query resolves to a plain array of rows.
+ * (No .rows / .rowCount: the old mock added them, which let code that read .rows pass
+ * the tests while it threw in production.)
  */
-function createQueryResult<T>(rows: T[]): T[] & { rows: T[]; rowCount: number } {
-  const result = [...rows] as T[] & { rows: T[]; rowCount: number }
-  result.rows = rows
-  result.rowCount = rows.length
-  return result
+function createQueryResult<T>(rows: T[]): T[] {
+  return [...rows]
 }
 
 /**
@@ -37,11 +35,7 @@ export const mockSql = vi.fn(
     // Look for matching mock result
     for (const [pattern, result] of mockResults) {
       if (query.includes(pattern)) {
-        // Wrap raw arrays in NeonQueryResult format
-        if (Array.isArray(result) && !('rows' in result)) {
-          return Promise.resolve(createQueryResult(result))
-        }
-        return Promise.resolve(result)
+        return Promise.resolve(Array.isArray(result) ? createQueryResult(result) : result)
       }
     }
 
@@ -104,12 +98,10 @@ export function getQueriesMatching(
 }
 
 /**
- * Create the mock db object with both direct call and .sql property support
- * This supports both:
- * - db`query` (subscription.mts pattern)
- * - db.sql`query` (ai.mts pattern)
+ * The mock db is the tagged-template function itself, like neon(): db`query`.
+ * (There is no db.sql in the real driver, so the mock doesn't offer one either.)
  */
-const mockDb = Object.assign(mockSql, { sql: mockSql })
+const mockDb = mockSql
 
 /**
  * Mock getDb function

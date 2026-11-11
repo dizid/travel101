@@ -10,13 +10,12 @@ import { checkRateLimit, getClientIp } from './lib/rate-limit.mts'
 // Claude API call to keep an oversized payload from running up token costs.
 const MAX_MESSAGE_LENGTH = 4000
 
-function requirePro(
-  db: ReturnType<typeof getDb> extends Promise<infer U> ? U : never,
-  userId: string
-): Promise<boolean> {
-  return db
-    .sql`SELECT is_pro FROM user_profiles WHERE user_id = ${userId}`
-    .then((r: { rows: { is_pro: boolean }[] }) => r.rows[0]?.is_pro ?? false)
+// neon() is itself the tagged-template function and returns a plain array of rows:
+// it has no .sql property and no .rows (the test mock used to add both, so the chat-history
+// queries passed the tests but threw in production).
+async function requirePro(db: ReturnType<typeof getDb>, userId: string): Promise<boolean> {
+  const rows = await db`SELECT is_pro FROM user_profiles WHERE user_id = ${userId}`
+  return rows[0]?.is_pro ?? false
 }
 
 const SYSTEM_PROMPT = `You are a friendly and knowledgeable Thailand travel advisor. You help travelers with:
@@ -123,18 +122,18 @@ export default async (req: Request, context: Context) => {
       }
 
       // Load the most recent non-archived conversation for this type/context
-      const result = await db.sql`
+      const result = await db`
         SELECT id, conversation_type, context_slug, title, messages, created_at, updated_at
         FROM ai_conversations
         WHERE user_id = ${userId}
           AND conversation_type = ${conversationType}
-          AND (context_slug = ${contextSlug} OR (context_slug IS NULL AND ${contextSlug} IS NULL))
+          AND (context_slug = ${contextSlug} OR (context_slug IS NULL AND ${contextSlug}::text IS NULL))
           AND is_archived = false
         ORDER BY updated_at DESC
         LIMIT 1
       `
 
-      const conversation = result.rows[0] || null
+      const conversation = result[0] || null
 
       return new Response(JSON.stringify({ conversation }), {
         headers: { 'Content-Type': 'application/json' },
@@ -169,12 +168,12 @@ export default async (req: Request, context: Context) => {
       }
 
       // Archive the conversation instead of deleting
-      await db.sql`
+      await db`
         UPDATE ai_conversations
         SET is_archived = true, updated_at = NOW()
         WHERE user_id = ${userId}
           AND conversation_type = ${conversationType}
-          AND (context_slug = ${contextSlug} OR (context_slug IS NULL AND ${contextSlug} IS NULL))
+          AND (context_slug = ${contextSlug} OR (context_slug IS NULL AND ${contextSlug}::text IS NULL))
           AND is_archived = false
       `
 
@@ -332,31 +331,31 @@ export default async (req: Request, context: Context) => {
           const title = message.slice(0, 100) + (message.length > 100 ? '...' : '')
 
           // Find existing active conversation or create new
-          const existing = await db.sql`
+          const existing = await db`
             SELECT id FROM ai_conversations
             WHERE user_id = ${userId}
               AND conversation_type = ${conversationType}
-              AND (context_slug = ${contextSlug} OR (context_slug IS NULL AND ${contextSlug} IS NULL))
+              AND (context_slug = ${contextSlug} OR (context_slug IS NULL AND ${contextSlug}::text IS NULL))
               AND is_archived = false
             LIMIT 1
           `
 
-          if (existing.rows.length > 0) {
+          if (existing.length > 0) {
             // Update existing conversation
-            await db.sql`
+            await db`
               UPDATE ai_conversations
               SET messages = ${JSON.stringify(updatedMessages)}::jsonb, updated_at = NOW()
-              WHERE id = ${existing.rows[0].id}
+              WHERE id = ${existing[0].id}
             `
-            conversationId = existing.rows[0].id
+            conversationId = existing[0].id
           } else {
             // Create new conversation
-            const result = await db.sql`
+            const result = await db`
               INSERT INTO ai_conversations (user_id, conversation_type, context_slug, title, messages)
               VALUES (${userId}, ${conversationType}, ${contextSlug}, ${title}, ${JSON.stringify(updatedMessages)}::jsonb)
               RETURNING id
             `
-            conversationId = result.rows[0]?.id
+            conversationId = result[0]?.id
           }
         }
       } catch (dbError) {
