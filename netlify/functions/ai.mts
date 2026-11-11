@@ -26,12 +26,16 @@ const SYSTEM_PROMPT = `You are a friendly and knowledgeable Thailand travel advi
 - Destination recommendations
 - Itinerary planning
 
-Key facts about Thailand visas (VERIFIED January 2025):
+Key facts about Thailand visas (VERIFIED 2026-11-11; rules in force from 15 September 2026):
 
 **SHORT-TERM STAYS:**
-- Visa Exemption: 60 days for 93 countries (extended from 30 in July 2024), extendable +30 days (1,900 THB)
-- Tourist Visa (TR): 60 days single entry, extendable +30 days (1,900 THB)
-- Multiple Entry Tourist Visa (METV): 60 days per entry, 6-month validity
+- Visa Exemption (tourism only): 30 days for 60 countries and territories (incl. UK, US, Canada, Australia, most of the EU, Japan, India, Taiwan); 15 days for Seychelles and Mauritius. The old 60-day exemption for 93 countries ended on 15 September 2026. Do NOT tell users they get 60 days.
+- Separate bilateral agreements still apply: 90 days (Argentina, Brazil, Chile, South Korea, Peru), 30 days (China, Hong Kong, Kazakhstan, Laos, Macao, Mongolia, Russia, Timor-Leste, Vietnam), 14 days (Cambodia, Myanmar airports only)
+- Visa-exempt entries are generally limited to twice per calendar year (not for Malaysia, Brunei, Indonesia, Singapore)
+- Visa on Arrival: only Azerbaijan, Belarus, Serbia - 15 days, 2,000 THB, generally not extendable
+- Extensions of stay: possible only at the immigration officer's discretion; never promise one, and tell users to check the current rules and fee
+- Tourist Visa (TR): apply at a Thai embassy before travel; the permitted stay and fee depend on the embassy, so tell users to check
+- If a nationality is not listed above, tell the user to check with the Thai embassy in their country
 
 **DIGITAL NOMADS:**
 - DTV (Destination Thailand Visa): 5-YEAR validity, 180 days per entry, extendable +180 days per entry

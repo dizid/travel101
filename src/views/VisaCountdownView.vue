@@ -49,16 +49,16 @@ const visaOptions: VisaOption[] = [
   {
     value: 'visa-exemption',
     label: 'Visa Exemption',
-    days: '60 days',
+    days: '30 days',
     extensible: true,
-    description: 'Most nationalities entering Thailand without a pre-arranged visa. Extendable by 30 days at immigration.',
+    description: 'Tourism-only entry without a pre-arranged visa, for 60 eligible nationalities (since 15 Sep 2026). Some nationalities have 14, 15, 30 or 90 days under other rules: check yours, and pick "Custom" if it differs.',
   },
   {
     value: 'tourist-visa',
     label: 'Tourist Visa (TR)',
     days: '60 days',
     extensible: true,
-    description: 'Single or multiple-entry tourist visa obtained at a Thai embassy. Extendable by 30 days.',
+    description: 'Tourist visa obtained at a Thai embassy. 60 days is typical: check the stay printed on your visa and use "Custom" if it differs.',
   },
   {
     value: 'dtv',
@@ -269,7 +269,7 @@ const breadcrumbs = [
               </p>
               <p>{{ selectedVisaOption.description }}</p>
               <p v-if="selectedVisaOption.extensible" class="text-green-700 font-medium mt-1">
-                ✓ Extendable by 30 days at any immigration office (1,900 THB fee)
+                Extensions may be possible at an immigration office (officer's discretion). Check the current rules and fee.
               </p>
             </div>
 
@@ -419,7 +419,7 @@ const breadcrumbs = [
               class="w-full mt-1 bg-green-50 hover:bg-green-100 text-green-700 font-medium text-sm px-4 py-2.5 rounded-xl border border-green-200 transition-colors"
               @click="handleExtension"
             >
-              Apply 30-Day Extension
+              I got a 30-day extension
             </button>
             <p v-else-if="!canExtend && !visaEntry.extensionDate" class="text-xs text-gray-400">
               This visa type cannot be extended in-country.

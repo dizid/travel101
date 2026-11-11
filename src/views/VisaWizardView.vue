@@ -244,7 +244,7 @@ const needsExtension = computed(() => {
 
 // Show border run warning for visa exemption users planning long stays
 const showBorderRunWarning = computed(() => {
-  return recommendedVisa.value?.code === 'VE' && wizardState.value.duration > 60
+  return recommendedVisa.value?.code === 'VE' && wizardState.value.duration > recommendedVisa.value.duration
 })
 
 // Format duration display - show years for long-term visas
@@ -613,13 +613,13 @@ watch(
               <div>
                 <h4 class="font-bold text-red-800 text-lg">Immigration Crackdown Active</h4>
                 <p class="text-red-700 mt-2">
-                  Your planned {{ wizardState.duration }} days exceeds the 60-day visa exemption.
+                  Your planned {{ wizardState.duration }} days exceeds your visa exemption of {{ recommendedVisa?.duration }} days.
                   Thai Immigration now strictly enforces visa run limits:
                 </p>
                 <ul class="mt-3 space-y-2 text-sm text-red-700">
                   <li class="flex items-start gap-2">
                     <span class="text-red-500 font-bold">•</span>
-                    <span><strong>Land borders:</strong> Maximum 2 visa-exempt entries per calendar year</span>
+                    <span><strong>Land borders:</strong> Visa-exempt entries are generally limited to 2 per calendar year</span>
                   </li>
                   <li class="flex items-start gap-2">
                     <span class="text-red-500 font-bold">•</span>
@@ -627,11 +627,11 @@ watch(
                   </li>
                   <li class="flex items-start gap-2">
                     <span class="text-red-500 font-bold">•</span>
-                    <span><strong>Land entries:</strong> NOT eligible for 30-day extension</span>
+                    <span><strong>Extensions:</strong> Only at the immigration officer's discretion, never guaranteed</span>
                   </li>
                 </ul>
                 <p class="text-red-800 mt-3 font-medium">
-                  ⚠️ Thousands of foreigners denied entry recently. For stays over 90 days, consider a <strong>Tourist Visa</strong>, <strong>DTV</strong>, or <strong>Non-O</strong> visa instead.
+                  ⚠️ Thousands of foreigners denied entry recently. For longer stays, consider a <strong>Tourist Visa</strong>, <strong>DTV</strong>, or <strong>Non-O</strong> visa instead.
                 </p>
               </div>
             </div>
@@ -650,11 +650,11 @@ watch(
                 <ul class="mt-3 space-y-2 text-sm">
                   <li class="flex items-center gap-2 text-amber-700">
                     <CheckCircleFilled class="text-amber-500" />
-                    <strong>Extend at Immigration</strong> - 1,900 THB for 30 more days
+                    <strong>Extend at Immigration</strong> - possible at the officer's discretion; check the current rules and fee
                   </li>
                   <li class="flex items-center gap-2 text-amber-700">
                     <CheckCircleFilled class="text-amber-500" />
-                    <strong>Apply for Tourist Visa</strong> - 60 days from embassy
+                    <strong>Apply for Tourist Visa</strong> - from a Thai embassy before travel
                   </li>
                   <li v-if="wizardState.tripPurpose === 'digital_nomad'" class="flex items-center gap-2 text-amber-700">
                     <CheckCircleFilled class="text-amber-500" />
@@ -884,7 +884,7 @@ watch(
       </div>
 
       <!-- Last updated -->
-      <p class="text-xs text-gray-400 mt-8 text-center">Visa information last updated: March 2026</p>
+      <p class="text-xs text-gray-400 mt-8 text-center">Visa information last updated: November 2026</p>
     </div>
   </div>
 </template>

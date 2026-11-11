@@ -1,127 +1,95 @@
 /**
  * Thailand Visa Eligibility Data
- * Last verified: January 2026
- * Source: Thai Immigration Bureau (immigration.go.th)
+ * Last verified: 2026-11-11
+ *
+ * Rules in force from 15 September 2026 (the old 60-day exemption for 93
+ * countries was revoked). Sources (official Thai government / TAT):
+ *  - TAT News: https://www.tatnews.org/2026/09/thailand-introduces-new-30-day-and-15-day-visa-exemption-rules-from-15-september/
+ *  - Royal Thai Embassy London: https://london.thaiembassy.org/en/content/revision-of-thailand-s-visa-0926
+ *  - Royal Thai Embassy Helsinki (30/15-day lists, bilateral 90/30/14-day lists, VoA):
+ *    https://helsinki.thaiembassy.org/en/publicservice/new-visa-exemption-and-visa-on-arrival-voa-to-thailand
+ *  - Royal Thai Embassy Doha (bilateral lists, VoA 15 days / 2,000 THB, extensions, land entries):
+ *    https://doha.thaiembassy.org/en/publicservice/tourist-visa-exemption-visa-on-arrival
+ *
+ * Only nationalities confirmed on those pages are listed. A country that is
+ * NOT in this table returns null from getVisaEligibility(), and the wizard
+ * then tells the user to check with the Thai embassy. Do not guess entries.
  */
 
 export type VisaEligibility = {
-  exemption: boolean      // 60-day visa exemption (air entry)
-  exemptionDays: number   // Days allowed under exemption
-  landExemption: boolean  // Land border visa exemption
-  landDays: number        // Days for land entry (if different)
+  exemption: boolean      // Visa exemption for tourism (30, 15 days or a bilateral period)
+  exemptionDays: number   // Days allowed under the exemption
+  landExemption: boolean  // Exemption also applies at land border checkpoints
+  landDays: number        // Days for land entry (same as exemptionDays)
   voa: boolean            // Visa on Arrival eligible
   voaDays: number         // VOA duration
   workingHoliday: boolean // Working Holiday Visa eligible
   notes?: string          // Special notes
 }
 
-// Countries eligible for 60-day visa exemption (by air)
-// These countries get visa-free entry for tourism
+/** Build an exemption entry (air + land, tourism). */
+function exemptEntry(days: number, workingHoliday = false, notes?: string): VisaEligibility {
+  return { exemption: true, exemptionDays: days, landExemption: true, landDays: days, voa: false, voaDays: 0, workingHoliday, notes }
+}
+
+const BILATERAL_NOTE = (days: number): string =>
+  `${days}-day visa exemption under a bilateral agreement between Thailand and your country (not the general 30-day scheme).`
+
+// 30-day tourism exemption: the 60 countries/territories listed by TAT (effective 15 Sep 2026)
+const THIRTY_DAY_CODES = [
+  'AU', 'AT', 'BH', 'BE', 'BT', 'BN', 'BG', 'CA', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FJ', 'FI', 'FR', 'GE', 'DE',
+  'GR', 'HU', 'IS', 'IN', 'ID', 'IE', 'IL', 'IT', 'JP', 'JO', 'KW', 'KG', 'LV', 'LI', 'LT', 'LU', 'MY', 'MV',
+  'MT', 'NL', 'NZ', 'NO', 'OM', 'PH', 'PL', 'PT', 'QA', 'RO', 'SA', 'SG', 'SK', 'SI', 'ZA', 'ES', 'SE', 'CH',
+  'TW', 'TR', 'UA', 'AE', 'GB', 'US',
+]
+
+// Working Holiday eligibility is unchanged by the Sept 2026 revision (kept from earlier data)
+const WORKING_HOLIDAY_CODES = new Set(['AU', 'NZ', 'CA', 'FR', 'KR', 'HK', 'IL'])
+
+// Visa exemption countries: 30-day general scheme, 15-day scheme, and bilateral agreements
 export const VISA_EXEMPT_COUNTRIES: Record<string, VisaEligibility> = {
-  // Europe - Schengen & EU
-  'AT': { exemption: true, exemptionDays: 60, landExemption: true, landDays: 30, voa: false, voaDays: 0, workingHoliday: false },
-  'BE': { exemption: true, exemptionDays: 60, landExemption: true, landDays: 30, voa: false, voaDays: 0, workingHoliday: false },
-  'CH': { exemption: true, exemptionDays: 60, landExemption: true, landDays: 30, voa: false, voaDays: 0, workingHoliday: false },
-  'CZ': { exemption: true, exemptionDays: 60, landExemption: true, landDays: 30, voa: false, voaDays: 0, workingHoliday: false },
-  'DE': { exemption: true, exemptionDays: 60, landExemption: true, landDays: 30, voa: false, voaDays: 0, workingHoliday: false },
-  'DK': { exemption: true, exemptionDays: 60, landExemption: true, landDays: 30, voa: false, voaDays: 0, workingHoliday: false },
-  'EE': { exemption: true, exemptionDays: 60, landExemption: true, landDays: 30, voa: false, voaDays: 0, workingHoliday: false },
-  'ES': { exemption: true, exemptionDays: 60, landExemption: true, landDays: 30, voa: false, voaDays: 0, workingHoliday: false },
-  'FI': { exemption: true, exemptionDays: 60, landExemption: true, landDays: 30, voa: false, voaDays: 0, workingHoliday: false },
-  'FR': { exemption: true, exemptionDays: 60, landExemption: true, landDays: 30, voa: false, voaDays: 0, workingHoliday: true },
-  'GR': { exemption: true, exemptionDays: 60, landExemption: true, landDays: 30, voa: false, voaDays: 0, workingHoliday: false },
-  'HU': { exemption: true, exemptionDays: 60, landExemption: true, landDays: 30, voa: false, voaDays: 0, workingHoliday: false },
-  'IE': { exemption: true, exemptionDays: 60, landExemption: true, landDays: 30, voa: false, voaDays: 0, workingHoliday: false },
-  'IS': { exemption: true, exemptionDays: 60, landExemption: true, landDays: 30, voa: false, voaDays: 0, workingHoliday: false },
-  'IT': { exemption: true, exemptionDays: 60, landExemption: true, landDays: 30, voa: false, voaDays: 0, workingHoliday: false },
-  'LI': { exemption: true, exemptionDays: 60, landExemption: true, landDays: 30, voa: false, voaDays: 0, workingHoliday: false },
-  'LT': { exemption: true, exemptionDays: 60, landExemption: true, landDays: 30, voa: false, voaDays: 0, workingHoliday: false },
-  'LU': { exemption: true, exemptionDays: 60, landExemption: true, landDays: 30, voa: false, voaDays: 0, workingHoliday: false },
-  'LV': { exemption: true, exemptionDays: 60, landExemption: true, landDays: 30, voa: false, voaDays: 0, workingHoliday: false },
-  'MC': { exemption: true, exemptionDays: 60, landExemption: true, landDays: 30, voa: false, voaDays: 0, workingHoliday: false },
-  'MT': { exemption: true, exemptionDays: 60, landExemption: true, landDays: 30, voa: false, voaDays: 0, workingHoliday: false },
-  'NL': { exemption: true, exemptionDays: 60, landExemption: true, landDays: 30, voa: false, voaDays: 0, workingHoliday: false },
-  'NO': { exemption: true, exemptionDays: 60, landExemption: true, landDays: 30, voa: false, voaDays: 0, workingHoliday: false },
-  'PL': { exemption: true, exemptionDays: 60, landExemption: true, landDays: 30, voa: false, voaDays: 0, workingHoliday: false },
-  'PT': { exemption: true, exemptionDays: 60, landExemption: true, landDays: 30, voa: false, voaDays: 0, workingHoliday: false },
-  'SE': { exemption: true, exemptionDays: 60, landExemption: true, landDays: 30, voa: false, voaDays: 0, workingHoliday: false },
-  'SI': { exemption: true, exemptionDays: 60, landExemption: true, landDays: 30, voa: false, voaDays: 0, workingHoliday: false },
-  'SK': { exemption: true, exemptionDays: 60, landExemption: true, landDays: 30, voa: false, voaDays: 0, workingHoliday: false },
+  // General 30-day tourism exemption (60 countries). Land entries: generally max 2 per calendar year.
+  ...Object.fromEntries(THIRTY_DAY_CODES.map((code) => [code, exemptEntry(30, WORKING_HOLIDAY_CODES.has(code))])),
 
-  // UK & Commonwealth
-  'GB': { exemption: true, exemptionDays: 60, landExemption: true, landDays: 30, voa: false, voaDays: 0, workingHoliday: false },
-  'AU': { exemption: true, exemptionDays: 60, landExemption: true, landDays: 30, voa: false, voaDays: 0, workingHoliday: true },
-  'NZ': { exemption: true, exemptionDays: 60, landExemption: true, landDays: 30, voa: false, voaDays: 0, workingHoliday: true },
-  'CA': { exemption: true, exemptionDays: 60, landExemption: true, landDays: 30, voa: false, voaDays: 0, workingHoliday: true },
+  // General 15-day tourism exemption
+  'SC': exemptEntry(15),
+  'MU': exemptEntry(15),
 
-  // Americas
-  'US': { exemption: true, exemptionDays: 60, landExemption: true, landDays: 30, voa: false, voaDays: 0, workingHoliday: false },
-  'AR': { exemption: true, exemptionDays: 60, landExemption: true, landDays: 30, voa: false, voaDays: 0, workingHoliday: false },
-  'BR': { exemption: true, exemptionDays: 60, landExemption: true, landDays: 30, voa: false, voaDays: 0, workingHoliday: false },
-  'CL': { exemption: true, exemptionDays: 60, landExemption: true, landDays: 30, voa: false, voaDays: 0, workingHoliday: false },
-  'MX': { exemption: true, exemptionDays: 60, landExemption: true, landDays: 30, voa: false, voaDays: 0, workingHoliday: false },
-  'PE': { exemption: true, exemptionDays: 60, landExemption: true, landDays: 30, voa: false, voaDays: 0, workingHoliday: false },
+  // Bilateral agreements - 90 days
+  'AR': exemptEntry(90, false, BILATERAL_NOTE(90)),
+  'BR': exemptEntry(90, false, BILATERAL_NOTE(90)),
+  'CL': exemptEntry(90, false, BILATERAL_NOTE(90)),
+  'KR': exemptEntry(90, true, BILATERAL_NOTE(90)),
+  'PE': exemptEntry(90, false, BILATERAL_NOTE(90)),
 
-  // Asia-Pacific (Visa Exempt)
-  'JP': { exemption: true, exemptionDays: 60, landExemption: true, landDays: 30, voa: false, voaDays: 0, workingHoliday: false },
-  'KR': { exemption: true, exemptionDays: 60, landExemption: true, landDays: 30, voa: false, voaDays: 0, workingHoliday: true },
-  'SG': { exemption: true, exemptionDays: 60, landExemption: true, landDays: 30, voa: false, voaDays: 0, workingHoliday: false },
-  'HK': { exemption: true, exemptionDays: 60, landExemption: true, landDays: 30, voa: false, voaDays: 0, workingHoliday: true },
-  'MY': { exemption: true, exemptionDays: 60, landExemption: true, landDays: 30, voa: false, voaDays: 0, workingHoliday: false },
-  'BN': { exemption: true, exemptionDays: 60, landExemption: true, landDays: 30, voa: false, voaDays: 0, workingHoliday: false },
-  'ID': { exemption: true, exemptionDays: 60, landExemption: true, landDays: 30, voa: false, voaDays: 0, workingHoliday: false },
-  'PH': { exemption: true, exemptionDays: 60, landExemption: true, landDays: 30, voa: false, voaDays: 0, workingHoliday: false },
-  'VN': { exemption: true, exemptionDays: 60, landExemption: true, landDays: 30, voa: false, voaDays: 0, workingHoliday: false },
+  // Bilateral agreements - 30 days
+  'CN': exemptEntry(30, false, BILATERAL_NOTE(30)),
+  'HK': exemptEntry(30, true, BILATERAL_NOTE(30)),
+  'KZ': exemptEntry(30, false, BILATERAL_NOTE(30)),
+  'LA': exemptEntry(30, false, BILATERAL_NOTE(30)),
+  'MO': exemptEntry(30, false, BILATERAL_NOTE(30)),
+  'MN': exemptEntry(30, false, BILATERAL_NOTE(30)),
+  'RU': exemptEntry(30, false, BILATERAL_NOTE(30)),
+  'TL': exemptEntry(30, false, BILATERAL_NOTE(30)),
+  'VN': exemptEntry(30, false, BILATERAL_NOTE(30)),
 
-  // Middle East
-  'AE': { exemption: true, exemptionDays: 60, landExemption: true, landDays: 30, voa: false, voaDays: 0, workingHoliday: false },
-  'BH': { exemption: true, exemptionDays: 60, landExemption: true, landDays: 30, voa: false, voaDays: 0, workingHoliday: false },
-  'IL': { exemption: true, exemptionDays: 60, landExemption: true, landDays: 30, voa: false, voaDays: 0, workingHoliday: true },
-  'KW': { exemption: true, exemptionDays: 60, landExemption: true, landDays: 30, voa: false, voaDays: 0, workingHoliday: false },
-  'OM': { exemption: true, exemptionDays: 60, landExemption: true, landDays: 30, voa: false, voaDays: 0, workingHoliday: false },
-  'QA': { exemption: true, exemptionDays: 60, landExemption: true, landDays: 30, voa: false, voaDays: 0, workingHoliday: false },
-  'SA': { exemption: true, exemptionDays: 60, landExemption: true, landDays: 30, voa: false, voaDays: 0, workingHoliday: false },
-  'TR': { exemption: true, exemptionDays: 60, landExemption: true, landDays: 30, voa: false, voaDays: 0, workingHoliday: false },
-
-  // Africa
-  'ZA': { exemption: true, exemptionDays: 60, landExemption: true, landDays: 30, voa: false, voaDays: 0, workingHoliday: false },
-
-  // Other European
-  'HR': { exemption: true, exemptionDays: 60, landExemption: true, landDays: 30, voa: false, voaDays: 0, workingHoliday: false },
-  'CY': { exemption: true, exemptionDays: 60, landExemption: true, landDays: 30, voa: false, voaDays: 0, workingHoliday: false },
-  'BG': { exemption: true, exemptionDays: 60, landExemption: true, landDays: 30, voa: false, voaDays: 0, workingHoliday: false },
-  'RO': { exemption: true, exemptionDays: 60, landExemption: true, landDays: 30, voa: false, voaDays: 0, workingHoliday: false },
+  // Bilateral agreements - 14 days
+  'KH': exemptEntry(14, false, BILATERAL_NOTE(14)),
+  'MM': exemptEntry(14, false, BILATERAL_NOTE(14) + ' Myanmar nationals: international airports only.'),
 }
 
-// Countries that require Visa on Arrival (VOA) - 15 days
+// Countries that can get a Visa on Arrival (VOA) - 15 days, 2,000 THB, from 15 Sep 2026
+const VOA_NOTE = 'Visa on Arrival - 15 days, 2,000 THB fee (cash, Thai baht). Generally not extendable.'
 export const VOA_COUNTRIES: Record<string, VisaEligibility> = {
-  'CN': { exemption: false, exemptionDays: 0, landExemption: false, landDays: 0, voa: true, voaDays: 15, workingHoliday: false, notes: 'Visa on Arrival only - 15 days, ฿2000 fee' },
-  'IN': { exemption: false, exemptionDays: 0, landExemption: false, landDays: 0, voa: true, voaDays: 15, workingHoliday: false, notes: 'Visa on Arrival only - 15 days, ฿2000 fee' },
-  'TW': { exemption: false, exemptionDays: 0, landExemption: false, landDays: 0, voa: true, voaDays: 15, workingHoliday: false, notes: 'Visa on Arrival only - 15 days, ฿2000 fee' },
-  'RU': { exemption: false, exemptionDays: 0, landExemption: false, landDays: 0, voa: true, voaDays: 15, workingHoliday: false, notes: 'Visa on Arrival only - 15 days, ฿2000 fee' },
-  'UA': { exemption: false, exemptionDays: 0, landExemption: false, landDays: 0, voa: true, voaDays: 15, workingHoliday: false, notes: 'Visa on Arrival only - 15 days, ฿2000 fee' },
-  'KZ': { exemption: false, exemptionDays: 0, landExemption: false, landDays: 0, voa: true, voaDays: 15, workingHoliday: false, notes: 'Visa on Arrival only - 15 days, ฿2000 fee' },
-  'UZ': { exemption: false, exemptionDays: 0, landExemption: false, landDays: 0, voa: true, voaDays: 15, workingHoliday: false, notes: 'Visa on Arrival only - 15 days, ฿2000 fee' },
-}
-
-// Countries that must apply for visa in advance
-export const VISA_REQUIRED_COUNTRIES: Record<string, VisaEligibility> = {
-  'PK': { exemption: false, exemptionDays: 0, landExemption: false, landDays: 0, voa: false, voaDays: 0, workingHoliday: false, notes: 'Must apply for visa at Thai embassy before travel' },
-  'BD': { exemption: false, exemptionDays: 0, landExemption: false, landDays: 0, voa: false, voaDays: 0, workingHoliday: false, notes: 'Must apply for visa at Thai embassy before travel' },
-  'LK': { exemption: false, exemptionDays: 0, landExemption: false, landDays: 0, voa: false, voaDays: 0, workingHoliday: false, notes: 'Must apply for visa at Thai embassy before travel' },
-  'NP': { exemption: false, exemptionDays: 0, landExemption: false, landDays: 0, voa: false, voaDays: 0, workingHoliday: false, notes: 'Must apply for visa at Thai embassy before travel' },
-  'MM': { exemption: false, exemptionDays: 0, landExemption: false, landDays: 0, voa: false, voaDays: 0, workingHoliday: false, notes: 'Must apply for visa at Thai embassy before travel' },
-  'IR': { exemption: false, exemptionDays: 0, landExemption: false, landDays: 0, voa: false, voaDays: 0, workingHoliday: false, notes: 'Must apply for visa at Thai embassy before travel' },
-  'AF': { exemption: false, exemptionDays: 0, landExemption: false, landDays: 0, voa: false, voaDays: 0, workingHoliday: false, notes: 'Must apply for visa at Thai embassy before travel' },
-  'SY': { exemption: false, exemptionDays: 0, landExemption: false, landDays: 0, voa: false, voaDays: 0, workingHoliday: false, notes: 'Must apply for visa at Thai embassy before travel' },
-  'YE': { exemption: false, exemptionDays: 0, landExemption: false, landDays: 0, voa: false, voaDays: 0, workingHoliday: false, notes: 'Must apply for visa at Thai embassy before travel' },
+  'AZ': { exemption: false, exemptionDays: 0, landExemption: false, landDays: 0, voa: true, voaDays: 15, workingHoliday: false, notes: VOA_NOTE },
+  'BY': { exemption: false, exemptionDays: 0, landExemption: false, landDays: 0, voa: true, voaDays: 15, workingHoliday: false, notes: VOA_NOTE },
+  'RS': { exemption: false, exemptionDays: 0, landExemption: false, landDays: 0, voa: true, voaDays: 15, workingHoliday: false, notes: VOA_NOTE },
 }
 
 // Combine all eligibility data
 export const ALL_VISA_ELIGIBILITY: Record<string, VisaEligibility> = {
   ...VISA_EXEMPT_COUNTRIES,
   ...VOA_COUNTRIES,
-  ...VISA_REQUIRED_COUNTRIES,
 }
 
 /**
@@ -182,26 +150,15 @@ export function getBestVisaOption(
   // Check visa exemption first
   if (eligibility.exemption) {
     const maxDays = isLandEntry ? eligibility.landDays : eligibility.exemptionDays
-    const extensible = !isLandEntry // Land entries NOT extensible
 
     if (durationDays <= maxDays) {
       return {
         visaType: 'exemption',
         maxDays,
-        extensible,
+        extensible: false, // Not guaranteed: extensions are at the immigration officer's discretion
         notes: isLandEntry
-          ? `Land entry: ${maxDays} days, NOT extensible. Max 2 land entries per calendar year.`
-          : `Air entry: ${maxDays} days, extensible +30 days at immigration (฿1,900).`,
-      }
-    }
-
-    // Can extend air entry by 30 days
-    if (!isLandEntry && durationDays <= maxDays + 30) {
-      return {
-        visaType: 'exemption',
-        maxDays: maxDays + 30,
-        extensible: true,
-        notes: `60-day exemption + 30-day extension = 90 days max. Apply at immigration office.`,
+          ? `Land entry: ${maxDays} days. Visa-exempt land entries are generally limited to 2 per calendar year (not for Malaysia, Brunei, Indonesia, Singapore).`
+          : `Air entry: ${maxDays} days, tourism only. Extensions may be possible at an immigration office (officer's discretion); check the current rules.`,
       }
     }
   }
@@ -212,17 +169,17 @@ export function getBestVisaOption(
       visaType: 'voa',
       maxDays: eligibility.voaDays,
       extensible: false,
-      notes: `Visa on Arrival: ${eligibility.voaDays} days, ฿2,000 fee. NOT extensible.`,
+      notes: `Visa on Arrival: ${eligibility.voaDays} days, 2,000 THB fee. Generally not extendable.`,
     }
   }
 
-  // Need Tourist Visa or DTV
+  // Longer than the exemption / VOA allows: a visa from a Thai embassy is needed
   if (durationDays <= 90) {
     return {
       visaType: 'tourist',
-      maxDays: 90,
-      extensible: true,
-      notes: 'Tourist Visa: 60 days + 30-day extension. Apply at Thai embassy before travel.',
+      maxDays: 60,
+      extensible: false,
+      notes: 'Your stay is longer than your exemption allows. Apply for a Tourist Visa at a Thai embassy before travel and check the permitted stay and fee for your nationality.',
     }
   }
 

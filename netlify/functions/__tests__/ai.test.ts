@@ -501,7 +501,7 @@ describe('ai function', () => {
 
       expect(mockAnthropic.messages.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          system: expect.stringContaining('Visa Exemption: 60 days'),
+          system: expect.stringContaining('Visa Exemption (tourism only): 30 days'),
         })
       )
       expect(mockAnthropic.messages.create).toHaveBeenCalledWith(

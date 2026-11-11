@@ -27,9 +27,15 @@ describe('useVisaCountdown', () => {
   // --- getVisaDays ---
 
   describe('getVisaDays', () => {
-    it('returns 60 for visa-exemption', () => {
+    it('returns 30 for visa-exemption (default since 15 Sep 2026)', () => {
       const { getVisaDays } = useVisaCountdown()
-      expect(getVisaDays('visa-exemption')).toBe(60)
+      expect(getVisaDays('visa-exemption')).toBe(30)
+      expect(getVisaDays('visa-exemption', undefined, '2026-09-15')).toBe(30)
+    })
+
+    it('keeps 60 for visa-exemption entries dated before 15 Sep 2026', () => {
+      const { getVisaDays } = useVisaCountdown()
+      expect(getVisaDays('visa-exemption', undefined, '2026-09-14')).toBe(60)
     })
 
     it('returns 60 for tourist-visa', () => {
@@ -73,8 +79,8 @@ describe('useVisaCountdown', () => {
   describe('getVisaLabel', () => {
     it('returns correct labels for all visa types', () => {
       const { getVisaLabel } = useVisaCountdown()
-      expect(getVisaLabel('visa-exemption')).toBe('Visa Exemption (60 days)')
-      expect(getVisaLabel('tourist-visa')).toBe('Tourist Visa (60 days)')
+      expect(getVisaLabel('visa-exemption')).toBe('Visa Exemption (30 days)')
+      expect(getVisaLabel('tourist-visa')).toBe('Tourist Visa (typically 60 days)')
       expect(getVisaLabel('dtv')).toContain('DTV')
       expect(getVisaLabel('education-visa')).toContain('ED')
       expect(getVisaLabel('retirement-visa')).toContain('O-A')
@@ -101,6 +107,22 @@ describe('useVisaCountdown', () => {
       const { setEntry, totalDays } = useVisaCountdown()
       setEntry(makeEntry({ visaType: 'visa-exemption', extensionDate: '2026-06-10' }))
       expect(totalDays.value).toBe(90)
+    })
+
+    it('uses 30 days for a visa-exemption entry made after 15 Sep 2026', () => {
+      const { setEntry, totalDays, expiryDate } = useVisaCountdown()
+      setEntry(makeEntry({ entryDate: '2026-10-01', visaType: 'visa-exemption' }))
+      expect(totalDays.value).toBe(30)
+      expect(expiryDate.value).toBe('2026-10-31')
+    })
+
+    it('loads a countdown saved before the rule change without crashing and keeps its 60 days', () => {
+      localStorage.setItem('happyroam_visa_countdown', JSON.stringify({
+        entryDate: '2026-08-20', visaType: 'visa-exemption', ninetyDayReports: [],
+      }))
+      const { visaEntry, totalDays } = useVisaCountdown()
+      expect(visaEntry.value?.visaType).toBe('visa-exemption')
+      expect(totalDays.value).toBe(60)
     })
 
     it('returns customDays for custom visa type', () => {

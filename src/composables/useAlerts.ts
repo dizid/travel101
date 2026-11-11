@@ -37,8 +37,8 @@ export type VisaType =
 
 const VISA_LABELS: Record<VisaType, string> = {
   visa_exempt: 'Visa Exempt (30 days)',
-  visa_exempt_60: 'Visa Exempt (60 days)',
-  tourist_visa_60: 'Tourist Visa (60 days)',
+  visa_exempt_60: 'Visa Exempt', // key kept for stored alerts; length varies by nationality since 15 Sep 2026
+  tourist_visa_60: 'Tourist Visa',
   tourist_visa_90: 'Tourist Visa (90 days)',
   dtv: 'Destination Thailand Visa (DTV)',
   ed_visa: 'Education Visa (ED)',

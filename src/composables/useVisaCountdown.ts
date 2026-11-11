@@ -9,8 +9,8 @@ export interface VisaEntry {
 }
 
 export type VisaType =
-  | 'visa-exemption'      // 60 days (ext +30)
-  | 'tourist-visa'        // 60 days (ext +30)
+  | 'visa-exemption'      // 30 days (general scheme since 15 Sep 2026; 60 before)
+  | 'tourist-visa'        // typically 60 days (check your visa)
   | 'dtv'                 // 180 days
   | 'education-visa'      // 90 days
   | 'retirement-visa'     // 365 days
@@ -19,8 +19,12 @@ export type VisaType =
 
 const STORAGE_KEY = 'happyroam_visa_countdown'
 
+// Thailand replaced the 60-day visa exemption with a 30-day one on this date
+const EXEMPTION_RULE_CHANGE_DATE = '2026-09-15'
+const LEGACY_EXEMPTION_DAYS = 60
+
 const VISA_BASE_DAYS: Record<VisaType, number> = {
-  'visa-exemption': 60,
+  'visa-exemption': 30,
   'tourist-visa': 60,
   'dtv': 180,
   'education-visa': 90,
@@ -30,8 +34,8 @@ const VISA_BASE_DAYS: Record<VisaType, number> = {
 }
 
 const VISA_LABELS: Record<VisaType, string> = {
-  'visa-exemption': 'Visa Exemption (60 days)',
-  'tourist-visa': 'Tourist Visa (60 days)',
+  'visa-exemption': 'Visa Exemption (30 days)',
+  'tourist-visa': 'Tourist Visa (typically 60 days)',
   'dtv': 'Destination Thailand Visa — DTV (180 days)',
   'education-visa': 'Education Visa — ED (90 days)',
   'retirement-visa': 'Retirement Visa — O-A (365 days)',
@@ -39,7 +43,7 @@ const VISA_LABELS: Record<VisaType, string> = {
   'custom': 'Custom Duration',
 }
 
-// Visa types that support a 30-day in-country extension
+// Visa types where an in-country extension may be granted (officer's discretion; user records it)
 const EXTENDABLE_TYPES: VisaType[] = ['visa-exemption', 'tourist-visa']
 
 function todayISOString(): string {
@@ -78,8 +82,13 @@ export function useVisaCountdown() {
 
   // --- Helpers ---
 
-  function getVisaDays(type: VisaType, customDays?: number): number {
+  function getVisaDays(type: VisaType, customDays?: number, entryDate?: string): number {
     if (type === 'custom') return customDays ?? 30
+    // Countdowns saved before the rule change were entered under the old 60-day exemption;
+    // travellers already in Thailand keep their original permitted stay.
+    if (type === 'visa-exemption' && entryDate && entryDate < EXEMPTION_RULE_CHANGE_DATE) {
+      return LEGACY_EXEMPTION_DAYS
+    }
     return VISA_BASE_DAYS[type]
   }
 
@@ -92,7 +101,7 @@ export function useVisaCountdown() {
   // Total days including extension if applied
   const totalDays = computed<number>(() => {
     if (!visaEntry.value) return 0
-    const base = getVisaDays(visaEntry.value.visaType, visaEntry.value.customDays)
+    const base = getVisaDays(visaEntry.value.visaType, visaEntry.value.customDays, visaEntry.value.entryDate)
     const extensionDays = visaEntry.value.extensionDate ? 30 : 0
     return base + extensionDays
   })

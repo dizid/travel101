@@ -15,31 +15,29 @@ import type {
 } from '@/types'
 import { getVisaEligibility, isVisaExempt, isVoaEligible, isWorkingHolidayEligible, OFFICIAL_RESOURCES } from '@/data/visaEligibility'
 
-// Thailand visa types data (VERIFIED January 2026)
+// Thailand visa types data (rules for exemption / VoA verified 2026-11-11, in force from 15 Sep 2026)
 const thailandVisaTypes: VisaType[] = [
   {
     id: 'visa-exemption',
     code: 'VE',
     name: 'Visa Exemption',
-    duration: 60, // Updated from 30 → 60 (July 2024)
-    description: 'For tourists from 93 eligible countries. Passport holders can enter visa-free for up to 60 days.',
+    duration: 30, // 30-day general scheme; getVisaForProfile overrides for 15-day / bilateral (14/30/90) nationalities
+    description: 'For tourism only. Passport holders of 60 countries and territories can enter visa-free for up to 30 days (15 days for Seychelles and Mauritius). Some nationalities have a separate bilateral agreement (14, 30 or 90 days).',
     requirements: [
       'Valid passport (6+ months validity)',
-      'Return/onward flight within 60 days',
+      'Return/onward flight within your permitted stay',
       'Proof of accommodation',
       'Proof of funds (10,000 THB individual / 20,000 THB family)',
       'TDAC completed before arrival',
     ],
-    extendable: true,
-    extensionDays: 30,
-    extensionFee: 1900,
+    extendable: true, // At the immigration officer's discretion; apply before the permitted stay ends
     forProfiles: [{ tripType: 'holiday' }],
     entryType: 'multiple',
     notes: [
-      'Land border entries: MAX 2 per calendar year',
+      'Tourism purposes only',
+      'Visa-exempt entries are generally limited to 2 per calendar year (the limit does not apply to Malaysia, Brunei, Indonesia, Singapore)',
+      'Extensions may be possible at an immigration office, at the officer\'s discretion. Check the current rules and fee',
       'Strict enforcement: Immigration actively denying entries to suspected overstayers',
-      'Land entries are NOT eligible for extension',
-      'Same-day re-entries NOT eligible for extension',
     ],
     officialUrl: OFFICIAL_RESOURCES.immigration,
   },
@@ -47,25 +45,23 @@ const thailandVisaTypes: VisaType[] = [
     id: 'tourist-visa',
     code: 'TR',
     name: 'Tourist Visa (Single Entry)',
-    duration: 60,
-    description: 'Single-entry tourist visa for planned holidays. Apply at Thai embassy before travel.',
+    duration: 60, // Typical single-entry TR stay; the visa itself states the permitted stay
+    description: 'Single-entry tourist visa for planned holidays. Apply at Thai embassy before travel. Check the permitted stay and fee for your nationality.',
     requirements: [
       'Valid passport (6+ months validity)',
       'Completed visa application form',
       'Passport-sized photos (4x6 cm)',
       'Proof of accommodation',
       'Bank statements (3 months, showing 20,000+ THB equivalent)',
-      'Return flight ticket within 60 days',
+      'Return flight ticket within your permitted stay',
       'TDAC completed before arrival',
     ],
-    extendable: true,
-    extensionDays: 30,
-    extensionFee: 1900,
+    extendable: true, // At the immigration officer's discretion
     forProfiles: [{ tripType: 'holiday' }],
     entryType: 'single',
     notes: [
-      'Total stay: up to 90 days (60 + 30 extension)',
-      'Multiple Entry Tourist Visa (METV) also available: 6-month validity, 60 days per entry',
+      'Longer stays than the visa exemption allows need a visa from a Thai embassy',
+      'Extensions may be possible at an immigration office; check the current rules and fee',
     ],
   },
   // STV REMOVED - Discontinued September 2022
@@ -206,7 +202,7 @@ const thailandVisaTypes: VisaType[] = [
     code: 'VOA',
     name: 'Visa on Arrival',
     duration: 15,
-    description: 'Quick visa for short stays. Available at Thai airports for citizens of eligible countries. NOT extendable.',
+    description: 'Quick visa for short stays. Available at designated checkpoints for citizens of Azerbaijan, Belarus and Serbia. Generally not extendable.',
     requirements: [
       'Valid passport (6+ months validity)',
       'Return flight within 15 days',
@@ -219,11 +215,10 @@ const thailandVisaTypes: VisaType[] = [
     forProfiles: [{ tripType: 'holiday' }],
     entryType: 'single',
     notes: [
-      'Available for China, India, Taiwan, Russia, and 18 other countries',
-      'NOT available for visa-exempt countries (they get 60 days free)',
-      'NOT extendable - must leave within 15 days',
-      'Can be slow during peak times - arrive early at airport',
-      'Cash only for visa fee at immigration counter',
+      'Available only for Azerbaijan, Belarus and Serbia (since 15 Sep 2026)',
+      'NOT available for visa-exempt countries',
+      'Generally NOT extendable (exception: serious illness) - plan to leave within 15 days',
+      'Cash only (Thai baht) for visa fee at immigration counter',
     ],
     officialUrl: OFFICIAL_RESOURCES.immigration,
   },
@@ -463,60 +458,55 @@ export const useCountryStore = defineStore('country', () => {
       return { visa }
     }
 
-    // Check nationality eligibility for visa exemption
-    if (isVisaExempt(nationality)) {
-      // Visa-exempt country
-      if (duration <= 60) {
-        const visa = visaTypes.value.find((v) => v.code === 'VE') || null
-        return { visa }
+    // Nationality not in our verified table: do not guess
+    if (!eligibility) {
+      return {
+        visa: null,
+        warning: 'Unable to determine visa rules for your nationality. Please check with the Thai embassy in your country before booking.',
       }
-      if (duration <= 90) {
-        // Visa exemption + extension (60 + 30)
-        const visa = visaTypes.value.find((v) => v.code === 'VE') || null
+    }
+
+    const trVisa = visaTypes.value.find((v) => v.code === 'TR') || null
+    const dtvVisa = visaTypes.value.find((v) => v.code === 'DTV')
+
+    if (isVisaExempt(nationality)) {
+      const exemptionDays = eligibility.exemptionDays
+      const veVisa = visaTypes.value.find((v) => v.code === 'VE') || null
+      if (veVisa && duration <= exemptionDays) {
+        // Show this nationality's own exemption length (30, 15 or bilateral 14/90)
         return {
-          visa,
-          warning: 'Requires 30-day extension at immigration office (฿1,900)',
+          visa: { ...veVisa, duration: exemptionDays },
+          warning: eligibility.notes,
         }
       }
-      // Over 90 days - need Tourist Visa or DTV
+      // Longer than the exemption: visa needed in advance (extension is discretionary, never promised)
       if (duration <= 120) {
-        const trVisa = visaTypes.value.find((v) => v.code === 'TR') || null
-        const dtvVisa = visaTypes.value.find((v) => v.code === 'DTV')
         return {
           visa: trVisa,
-          warning: 'Tourist Visa with extension recommended for this duration',
+          warning: `Your visa exemption allows ${exemptionDays} days. For a longer stay, apply for a visa at a Thai embassy before travel. Extensions at an immigration office are at the officer's discretion, so do not rely on one.`,
           alternatives: dtvVisa ? [dtvVisa] : undefined,
         }
       }
     } else if (isVoaEligible(nationality)) {
-      // VOA-only country (China, India, etc.)
-      if (duration <= 15) {
+      // VOA-only country (Azerbaijan, Belarus, Serbia)
+      if (duration <= eligibility.voaDays) {
         const visa = visaTypes.value.find((v) => v.code === 'VOA') || null
         return {
           visa,
-          warning: eligibility?.notes || 'Visa on Arrival: 15 days, ฿2,000 fee, NOT extendable',
+          warning: eligibility.notes,
         }
       }
       // Need Tourist Visa for longer stays
-      const trVisa = visaTypes.value.find((v) => v.code === 'TR') || null
       return {
         visa: trVisa,
-        warning: 'Your country requires Tourist Visa for stays over 15 days. Apply at Thai embassy before travel.',
-      }
-    } else {
-      // Visa required - must apply at embassy
-      const trVisa = visaTypes.value.find((v) => v.code === 'TR') || null
-      return {
-        visa: trVisa,
-        warning: 'Your country requires visa application at Thai embassy before travel. No visa exemption or VOA available.',
+        warning: `Visa on Arrival allows ${eligibility.voaDays} days. For longer stays, apply for a visa at a Thai embassy before travel.`,
       }
     }
 
     // Long-term stay for anyone → DTV or Elite
-    const dtvVisa = visaTypes.value.find((v) => v.code === 'DTV') || null
     const edVisa = visaTypes.value.find((v) => v.code === 'ED')
     return {
-      visa: dtvVisa,
+      visa: dtvVisa ?? null,
       alternatives: edVisa ? [edVisa] : undefined,
     }
   }

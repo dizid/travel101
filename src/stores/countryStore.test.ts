@@ -54,128 +54,148 @@ describe('countryStore', () => {
         expect(result.warning).toBeUndefined()
       })
 
-      it('should return VE for US citizen 60-day holiday', () => {
+      it('should return VE with 30 days for a US citizen staying exactly 30 days', () => {
+        const store = useCountryStore()
+
+        const result = store.getVisaForProfile('US', 'holiday', 30)
+
+        expect(result.visa?.code).toBe('VE')
+        expect(result.visa?.duration).toBe(30)
+      })
+
+      it('should NOT treat a 60-day stay as visa exempt for a US citizen', () => {
         const store = useCountryStore()
 
         const result = store.getVisaForProfile('US', 'holiday', 60)
 
-        expect(result.visa?.code).toBe('VE')
-        expect(result.warning).toBeUndefined()
+        expect(result.visa?.code).toBe('TR')
+        expect(result.warning).toContain('30 days')
+        expect(result.warning).toContain('discretion')
+        expect(result.alternatives?.some(v => v.code === 'DTV')).toBe(true)
       })
 
-      it('should return VE with extension warning for 75-day stay', () => {
-        const store = useCountryStore()
-
-        const result = store.getVisaForProfile('US', 'holiday', 75)
-
-        expect(result.visa?.code).toBe('VE')
-        expect(result.warning).toContain('extension')
-      })
-
-      it('should return VE with extension warning for 90-day stay', () => {
+      it('should send a UK citizen planning 90 days to a visa, never promising an extension', () => {
         const store = useCountryStore()
 
         const result = store.getVisaForProfile('GB', 'holiday', 90)
 
-        expect(result.visa?.code).toBe('VE')
-        expect(result.warning).toBeDefined()
+        expect(result.visa?.code).toBe('TR')
+        expect(result.warning).toContain('do not rely')
       })
 
-      it('should return Tourist Visa for stays over 90 days', () => {
+      it('should return DTV for stays over 120 days', () => {
         const store = useCountryStore()
 
-        const result = store.getVisaForProfile('DE', 'holiday', 100)
+        const result = store.getVisaForProfile('DE', 'holiday', 150)
 
-        expect(result.visa?.code).toBe('TR')
-        expect(result.warning).toContain('Tourist Visa')
-        expect(result.alternatives?.some(v => v.code === 'DTV')).toBe(true)
+        expect(result.visa?.code).toBe('DTV')
       })
 
       it('should work for EU countries', () => {
         const store = useCountryStore()
 
-        const resultDE = store.getVisaForProfile('DE', 'holiday', 30)
-        const resultFR = store.getVisaForProfile('FR', 'holiday', 30)
-        const resultES = store.getVisaForProfile('ES', 'holiday', 30)
-
-        expect(resultDE.visa?.code).toBe('VE')
-        expect(resultFR.visa?.code).toBe('VE')
-        expect(resultES.visa?.code).toBe('VE')
+        for (const code of ['DE', 'FR', 'ES']) {
+          const result = store.getVisaForProfile(code, 'holiday', 30)
+          expect(result.visa?.code).toBe('VE')
+          expect(result.visa?.duration).toBe(30)
+        }
       })
 
-      it('should work for other exempt countries', () => {
+      it('should work for newly listed countries (India, Taiwan, Ukraine, Bhutan)', () => {
         const store = useCountryStore()
 
-        const resultJP = store.getVisaForProfile('JP', 'holiday', 30)
-        const resultKR = store.getVisaForProfile('KR', 'holiday', 30)
-        const resultAU = store.getVisaForProfile('AU', 'holiday', 30)
+        for (const code of ['IN', 'TW', 'UA', 'BT']) {
+          const result = store.getVisaForProfile(code, 'holiday', 30)
+          expect(result.visa?.code).toBe('VE')
+        }
+      })
+    })
 
-        expect(resultJP.visa?.code).toBe('VE')
-        expect(resultKR.visa?.code).toBe('VE')
-        expect(resultAU.visa?.code).toBe('VE')
+    describe('15-day exemption and bilateral agreements', () => {
+      it('should show 15 days for Mauritius', () => {
+        const store = useCountryStore()
+
+        const result = store.getVisaForProfile('MU', 'holiday', 15)
+
+        expect(result.visa?.code).toBe('VE')
+        expect(result.visa?.duration).toBe(15)
+        expect(store.getVisaForProfile('MU', 'holiday', 20).visa?.code).toBe('TR')
+      })
+
+      it('should show 90 days for South Korea (bilateral)', () => {
+        const store = useCountryStore()
+
+        const result = store.getVisaForProfile('KR', 'holiday', 90)
+
+        expect(result.visa?.code).toBe('VE')
+        expect(result.visa?.duration).toBe(90)
+        expect(result.warning).toContain('bilateral')
+      })
+
+      it('should show 30 days for China and Russia (bilateral)', () => {
+        const store = useCountryStore()
+
+        for (const code of ['CN', 'RU']) {
+          const result = store.getVisaForProfile(code, 'holiday', 30)
+          expect(result.visa?.code).toBe('VE')
+          expect(result.visa?.duration).toBe(30)
+        }
+      })
+
+      it('should show 14 days for Cambodia (bilateral)', () => {
+        const store = useCountryStore()
+
+        const result = store.getVisaForProfile('KH', 'holiday', 14)
+
+        expect(result.visa?.duration).toBe(14)
+        expect(store.getVisaForProfile('KH', 'holiday', 15).visa?.code).toBe('TR')
       })
     })
 
     describe('visa on arrival (VOA)', () => {
-      it('should return VOA for Chinese citizen short stay', () => {
+      it('should return VOA for Serbian citizen short stay', () => {
         const store = useCountryStore()
 
-        const result = store.getVisaForProfile('CN', 'holiday', 10)
+        const result = store.getVisaForProfile('RS', 'holiday', 10)
 
         expect(result.visa?.code).toBe('VOA')
         expect(result.warning).toContain('15 days')
       })
 
-      it('should return VOA for Indian citizen', () => {
+      it('should return VOA for Azerbaijan and Belarus', () => {
         const store = useCountryStore()
 
-        const result = store.getVisaForProfile('IN', 'holiday', 15)
-
-        expect(result.visa?.code).toBe('VOA')
+        expect(store.getVisaForProfile('AZ', 'holiday', 15).visa?.code).toBe('VOA')
+        expect(store.getVisaForProfile('BY', 'holiday', 15).visa?.code).toBe('VOA')
       })
 
       it('should return Tourist Visa for VOA country staying over 15 days', () => {
         const store = useCountryStore()
 
-        const result = store.getVisaForProfile('CN', 'holiday', 30)
-
-        expect(result.visa?.code).toBe('TR')
-        expect(result.warning).toContain('Tourist Visa')
-      })
-
-      it('should return VOA for Russian citizen', () => {
-        const store = useCountryStore()
-
-        const result = store.getVisaForProfile('RU', 'holiday', 10)
-
-        expect(result.visa?.code).toBe('VOA')
-      })
-
-      it('should return VOA for Taiwan citizen', () => {
-        const store = useCountryStore()
-
-        const result = store.getVisaForProfile('TW', 'holiday', 14)
-
-        expect(result.visa?.code).toBe('VOA')
-      })
-    })
-
-    describe('visa required countries', () => {
-      it('should return Tourist Visa with embassy warning for Pakistan', () => {
-        const store = useCountryStore()
-
-        const result = store.getVisaForProfile('PK', 'holiday', 30)
+        const result = store.getVisaForProfile('RS', 'holiday', 30)
 
         expect(result.visa?.code).toBe('TR')
         expect(result.warning).toContain('embassy')
       })
+    })
 
-      it('should return Tourist Visa with embassy warning for Bangladesh', () => {
+    describe('nationalities not confirmed (check with embassy)', () => {
+      it('should not guess for Pakistan: no visa, embassy message', () => {
         const store = useCountryStore()
 
-        const result = store.getVisaForProfile('BD', 'holiday', 30)
+        const result = store.getVisaForProfile('PK', 'holiday', 30)
 
-        expect(result.visa?.code).toBe('TR')
+        expect(result.visa).toBeNull()
+        expect(result.warning).toContain('Unable to determine')
+        expect(result.warning).toContain('embassy')
+      })
+
+      it('should not guess for Mexico', () => {
+        const store = useCountryStore()
+
+        const result = store.getVisaForProfile('MX', 'holiday', 30)
+
+        expect(result.visa).toBeNull()
         expect(result.warning).toContain('embassy')
       })
     })
@@ -546,13 +566,15 @@ describe('countryStore', () => {
   })
 
   describe('visa types data integrity', () => {
-    it('should have correct VE duration (60 days)', () => {
+    it('should have correct VE duration (30 days)', () => {
       const store = useCountryStore()
       const ve = store.visaTypes.find(v => v.code === 'VE')
 
-      expect(ve?.duration).toBe(60)
+      expect(ve?.duration).toBe(30)
       expect(ve?.extendable).toBe(true)
-      expect(ve?.extensionDays).toBe(30)
+      // No promised extension length or fee: extensions are discretionary
+      expect(ve?.extensionDays).toBeUndefined()
+      expect(ve?.extensionFee).toBeUndefined()
     })
 
     it('should have correct DTV duration (180 days per entry)', () => {
@@ -588,7 +610,7 @@ describe('countryStore', () => {
 
       expect(tr?.duration).toBe(60)
       expect(tr?.extendable).toBe(true)
-      expect(tr?.extensionDays).toBe(30)
+      expect(tr?.extensionDays).toBeUndefined() // no promised extension length
     })
 
     it('should have Working Holiday visa', () => {
