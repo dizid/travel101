@@ -72,7 +72,27 @@ describe('itinerary function', () => {
 
       expect(response.status).toBe(200)
       expect(data.itineraries).toHaveLength(2)
-      expect(data.itineraries[0].day_count).toBe(3)
+      // camelCase, like src/composables/useItinerary.ts reads it (T-0449)
+      expect(data.itineraries[0].dayCount).toBe(3)
+      expect(data.itineraries[0]).not.toHaveProperty('day_count')
+    })
+
+    it('sends days and activities in camelCase so the page shows numbers, times and costs (T-0449)', async () => {
+      setMockQueryResult('SELECT * FROM itineraries', [
+        { id: 'itin-1', name: 'Bangkok Trip', start_date: '2026-12-01', ai_generated: true },
+      ])
+      setMockQueryResult('FROM itinerary_days', [{ id: 'day-1', itinerary_id: 'itin-1', day_number: 2, location: 'Bangkok' }])
+      setMockQueryResult('FROM itinerary_activities', [
+        { id: 'act-1', day_id: 'day-1', time_slot: '14:30', activity_type: 'food', duration_minutes: 90, estimated_cost_thb: 400 },
+      ])
+
+      const req = createMockRequest('GET', '/api/itinerary?id=itin-1', { headers: { 'x-user-id': 'user-123' } })
+      const text = await (await itineraryHandler(req, mockContext as never)).text()
+
+      expect(text).not.toMatch(/"[a-z]+_[a-z_]+":/) // no snake_case keys anywhere
+      const data = JSON.parse(text)
+      expect(data.startDate).toBe('2026-12-01')
+      expect(data.aiGenerated).toBe(true)
     })
 
     it('should get single itinerary with days and activities', async () => {

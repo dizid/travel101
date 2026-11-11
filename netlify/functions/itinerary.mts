@@ -3,8 +3,25 @@ import Anthropic from '@anthropic-ai/sdk'
 import { getDb } from './lib/db.mts'
 import { requireAuth } from './lib/auth.mts'
 
+// The page reads camelCase (src/composables/useItinerary.ts: dayNumber, timeSlot, startDate...)
+// but neon() rows are snake_case. Without this the Trip Planner showed 'Day ' with no number,
+// no times/costs/dates, and editing an activity overwrote its time, type and duration with the
+// form defaults. Every response goes through json(), so the mapping lives here.
+const toCamelKey = (key: string) => key.replace(/_([a-z0-9])/g, (_match, char: string) => char.toUpperCase())
+
+function camelize(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(camelize)
+  if (value instanceof Date) return value
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value as Record<string, unknown>).map(([key, inner]) => [toCamelKey(key), camelize(inner)])
+    )
+  }
+  return value
+}
+
 const json = (data: unknown, status = 200) =>
-  new Response(JSON.stringify(data), {
+  new Response(JSON.stringify(camelize(data)), {
     status,
     headers: { 'Content-Type': 'application/json' },
   })
@@ -278,7 +295,7 @@ export default async (req: Request, context: Context) => {
         // List all itineraries for user
         const itineraries = await db`
           SELECT id, name, start_date, end_date, status, ai_generated, created_at, updated_at,
-            (SELECT COUNT(*) FROM itinerary_days WHERE itinerary_id = itineraries.id) as day_count
+            (SELECT COUNT(*)::int FROM itinerary_days WHERE itinerary_id = itineraries.id) as day_count
           FROM itineraries
           WHERE user_id = ${userId}
           ORDER BY updated_at DESC

@@ -1,3 +1,4 @@
+import { parseCalendarDay } from './calendarDay'
 import type { Itinerary } from '@/composables/useItinerary'
 
 // Format date for .ics file (YYYYMMDD or YYYYMMDDTHHMMSS)
@@ -22,7 +23,7 @@ export function generateIcsCalendar(itinerary: Itinerary): string {
   if (!itinerary.days) return ''
 
   for (const day of itinerary.days) {
-    const dayDate = day.date ? new Date(day.date) : new Date(now.getTime() + (day.dayNumber - 1) * 24 * 60 * 60 * 1000)
+    const dayDate = day.date ? parseCalendarDay(day.date) : new Date(now.getTime() + (day.dayNumber - 1) * 24 * 60 * 60 * 1000)
 
     for (const activity of day.activities) {
       const { hours, minutes } = parseTimeSlot(activity.timeSlot || '09:00')
@@ -90,7 +91,7 @@ export function generateTextItinerary(itinerary: Itinerary): string {
       lines.push('')
       lines.push(`📍 DAY ${day.dayNumber}: ${day.location}`)
       if (day.date) {
-        lines.push(`   ${new Date(day.date).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}`)
+        lines.push(`   ${parseCalendarDay(day.date).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}`)
       }
       lines.push('')
 

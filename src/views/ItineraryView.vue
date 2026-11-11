@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { parseCalendarDay } from '@/utils/calendarDay'
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@stores/userStore'
@@ -181,7 +182,7 @@ function goBack() {
 }
 
 function formatDate(date: string) {
-  return new Date(date).toLocaleDateString('en-US', {
+  return parseCalendarDay(date).toLocaleDateString('en-US', {
     weekday: 'short',
     month: 'short',
     day: 'numeric',

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@stores/userStore'
 import { useCountryStore } from '@stores/countryStore'
@@ -30,7 +30,9 @@ const { get, post, del } = useApi()
 import { useItinerary } from '@/composables/useItinerary'
 const {
   itineraries,
+  currentItinerary,
   fetchItineraries,
+  fetchItinerary,
   addActivity,
 } = useItinerary()
 
@@ -176,13 +178,24 @@ function goToAttraction(slug: string) {
 // Add to Itinerary functions
 function openAddToTripModal(slug: string, name: string, score: number) {
   selectedAttractionForTrip.value = { slug, name, score }
-  selectedItineraryId.value = itineraries.value[0]?.id || ''
-  selectedDayId.value = ''
   showAddToTripModal.value = true
+  selectedDayId.value = ''
+  const firstId = itineraries.value[0]?.id || ''
+  if (selectedItineraryId.value === firstId && firstId) {
+    fetchItinerary(firstId) // same trip as last time: the watcher won't fire, load it here
+  }
+  selectedItineraryId.value = firstId
 }
 
+// The trip list (GET /itinerary) carries no days, so the day picker loads the chosen trip
+// itself; before this every trip showed 'No days in this itinerary yet'.
 const selectedItinerary = computed(() => {
-  return itineraries.value.find(it => it.id === selectedItineraryId.value)
+  return currentItinerary.value?.id === selectedItineraryId.value ? currentItinerary.value : null
+})
+
+watch(selectedItineraryId, async (id) => {
+  selectedDayId.value = ''
+  if (id && showAddToTripModal.value) await fetchItinerary(id)
 })
 
 async function handleAddToTrip() {
