@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import ToolIntro from '@/components/common/ToolIntro.vue'
 import { ref, computed, onMounted } from 'vue'
 import { useApi } from '@/composables/useApi'
 import { useUserStore } from '@/stores/userStore'
@@ -173,6 +174,7 @@ onMounted(() => {
     </div>
 
     <div class="max-w-4xl mx-auto px-4 sm:px-6 py-8">
+      <ToolIntro page="packing" />
       <ProGate featureName="AI Packing Lists">
       <!-- Trip Configuration -->
       <div class="card-thai mb-8 print:hidden">

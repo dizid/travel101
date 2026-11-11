@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import ToolIntro from '@/components/common/ToolIntro.vue'
 import { ref, computed } from 'vue'
 import { useUserStore } from '@stores/userStore'
 import { RouterLink } from 'vue-router'
@@ -130,6 +131,8 @@ const costCategories = [
 
     <!-- Content -->
     <div class="max-w-4xl mx-auto px-4 sm:px-6 py-8">
+      <ToolIntro page="costCalculator" />
+
       <!-- Pro gate -->
       <div v-if="!isPro" class="card-thai text-center py-12">
         <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-green-50 flex items-center justify-center">

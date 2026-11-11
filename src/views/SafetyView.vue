@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import ToolIntro from '@/components/common/ToolIntro.vue'
 import BodyTeleport from '@/components/common/BodyTeleport.vue'
 import { ref, computed, onMounted, watch } from 'vue'
 import { RouterLink } from 'vue-router'
@@ -253,6 +254,8 @@ onMounted(() => {
           </div>
         </div>
       </div>
+
+      <ToolIntro page="safety" />
 
       <!-- Pro gate: scam reports, safety guide, and reporting are Pro features.
            Emergency numbers above stay free (also available at /emergency). -->

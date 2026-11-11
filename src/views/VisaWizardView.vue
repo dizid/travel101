@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import ToolIntro from '@/components/common/ToolIntro.vue'
 import { ref, computed, watch } from 'vue'
 import { useUserStore } from '@stores/userStore'
 import { useCountryStore } from '@stores/countryStore'
@@ -332,6 +333,9 @@ watch(
     <!-- Breadcrumb navigation -->
     <div class="max-w-3xl mx-auto px-4 sm:px-6 pt-4">
       <BreadcrumbNav :items="[{ name: 'Home', url: '/' }, { name: 'Visa Guide' }]" />
+    </div>
+    <div class="max-w-3xl mx-auto px-4 sm:px-6 pt-8">
+      <ToolIntro page="visa" />
     </div>
     <div class="max-w-3xl mx-auto px-4 sm:px-6 py-8 md:py-12">
       <!-- Step 1: Your Situation -->
