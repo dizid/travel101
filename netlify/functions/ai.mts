@@ -4,7 +4,7 @@ import { getDb } from './lib/db.mts'
 import { checkAndIncrementUsage, checkAndIncrementAnonUsage } from './lib/usage.mts'
 import { optionalAuth } from './lib/auth.mts'
 import { validateAppSecret } from './lib/security.mts'
-import { sanitizeHistory, shortText, shortList } from './lib/ai-input.mts'
+import { sanitizeHistory, shortText, shortList, MAX_STORED_MESSAGES } from './lib/ai-input.mts'
 import { checkRateLimit, getClientIp } from './lib/rate-limit.mts'
 
 // Max length for the user-supplied chat message, enforced before any DB or
@@ -325,9 +325,11 @@ export default async (req: Request, context: Context) => {
         const isPro = await requirePro(db, userId)
 
         if (isPro) {
-          // Build updated messages array
+          // Build updated messages array. The stored copy keeps up to MAX_STORED_MESSAGES
+          // turns; only the AI prompt uses the shorter safeHistory (T-0571).
+          const storedHistory = sanitizeHistory(conversationHistory, MAX_STORED_MESSAGES)
           const updatedMessages = [
-            ...safeHistory.map((msg: { role: string; content: string }) => ({
+            ...storedHistory.map((msg: { role: string; content: string }) => ({
               role: msg.role,
               content: msg.content,
               timestamp: new Date().toISOString(),

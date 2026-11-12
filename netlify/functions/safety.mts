@@ -55,6 +55,8 @@ const SCAM_TYPES = [
 
 // Input limits for a new report (T-0565).
 const REPORT_LIMITS = { title: 120, description: 2000, location_name: 120, province: 60 } as const
+// At most this many unchecked reports from everyone together in 24 hours (T-0571).
+const MAX_UNCHECKED_REPORTS_PER_DAY = 50
 
 /** A message when a submitted report is malformed or too long; null when fine. */
 export function reportProblem(body: unknown): string | null {
@@ -136,11 +138,13 @@ export default async (req: Request, context: Context) => {
       }
 
       // Get statistics
+      // Public numbers count checked reports only (T-0571): unchecked ones are hidden, so
+      // counting them let spam raise the page's 'N reports' figure.
       const stats = await db`
         SELECT
-          COUNT(*) as total_reports,
+          COUNT(*) FILTER (WHERE verified = true) as total_reports,
           COUNT(*) FILTER (WHERE verified = true) as verified_reports,
-          COUNT(DISTINCT province) as provinces_covered
+          COUNT(DISTINCT province) FILTER (WHERE verified = true) as provinces_covered
         FROM scam_reports
       `
 
@@ -214,20 +218,36 @@ export default async (req: Request, context: Context) => {
       `
 
       if (existing.length > 0) {
-        // Increment report count for existing report
-        const updated = await db`
+        // Increment report count for existing report. The reply carries no report data
+        // (T-0571): it returned the whole row, so guessing a type + province + title showed
+        // an unchecked report and its reporter's user_id, which the public list never shows.
+        await db`
           UPDATE scam_reports
           SET report_count = report_count + 1,
               last_reported_at = NOW(),
               updated_at = NOW()
           WHERE id = ${existing[0].id}
-          RETURNING *
         `
         return new Response(JSON.stringify({
           message: 'Report added to existing entry',
-          report: updated[0],
           merged: true,
         }), {
+          headers: { 'Content-Type': 'application/json' },
+        })
+      }
+
+      // A ceiling on unchecked reports across all senders (T-0571): the per-address limit
+      // is per function instance and IPv6 hands out many addresses, so the database
+      // itself must not fill up with unchecked reports.
+      const pending = await db`
+        SELECT COUNT(*)::int AS count FROM scam_reports
+        WHERE verified = false AND created_at > NOW() - INTERVAL '24 hours'
+      `
+      if ((pending[0]?.count ?? 0) >= MAX_UNCHECKED_REPORTS_PER_DAY) {
+        return new Response(JSON.stringify({
+          error: 'We have received many reports today. Please try again tomorrow, or call the Tourist Police on 1155.'
+        }), {
+          status: 429,
           headers: { 'Content-Type': 'application/json' },
         })
       }
@@ -242,12 +262,12 @@ export default async (req: Request, context: Context) => {
           ${location_name || null}, ${province}, ${lat || null}, ${lng || null},
           ${severity || 2}
         )
-        RETURNING *
+        RETURNING id
       `
 
       return new Response(JSON.stringify({
         message: 'Report submitted successfully',
-        report: result[0],
+        id: result[0]?.id,
         merged: false,
       }), {
         status: 201,

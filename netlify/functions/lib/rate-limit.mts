@@ -85,12 +85,35 @@ export function checkRateLimit(
  * rather than crashing.
  */
 export function getClientIp(req: Request, context: { ip?: string }): string {
-  return (
+  return addressGroup(
     context.ip ||
     req.headers.get('x-nf-client-connection-ip') ||
     req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
     'unknown'
   )
+}
+
+/**
+ * IPv6 callers are grouped by their /64 network (T-0571): one home or server line
+ * usually gets a whole /64, so counting full addresses let one caller rotate through
+ * endless 'addresses' and skip every per-address limit. IPv4 (also IPv4-mapped IPv6)
+ * stays the plain address.
+ */
+export function addressGroup(ip: string): string {
+  const value = ip.trim().toLowerCase()
+  if (!value.includes(':')) return value
+  const mapped = value.match(/^::ffff:(\d{1,3}(?:\.\d{1,3}){3})$/)
+  if (mapped) return mapped[1]
+  const [head, tail] = value.split('%')[0].split('::')
+  const headGroups = head ? head.split(':') : []
+  const tailGroups = tail !== undefined && tail !== '' ? tail.split(':') : []
+  const missing = 8 - headGroups.length - tailGroups.length
+  const groups = tail !== undefined
+    ? [...headGroups, ...Array(Math.max(0, missing)).fill('0'), ...tailGroups]
+    : headGroups
+  const prefix = groups.slice(0, 4).map(group => (group.replace(/^0+(?=.)/, '') || '0'))
+  if (prefix.length < 4 || prefix.some(group => !/^[0-9a-f]{1,4}$/.test(group))) return value
+  return `${prefix.join(':')}::/64`
 }
 
 /**

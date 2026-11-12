@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import '../__mocks__/db'
-import { setMockQueryResult, clearMockResults, wasQueryMade, setMockQueryError } from '../__mocks__/db'
+import { setMockQueryResult, clearMockResults, wasQueryMade, setMockQueryError, getQueriesMatching } from '../__mocks__/db'
 import { setMockEnv, clearMockEnv } from './setup.js'
 import { createMockRequest, parseResponse } from './helpers.js'
 
@@ -226,10 +226,66 @@ describe('safety function', () => {
   describe('T-0565 guards', () => {
     const valid = { scam_type: 'tuk_tuk', title: 'Gem shop detour', description: 'Driver insisted on a gem shop', province: 'Bangkok' }
 
-    it('public lists show only checked (verified) reports', async () => {
+    it('public lists show only checked (verified) reports, with every filter (T-0571)', async () => {
+      // The list query itself must filter; the stats query also says 'verified = true',
+      // so a check on any query would pass even without the list filter.
+      for (const query of ['', '?province=Bangkok', '?type=taxi', '?province=Bangkok&type=taxi']) {
+        clearMockResults()
+        setMockQueryResult('SELECT * FROM scam_reports', [])
+        const before = getQueriesMatching('SELECT * FROM scam_reports').length
+        await safetyHandler(createMockRequest('GET', `/api/safety${query}`), { ip: '1.1.1.1' } as never)
+        const listQueries = getQueriesMatching('SELECT * FROM scam_reports').slice(before)
+        expect(listQueries.length).toBe(1)
+        expect(listQueries[0].query).toMatch(/WHERE[^]*verified = true[^]*ORDER BY/)
+      }
+    })
+
+    it('public numbers count checked reports only (T-0571)', async () => {
       setMockQueryResult('SELECT * FROM scam_reports', [])
       await safetyHandler(createMockRequest('GET', '/api/safety'), { ip: '1.1.1.1' } as never)
-      expect(wasQueryMade('verified = true')).toBe(true)
+      const statsQuery = getQueriesMatching('total_reports').pop()!.query
+      expect(statsQuery).toMatch(/COUNT\(\*\) FILTER \(WHERE verified = true\) as total_reports/)
+      expect(statsQuery).toMatch(/COUNT\(DISTINCT province\) FILTER \(WHERE verified = true\)/)
+    })
+
+    it('a merged report reply carries no report data (T-0571)', async () => {
+      setMockQueryResult('SELECT id, report_count', [{ id: 'unchecked-1', report_count: 1 }])
+      setMockQueryResult('UPDATE scam_reports', [{ id: 'unchecked-1', user_id: 'reporter-123', description: 'secret' }])
+      const res = await safetyHandler(createMockRequest('POST', '/api/safety', { body: valid }), { ip: '5.5.5.5' } as never)
+      const data = await parseResponse(res)
+      expect(res.status).toBe(200)
+      expect(data).toEqual({ message: 'Report added to existing entry', merged: true })
+      expect(JSON.stringify(data)).not.toContain('reporter-123')
+    })
+
+    it('a new report reply carries only its id (T-0571)', async () => {
+      setMockQueryResult('SELECT id, report_count', [])
+      setMockQueryResult('INSERT INTO scam_reports', [{ id: 'r-new' }])
+      const res = await safetyHandler(createMockRequest('POST', '/api/safety', { body: valid }), { ip: '6.6.6.6' } as never)
+      const data = await parseResponse(res)
+      expect(res.status).toBe(201)
+      expect(data).toEqual({ message: 'Report submitted successfully', id: 'r-new', merged: false })
+      expect(getQueriesMatching('INSERT INTO scam_reports').pop()!.query).toContain('RETURNING id')
+    })
+
+    it('refuses new reports once 50 unchecked ones came in within 24 hours (T-0571)', async () => {
+      setMockQueryResult('SELECT id, report_count', [])
+      setMockQueryResult('WHERE verified = false AND created_at', [{ count: 50 }])
+      const res = await safetyHandler(createMockRequest('POST', '/api/safety', { body: valid }), { ip: '7.7.7.7' } as never)
+      expect(res.status).toBe(429)
+      expect(wasQueryMade('INSERT INTO scam_reports')).toBe(false)
+    })
+
+    it('counts IPv6 callers per /64 network, so rotating addresses hits the same limit (T-0571)', async () => {
+      setMockQueryResult('SELECT id, report_count', [])
+      setMockQueryResult('INSERT INTO scam_reports', [{ id: 'r1' }])
+      const statuses: number[] = []
+      for (let i = 0; i < 6; i++) {
+        const res = await safetyHandler(createMockRequest('POST', '/api/safety', { body: valid }), { ip: `2001:db8:abcd:12::${i + 1}` } as never)
+        statuses.push(res.status)
+      }
+      expect(statuses.slice(0, 5).every(s => s === 201)).toBe(true)
+      expect(statuses[5]).toBe(429)
     })
 
     it('refuses unknown types, oversized text and places outside Thailand', async () => {
@@ -363,7 +419,8 @@ describe('safety function', () => {
 
       expect(response.status).toBe(201)
       expect(data.message).toBe('Report submitted successfully')
-      expect(data.report).toBeDefined()
+      expect(data.id).toBe('scam-new')
+      expect(data.report).toBeUndefined()
       expect(data.merged).toBe(false)
     })
 

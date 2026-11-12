@@ -63,6 +63,15 @@ describe('usage lib', () => {
       expect(wasQueryMade('SELECT usage_count FROM ai_usage')).toBe(false)
     })
 
+    it("leaves Pro members' calls out of the shared daily ceiling (T-0571)", async () => {
+      setMockQueryResult('SELECT is_pro FROM user_profiles', [{ is_pro: false }])
+
+      await checkAndIncrementUsage(mockSql, 'user-free', 'general_chat')
+
+      const counting = getMockQueryLog().find(q => q.query.includes('INSERT INTO ai_usage'))!
+      expect(counting.query).toMatch(/NOT EXISTS \(SELECT 1 FROM user_profiles p WHERE p\.user_id = u\.user_id AND p\.is_pro\)/)
+    })
+
     it('should deny free user who reached limit', async () => {
       setMockQueryResult('SELECT is_pro FROM user_profiles', [{ is_pro: false }])
       // The counting INSERT returns no row when the limit (or daily ceiling) is reached

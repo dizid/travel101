@@ -281,6 +281,10 @@ describe('flights function', () => {
         { origin: 'LHR', destination: 'BKK', departureDate: 'tomorrow' },
         { origin: 'LHR', destination: 'BKK', departureDate: '2025-02-01', adults: 500 },
         { origin: 'LHR', destination: 'BKK', departureDate: '2025-02-01', cabinClass: 'x'.repeat(5000) },
+        // Right shape, impossible day: was a 500 (T-0571)
+        { origin: 'LHR', destination: 'BKK', departureDate: '2026-13-45' },
+        { origin: 'LHR', destination: 'BKK', departureDate: '2026-02-30' },
+        { origin: 'LHR', destination: 'BKK', departureDate: '2026-03-01', returnDate: '2026-04-31' },
       ]
       for (const body of bad) {
         clearMockResults()

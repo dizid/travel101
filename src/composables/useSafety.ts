@@ -85,7 +85,7 @@ export function useSafety() {
   }
 
   async function submitReport(report: NewScamReport) {
-    const result = await post<{ message: string; report: ScamReport; merged: boolean }>(
+    const result = await post<{ message: string; merged: boolean; id?: string }>(
       '/safety',
       report,
       { requiresAuth: false }

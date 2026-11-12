@@ -90,11 +90,16 @@ export async function checkAndIncrementUsage(
   // Count and check in ONE statement (T-0569): the old read-then-write let parallel
   // requests from one account all read 0 and all pass. The row lock of ON CONFLICT makes
   // the per-user limit exact; the daily ceiling for all free + anonymous calls is checked
-  // in the same statement (a few parallel calls may pass it by one or two).
+  // in the same statement (parallel calls from different callers can pass it by about as
+  // many as run at once). Pro members' calls are logged in ai_usage too but are left out
+  // of the ceiling (T-0571): one Pro member browsing attraction pages could otherwise use
+  // up the day's 200 and lock out every free and anonymous user.
   const counted = await db`
     INSERT INTO ai_usage (user_id, feature_type, usage_date, usage_count)
     SELECT ${userId}, ${featureType}, CURRENT_DATE, 1
-    WHERE (SELECT COALESCE(SUM(usage_count), 0) FROM ai_usage WHERE usage_date = CURRENT_DATE)
+    WHERE (SELECT COALESCE(SUM(u.usage_count), 0) FROM ai_usage u
+           WHERE u.usage_date = CURRENT_DATE
+             AND NOT EXISTS (SELECT 1 FROM user_profiles p WHERE p.user_id = u.user_id AND p.is_pro))
       + (SELECT COALESCE(SUM(usage_count), 0) FROM ai_anon_usage WHERE usage_date = CURRENT_DATE)
       < ${FREE_GLOBAL_DAILY_LIMIT}
     ON CONFLICT (user_id, feature_type, usage_date)
@@ -214,7 +219,9 @@ export async function checkAndIncrementAnonUsage(
   const counted = await db`
     INSERT INTO ai_anon_usage (anon_id, feature_type, usage_date, usage_count)
     SELECT ${anonId}, ${featureType}, CURRENT_DATE, 1
-    WHERE (SELECT COALESCE(SUM(usage_count), 0) FROM ai_usage WHERE usage_date = CURRENT_DATE)
+    WHERE (SELECT COALESCE(SUM(u.usage_count), 0) FROM ai_usage u
+           WHERE u.usage_date = CURRENT_DATE
+             AND NOT EXISTS (SELECT 1 FROM user_profiles p WHERE p.user_id = u.user_id AND p.is_pro))
       + (SELECT COALESCE(SUM(usage_count), 0) FROM ai_anon_usage WHERE usage_date = CURRENT_DATE)
       < ${FREE_GLOBAL_DAILY_LIMIT}
     ON CONFLICT (anon_id, feature_type, usage_date)

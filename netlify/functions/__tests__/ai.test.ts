@@ -429,6 +429,31 @@ describe('ai function', () => {
       expect(wasQueryMade('INSERT INTO ai_conversations')).toBe(true)
     })
 
+    it("saving keeps a Pro member's longer chat, while the AI gets only the last 10 turns (T-0571)", async () => {
+      setMockAIResponse('AI response')
+      setMockQueryResult('SELECT is_pro', [{ is_pro: true }])
+      setMockQueryResult('SELECT id FROM ai_conversations', [{ id: 'conv-existing' }])
+      setMockQueryResult('UPDATE ai_conversations', [])
+      const conversationHistory = Array.from({ length: 30 }, (_, i) => ({
+        role: i % 2 === 0 ? 'user' : 'assistant',
+        content: `turn ${i}`,
+      }))
+
+      const req = createMockRequest('POST', '/api/ai', {
+        headers: { 'x-user-id': 'user-123' },
+        body: { message: 'Next question', conversationHistory, saveToDb: true },
+      })
+      const response = await aiHandler(req, mockContext as never)
+
+      expect(response.status).toBe(200)
+      const sent = mockAnthropic.messages.create.mock.calls[0][0].messages
+      expect(sent).toHaveLength(11)
+      const update = getMockQueryLog().find(q => q.query.includes('UPDATE ai_conversations'))!
+      const stored = JSON.parse(String(update.values.find(v => typeof v === 'string' && v.startsWith('['))))
+      expect(stored).toHaveLength(32) // 30 earlier turns + question + answer
+      expect(stored[0].content).toBe('turn 0')
+    })
+
     it('should update existing conversation when one exists', async () => {
       setMockAIResponse('AI response')
       setMockQueryResult('SELECT is_pro', [{ is_pro: true }])

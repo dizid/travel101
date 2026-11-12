@@ -161,6 +161,13 @@ function generateMockFlights(params: FlightSearchRequest): Flight[] {
 
 const IATA_CODE = /^[A-Z]{3}$/
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/
+
+/** YYYY-MM-DD that is also a real calendar day (2026-13-45 or 2026-02-30 fail; T-0571). */
+function isRealDate(value: string): boolean {
+  if (!ISO_DATE.test(value)) return false
+  const parsed = new Date(`${value}T00:00:00Z`)
+  return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value
+}
 const CABIN_CLASSES = ['economy', 'premium_economy', 'business', 'first'] as const
 
 /** A clean, bounded search request, or null when anything is malformed (T-0561). */
@@ -173,8 +180,8 @@ export function parseFlightSearch(input: unknown): FlightSearchRequest | null {
   const returnDate = raw.returnDate == null || raw.returnDate === '' ? undefined : raw.returnDate
   const adults = raw.adults == null ? 1 : raw.adults
   const cabinClass = raw.cabinClass == null ? 'economy' : raw.cabinClass
-  if (!IATA_CODE.test(origin) || !IATA_CODE.test(destination) || !ISO_DATE.test(departureDate)) return null
-  if (returnDate !== undefined && (typeof returnDate !== 'string' || !ISO_DATE.test(returnDate))) return null
+  if (!IATA_CODE.test(origin) || !IATA_CODE.test(destination) || !isRealDate(departureDate)) return null
+  if (returnDate !== undefined && (typeof returnDate !== 'string' || !isRealDate(returnDate))) return null
   if (typeof adults !== 'number' || !Number.isInteger(adults) || adults < 1 || adults > 9) return null
   if (typeof cabinClass !== 'string' || !(CABIN_CLASSES as readonly string[]).includes(cabinClass)) return null
   return {
@@ -285,7 +292,6 @@ export default async (req: Request, context: Context) => {
 
         if (response.ok) {
           const data = await response.json()
-          fromRealApi = true
           flights = data.data?.map((f: any) => ({
             id: f.id,
             price: f.price,
@@ -316,6 +322,9 @@ export default async (req: Request, context: Context) => {
               destination: r.flyTo,
             })),
           })) || []
+          // Only after the mapping worked: if it throws, the catch below falls back to
+          // sample flights, which must never be cached as real results (T-0571).
+          fromRealApi = true
         } else {
           console.error('Kiwi API error:', await response.text())
           flights = generateMockFlights(body)

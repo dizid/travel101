@@ -4,6 +4,9 @@
  */
 
 export const MAX_HISTORY_MESSAGES = 10
+// A saved Pro conversation keeps more turns than go to the AI (T-0571: saving used the
+// 10-turn AI cap, so every save cut a Pro member's stored chat to 12 messages).
+export const MAX_STORED_MESSAGES = 100
 export const MAX_HISTORY_MESSAGE_CHARS = 4000
 const MAX_PROFILE_TEXT = 60
 const MAX_PROFILE_LIST = 8
@@ -13,13 +16,13 @@ export interface ChatTurn {
   content: string
 }
 
-/** Last MAX_HISTORY_MESSAGES user/assistant turns, each cut to MAX_HISTORY_MESSAGE_CHARS. */
-export function sanitizeHistory(history: unknown): ChatTurn[] {
+/** Last `maxMessages` user/assistant turns, each cut to MAX_HISTORY_MESSAGE_CHARS. */
+export function sanitizeHistory(history: unknown, maxMessages = MAX_HISTORY_MESSAGES): ChatTurn[] {
   if (!Array.isArray(history)) return []
   return history
     .filter((msg): msg is ChatTurn =>
       !!msg && (msg.role === 'user' || msg.role === 'assistant') && typeof msg.content === 'string')
-    .slice(-MAX_HISTORY_MESSAGES)
+    .slice(-maxMessages)
     .map(msg => ({ role: msg.role, content: msg.content.slice(0, MAX_HISTORY_MESSAGE_CHARS) }))
 }
 
