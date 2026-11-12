@@ -7,6 +7,21 @@
 [build.environment]
   NODE_VERSION = "20"
 
+# Neon Auth through our own domain (T-0493, Nov 12 2026, same fix as
+# Foreground T-0492). Called directly, its session cookie is a cross-site
+# cookie on the neonauth host: Safari before 26.2 (and any browser that blocks
+# third-party cookies without honouring "Partitioned") drops it, so sign-up
+# and sign-in silently failed there. Through this rewrite the cookie is
+# first-party for happyroam.travel (Better Auth's recommended fix for Safari).
+# Neon answers with Cache-Control: no-store, so the CDN keeps nothing. Must
+# stay above the SPA catch-all. The JWT issuer stays Neon's own origin, so the
+# functions' NEON_AUTH_JWKS_URL check is unchanged.
+[[redirects]]
+  from = "/neon-auth/*"
+  to = "https://ep-royal-art-abpqmm55.neonauth.eu-west-2.aws.neon.tech/neondb/auth/:splat"
+  status = 200
+  force = true
+
 # API routes to functions - explicit mappings for multi-path functions
 # Heritage (has sub-paths)
 [[redirects]]
