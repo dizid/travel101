@@ -298,7 +298,7 @@ Rules that keep it working: `ssgOptions.formatting` must stay `'none'` (minify s
 DATABASE_URL              # Neon PostgreSQL connection string
 
 # Auth
-VITE_NEON_AUTH_URL        # Neon Auth endpoint
+VITE_NEON_AUTH_URL        # Neon Auth endpoint (since T-0493, Nov 12 2026, the browser no longer calls it directly: src/lib/auth.ts uses <origin>/neon-auth, a proxy rewrite in netlify.toml, so the session cookie is first-party; direct calls made it a cross-site cookie that Safari before 26.2 drops. Test account claude-test-t0493@dizid.com)
 
 # Stripe
 VITE_STRIPE_PUBLISHABLE_KEY # Stripe publishable key (frontend)
