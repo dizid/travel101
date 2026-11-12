@@ -77,6 +77,10 @@ describe('affiliates', () => {
         const url = generateAffiliateUrl('klook', 'Bangkok')
         expect(url).toContain('affiliate.klook.com/redirect')
         expect(url).toContain('aid=klk123')
+        // Klook's deep-link parameter is k_site ('url=' landed on Klook's home page, T-0576)
+        const target = new URL(url).searchParams.get('k_site')
+        expect(target).toBe('https://www.klook.com/en-US/search/?query=Bangkok')
+        expect(new URL(url).searchParams.has('url')).toBe(false)
       })
 
       it('adds cid param for Agoda', () => {

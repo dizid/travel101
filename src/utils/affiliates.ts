@@ -26,7 +26,9 @@ const affiliateConfigs: Record<AffiliatePartner, AffiliateConfig> = {
       // Use affiliate redirect domain to ensure tracking persists through redirects
       const searchUrl = `https://www.klook.com/en-US/search/?query=${encodeURIComponent(query)}`
       if (affiliateId) {
-        return `https://affiliate.klook.com/redirect?aid=${affiliateId}&url=${encodeURIComponent(searchUrl)}`
+        // Klook's deep-link parameter is k_site; with 'url=' the redirect ignored the page
+        // and every click landed on Klook's home page (checked Nov 12 2026, T-0576).
+        return `https://affiliate.klook.com/redirect?aid=${affiliateId}&k_site=${encodeURIComponent(searchUrl)}`
       }
       return searchUrl
     },
