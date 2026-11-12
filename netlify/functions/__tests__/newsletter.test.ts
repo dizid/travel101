@@ -8,6 +8,7 @@ vi.mock('@neondatabase/serverless', () => ({
 }))
 
 import newsletterHandler from '../newsletter.mts'
+import { resetRateLimitsForTests } from '../lib/rate-limit.mts'
 
 const mockContext = {
   geo: { city: 'Bangkok' },
@@ -16,6 +17,7 @@ const mockContext = {
 
 describe('newsletter function', () => {
   beforeEach(() => {
+    resetRateLimitsForTests()
     vi.clearAllMocks()
     mockSqlFn.mockResolvedValue([])
     process.env.DATABASE_URL = 'postgresql://test:test@localhost/test'
@@ -103,8 +105,22 @@ describe('newsletter function', () => {
       const response = await newsletterHandler(req, mockContext as never)
       const data = await parseResponse(response)
 
-      // Basic check only requires @ symbol
-      expect(response.status).toBe(200) // This passes the simple validation
+      // A real address shape is required now (T-0565)
+      expect(response.status).toBe(400)
+    })
+  })
+
+  describe('abuse limits (T-0565)', () => {
+    it('limits one address to 5 sign-ups an hour and refuses oversized fields', async () => {
+      const statuses: number[] = []
+      for (let i = 0; i < 6; i++) {
+        const res = await newsletterHandler(createMockRequest('POST', '/api/newsletter', { headers: {}, body: { email: `a${i}@example.com` } }), mockContext as never)
+        statuses.push(res.status)
+      }
+      expect(statuses[5]).toBe(429)
+      resetRateLimitsForTests()
+      const big = await newsletterHandler(createMockRequest('POST', '/api/newsletter', { headers: {}, body: { email: 'a@example.com', source: 'x'.repeat(500) } }), mockContext as never)
+      expect(big.status).toBe(400)
     })
   })
 

@@ -513,7 +513,7 @@ onMounted(() => {
           <div v-if="submitSuccess" class="p-8 text-center">
             <CheckOutlined class="text-5xl text-green-500 mb-4" />
             <h3 class="text-lg font-medium text-gray-900">Thank you!</h3>
-            <p class="text-gray-500">Your report has been submitted.</p>
+            <p class="text-gray-500">Your report has been submitted. We check reports before they appear on this page.</p>
           </div>
 
           <form v-else @submit.prevent="handleSubmitReport" class="p-6 space-y-4">

@@ -4,6 +4,7 @@ import { setMockQueryResult, clearMockResults, wasQueryMade, setMockQueryError }
 import { setMockEnv, clearMockEnv } from './setup.js'
 import { createMockRequest, parseResponse } from './helpers.js'
 
+import { resetRateLimitsForTests } from '../lib/rate-limit.mts'
 import safetyHandler from '../safety.mts'
 
 const mockContext = {
@@ -48,6 +49,7 @@ const mockProvinceSafety = [
 
 describe('safety function', () => {
   beforeEach(() => {
+    resetRateLimitsForTests()
     clearMockResults()
     clearMockEnv()
     vi.clearAllMocks()
@@ -218,6 +220,49 @@ describe('safety function', () => {
       expect(data.stats.total_reports).toBe('170')
       expect(data.stats.verified_reports).toBe('150')
       expect(data.stats.provinces_covered).toBe('5')
+    })
+  })
+
+  describe('T-0565 guards', () => {
+    const valid = { scam_type: 'tuk_tuk', title: 'Gem shop detour', description: 'Driver insisted on a gem shop', province: 'Bangkok' }
+
+    it('public lists show only checked (verified) reports', async () => {
+      setMockQueryResult('SELECT * FROM scam_reports', [])
+      await safetyHandler(createMockRequest('GET', '/api/safety'), { ip: '1.1.1.1' } as never)
+      expect(wasQueryMade('verified = true')).toBe(true)
+    })
+
+    it('refuses unknown types, oversized text and places outside Thailand', async () => {
+      for (const body of [
+        { ...valid, scam_type: 'not-a-type' },
+        { ...valid, title: 'x'.repeat(500) },
+        { ...valid, description: 'x'.repeat(5000) },
+        { ...valid, lat: 51.5, lng: -0.1 },
+      ]) {
+        clearMockResults()
+        const res = await safetyHandler(createMockRequest('POST', '/api/safety', { body }), { ip: '2.2.2.2' } as never)
+        expect(res.status).toBe(400)
+        expect(wasQueryMade('INSERT INTO scam_reports')).toBe(false)
+      }
+    })
+
+    it('turns an out-of-range severity into the default instead of topping the list', async () => {
+      setMockQueryResult('SELECT id, report_count', [])
+      setMockQueryResult('INSERT INTO scam_reports', [{ id: 'r1' }])
+      const res = await safetyHandler(createMockRequest('POST', '/api/safety', { body: { ...valid, severity: 999 } }), { ip: '3.3.3.3' } as never)
+      expect(res.status).toBe(201)
+    })
+
+    it('limits one address to 5 reports an hour', async () => {
+      setMockQueryResult('SELECT id, report_count', [])
+      setMockQueryResult('INSERT INTO scam_reports', [{ id: 'r1' }])
+      const statuses: number[] = []
+      for (let i = 0; i < 6; i++) {
+        const res = await safetyHandler(createMockRequest('POST', '/api/safety', { body: valid }), { ip: '4.4.4.4' } as never)
+        statuses.push(res.status)
+      }
+      expect(statuses.slice(0, 5).every(s => s === 201)).toBe(true)
+      expect(statuses[5]).toBe(429)
     })
   })
 

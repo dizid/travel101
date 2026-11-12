@@ -1,6 +1,7 @@
 import type { Context, Config } from '@netlify/functions'
 import { getDb } from './lib/db.mts'
 import { optionalAuth } from './lib/auth.mts'
+import { checkRateLimit, getClientIp } from './lib/rate-limit.mts'
 
 interface ScamReport {
   id: string
@@ -52,6 +53,30 @@ const SCAM_TYPES = [
   { value: 'other', label: 'Other', icon: '⚠️' },
 ]
 
+// Input limits for a new report (T-0565).
+const REPORT_LIMITS = { title: 120, description: 2000, location_name: 120, province: 60 } as const
+
+/** A message when a submitted report is malformed or too long; null when fine. */
+export function reportProblem(body: unknown): string | null {
+  if (!body || typeof body !== 'object') return 'Invalid report'
+  const report = body as Record<string, unknown>
+  if (typeof report.scam_type !== 'string' || !SCAM_TYPES.some(t => t.value === report.scam_type)) {
+    return 'Unknown scam type'
+  }
+  for (const [field, max] of Object.entries(REPORT_LIMITS)) {
+    const value = report[field]
+    if (value === undefined || value === null || value === '') continue
+    if (typeof value !== 'string') return `${field} must be text`
+    if (value.length > max) return `${field} is too long (max ${max} characters)`
+  }
+  for (const [field, min, max] of [['lat', 5, 21], ['lng', 97, 106]] as const) {
+    const value = report[field]
+    if (value === undefined || value === null || value === '') continue
+    if (typeof value !== 'number' || value < min || value > max) return `${field} must be a location in Thailand`
+  }
+  return null
+}
+
 export default async (req: Request, context: Context) => {
   const db = await getDb()
   const url = new URL(req.url)
@@ -64,32 +89,35 @@ export default async (req: Request, context: Context) => {
       const scamType = url.searchParams.get('type')
       const limit = Math.min(parseInt(url.searchParams.get('limit') || '50'), 100)
 
-      // Build query based on filters
+      // Build query based on filters. Only checked (verified) reports are public (T-0565):
+      // anyone can submit one, and before this a made-up report naming a real business went
+      // live at once, sorted to the top by a severity the sender picked.
       let scamReports: ScamReport[]
       if (province && scamType) {
         scamReports = await db`
           SELECT * FROM scam_reports
-          WHERE province = ${province} AND scam_type = ${scamType}
+          WHERE province = ${province} AND scam_type = ${scamType} AND verified = true
           ORDER BY severity DESC, verified DESC, last_reported_at DESC
           LIMIT ${limit}
         `
       } else if (province) {
         scamReports = await db`
           SELECT * FROM scam_reports
-          WHERE province = ${province}
+          WHERE province = ${province} AND verified = true
           ORDER BY severity DESC, verified DESC, last_reported_at DESC
           LIMIT ${limit}
         `
       } else if (scamType) {
         scamReports = await db`
           SELECT * FROM scam_reports
-          WHERE scam_type = ${scamType}
+          WHERE scam_type = ${scamType} AND verified = true
           ORDER BY severity DESC, verified DESC, last_reported_at DESC
           LIMIT ${limit}
         `
       } else {
         scamReports = await db`
           SELECT * FROM scam_reports
+          WHERE verified = true
           ORDER BY severity DESC, verified DESC, last_reported_at DESC
           LIMIT ${limit}
         `
@@ -138,8 +166,34 @@ export default async (req: Request, context: Context) => {
 
     // POST /api/safety - Submit a new scam report
     if (req.method === 'POST') {
+      // At most 5 reports per hour from one address (per instance; see lib/rate-limit.mts).
+      const rate = checkRateLimit(`${getClientIp(req, context)}:safety-report`, 5, 3_600_000)
+      if (!rate.allowed) {
+        return new Response(JSON.stringify({ error: 'Too many reports, please try again later' }), {
+          status: 429,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      }
+
       const body: NewScamReport = await req.json()
-      const { scam_type, title, description, location_name, province, lat, lng, severity } = body
+      if (!body?.scam_type || !body?.title || !body?.description || !body?.province) {
+        return new Response(JSON.stringify({
+          error: 'Missing required fields: scam_type, title, description, province'
+        }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      }
+      const problem = reportProblem(body)
+      if (problem) {
+        return new Response(JSON.stringify({ error: problem }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      }
+      const { scam_type, title, description, location_name, province, lat, lng } = body
+      // The form offers 1-3; anything else (e.g. 999 to top the list) becomes the default.
+      const severity = [1, 2, 3].includes(Number(body.severity)) ? Number(body.severity) : 2
 
       if (!scam_type || !title || !description || !province) {
         return new Response(JSON.stringify({
