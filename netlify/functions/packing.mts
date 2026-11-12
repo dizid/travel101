@@ -102,7 +102,10 @@ export default async (req: Request, context: Context) => {
   // Shared-secret check (cheap, no I/O). Honest limitation documented in
   // validateAppSecret(): stops casual/scripted abuse, not a determined
   // attacker. Fails open if APP_SHARED_SECRET is not configured.
-  if (!validateAppSecret(req)) {
+  // Signed-in callers (verified Neon Auth token, T-0555) don't need the speed-bump secret:
+  // the live build never had VITE_APP_SHARED_SECRET, so every request answered 401 (T-0560).
+  const userId = await optionalAuth(req)
+  if (!userId && !validateAppSecret(req)) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), {
       status: 401,
       headers: { 'Content-Type': 'application/json' },
@@ -159,7 +162,6 @@ export default async (req: Request, context: Context) => {
     // so anonymous callers bypassed the quota entirely and got unlimited free
     // Claude API calls. Anonymous callers now get their own (lower) quota
     // tracked by IP.
-    const userId = await optionalAuth(req)
     const db = await getDb()
     const usageCheck = userId
       ? await checkAndIncrementUsage(db, userId, 'packing')

@@ -62,11 +62,11 @@ describe('attraction-ai function', () => {
   })
 
   describe('cost-abuse protections', () => {
-    it('should return 401 when APP_SHARED_SECRET is set but x-app-secret header is missing', async () => {
+    it('should return 401 for an anonymous caller without the x-app-secret header', async () => {
       setMockEnv('APP_SHARED_SECRET', 'test-shared-secret')
 
       const req = createMockRequest('POST', '/api/attraction-ai', {
-        headers: { 'x-user-id': 'user-123' },
+        headers: {},
         body: { action: 'personalized_intro', attractionSlug: 'wat-phra-kaew' },
       })
 
@@ -75,6 +75,21 @@ describe('attraction-ai function', () => {
 
       expect(response.status).toBe(401)
       expect(data.error).toBe('Unauthorized')
+    })
+
+    it('lets a signed-in caller through without the app secret (live build has none; T-0560)', async () => {
+      setMockEnv('APP_SHARED_SECRET', 'test-shared-secret')
+      setMockQueryResult('SELECT id, slug', [mockAttraction])
+      setMockAIResponse('Personalized response')
+
+      const req = createMockRequest('POST', '/api/attraction-ai', {
+        headers: { 'x-user-id': 'user-123' },
+        body: { action: 'personalized_intro', attractionSlug: 'wat-phra-kaew' },
+      })
+
+      const response = await attractionAiHandler(req, mockContext as never)
+
+      expect(response.status).not.toBe(401)
     })
 
     it('should return 429 after exceeding the per-IP rate limit', async () => {

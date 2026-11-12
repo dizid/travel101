@@ -10,6 +10,32 @@ import { checkRateLimit, getClientIp } from './lib/rate-limit.mts'
 // Claude API call to keep an oversized payload from running up token costs.
 const MAX_MESSAGE_LENGTH = 4000
 
+// Server-side limits on what the browser sends along with a chat message (T-0560).
+const MAX_HISTORY_MESSAGES = 10
+const MAX_PROFILE_TEXT = 60
+const MAX_PROFILE_LIST = 8
+
+/** Last MAX_HISTORY_MESSAGES user/assistant turns, each cut to MAX_MESSAGE_LENGTH characters. */
+function sanitizeHistory(history: unknown): { role: 'user' | 'assistant'; content: string }[] {
+  if (!Array.isArray(history)) return []
+  return history
+    .filter((msg): msg is { role: 'user' | 'assistant'; content: string } =>
+      !!msg && (msg.role === 'user' || msg.role === 'assistant') && typeof msg.content === 'string')
+    .slice(-MAX_HISTORY_MESSAGES)
+    .map(msg => ({ role: msg.role, content: msg.content.slice(0, MAX_MESSAGE_LENGTH) }))
+}
+
+function shortText(value: unknown): string {
+  return typeof value === 'string' ? value.slice(0, MAX_PROFILE_TEXT) : ''
+}
+
+function shortList(value: unknown): string {
+  return Array.isArray(value)
+    ? value.filter((item): item is string => typeof item === 'string')
+        .slice(0, MAX_PROFILE_LIST).map(item => item.slice(0, MAX_PROFILE_TEXT)).join(', ')
+    : ''
+}
+
 // neon() is itself the tagged-template function and returns a plain array of rows:
 // it has no .sql property and no .rows (the test mock used to add both, so the chat-history
 // queries passed the tests but threw in production).
@@ -199,7 +225,10 @@ export default async (req: Request, context: Context) => {
   // Shared-secret check (cheap, no I/O). See validateAppSecret() for the
   // honest limitation: this stops casual/scripted abuse, not a determined
   // attacker inspecting network requests. Fails open if not configured.
-  if (!validateAppSecret(req)) {
+  // Signed-in callers (verified Neon Auth token, T-0555) don't need it: the live build never
+  // had VITE_APP_SHARED_SECRET, so every chat answered 401 for everyone (T-0560). They are
+  // still bound by the per-user daily quota below; anonymous callers still need the secret.
+  if (!userId && !validateAppSecret(req)) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), {
       status: 401,
       headers: { 'Content-Type': 'application/json' },
@@ -273,28 +302,32 @@ export default async (req: Request, context: Context) => {
         })
       }
     } catch (usageError) {
-      // Log error but continue with request - fail open for better UX.
-      // The rate limiter above and shared-secret check still apply even if
-      // this fails, so this is not the sole layer of protection.
+      // Fail closed (T-0560): if the quota can't be checked, no AI call is made. Before,
+      // a database hiccup let every request through without any daily limit.
       console.error('Usage check failed:', usageError)
+      return new Response(JSON.stringify({ error: 'AI chat is busy, please try again in a minute' }), {
+        status: 503,
+        headers: { 'Content-Type': 'application/json' },
+      })
     }
 
     const anthropic = new Anthropic({ apiKey })
 
-    const userContext = userProfile
+    const userContext = userProfile && typeof userProfile === 'object'
       ? `\n\nUser profile:
-- Nationality: ${userProfile.nationality || 'Not specified'}
-- Trip type: ${userProfile.tripType || 'holiday'}
-- Travel style: ${userProfile.travelStyle?.join(', ') || 'Not specified'}
-- Budget: ${userProfile.budget || 'mid'}
-- Interests: ${userProfile.interests?.join(', ') || 'Not specified'}`
+- Nationality: ${shortText(userProfile.nationality) || 'Not specified'}
+- Trip type: ${shortText(userProfile.tripType) || 'holiday'}
+- Travel style: ${shortList(userProfile.travelStyle) || 'Not specified'}
+- Budget: ${shortText(userProfile.budget) || 'mid'}
+- Interests: ${shortList(userProfile.interests) || 'Not specified'}`
       : ''
 
+    // The history comes from the browser, so its size is capped here too (T-0560): before,
+    // a caller could send megabytes of 'history' and make each call cost ~100x more.
+    const safeHistory = sanitizeHistory(conversationHistory)
+
     const messages = [
-      ...conversationHistory.map((msg: { role: string; content: string }) => ({
-        role: msg.role as 'user' | 'assistant',
-        content: msg.content,
-      })),
+      ...safeHistory,
       { role: 'user' as const, content: message },
     ]
 
@@ -318,7 +351,7 @@ export default async (req: Request, context: Context) => {
         if (isPro) {
           // Build updated messages array
           const updatedMessages = [
-            ...conversationHistory.map((msg: { role: string; content: string }) => ({
+            ...safeHistory.map((msg: { role: string; content: string }) => ({
               role: msg.role,
               content: msg.content,
               timestamp: new Date().toISOString(),

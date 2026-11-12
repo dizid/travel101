@@ -83,7 +83,11 @@ export default async (req: Request, context: Context) => {
   // Shared-secret check (cheap, no I/O). Honest limitation documented in
   // validateAppSecret(): stops casual/scripted abuse, not a determined
   // attacker. Fails open if APP_SHARED_SECRET is not configured.
-  if (!validateAppSecret(req)) {
+  // A caller with a verified Neon Auth token (T-0555) doesn't need the speed-bump secret:
+  // the GitHub Action build never had VITE_APP_SHARED_SECRET, so the live app sent no
+  // secret and every AI request answered 401 (T-0560). The per-user quota below still applies.
+  const userId = await optionalAuth(req)
+  if (!userId && !validateAppSecret(req)) {
     return json({ error: 'Unauthorized' }, 401)
   }
 
@@ -99,7 +103,6 @@ export default async (req: Request, context: Context) => {
   // required auth (no anonymous path to begin with), so the quota check
   // below already covers every caller -- no unconditional-quota change is
   // needed here, unlike ai.mts/packing.mts.
-  const userId = await optionalAuth(req)
   if (!userId) {
     return json({ error: 'Unauthorized - login required for AI features' }, 401)
   }
