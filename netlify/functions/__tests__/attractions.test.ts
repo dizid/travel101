@@ -297,7 +297,7 @@ describe('attractions function', () => {
       expect(data.attraction.secrets).toHaveLength(1)
     })
 
-    it('should include recommendations when requested', async () => {
+    it('serves no AI recommendations until they are fact-checked (T-0549)', async () => {
       setMockQueryResult('WHERE slug', [mockAttraction])
       setMockQueryResult('FROM attraction_recommendations', [mockRecommendation])
 
@@ -307,8 +307,8 @@ describe('attractions function', () => {
       const data = await parseResponse(response)
 
       expect(response.status).toBe(200)
-      expect(data.attraction.recommendations).toBeDefined()
-      expect(data.attraction.recommendations).toHaveLength(1)
+      // Same response shape (the page shows "No nearby recommendations available yet")
+      expect(data.attraction.recommendations).toEqual([])
     })
 
     it('should include all related data when include=all', async () => {

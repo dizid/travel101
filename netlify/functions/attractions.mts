@@ -472,12 +472,8 @@ async function handleDetail(
   }
 
   if (includeRecommendations) {
-    const recommendations: AttractionRecommendation[] = await db`
-      SELECT id, rec_type, name, description, why_special, price_range, google_maps_url, is_pro_only, sort_order
-      FROM attraction_recommendations
-      WHERE attraction_id = ${attraction.id}
-      ORDER BY sort_order, created_at
-    `
+    // AI-written 'nearby recommendations' are not served until they are fact-checked: a Nov 12 2026 check of 54 of them found invented restaurants, wrong distances and made-up histories (output/T-0548-check-*.md in ~/AI-COMPANY). The rows stay in attraction_recommendations; turn this back on per checked row (T-0549).
+    const recommendations: AttractionRecommendation[] = []
     response.attraction.recommendations = recommendations
   }
 

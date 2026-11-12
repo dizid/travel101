@@ -245,7 +245,7 @@ export async function prefetchSSGData(): Promise<PrefetchResult> {
     allAttractions,
     allTips,
     allSecrets,
-    allRecommendations,
+    /* allRecommendations: not served until fact-checked (T-0549) */,
     allHeritageImages,
     allHeritageEvents,
     allFestivals,
@@ -257,7 +257,6 @@ export async function prefetchSSGData(): Promise<PrefetchResult> {
   // Group related data by attraction_id for fast lookup
   const tipsByAttraction = groupBy(allTips, 'attraction_id')
   const secretsByAttraction = groupBy(allSecrets, 'attraction_id')
-  const recsByAttraction = groupBy(allRecommendations, 'attraction_id')
   const imagesByAttraction = groupBy(allHeritageImages, 'attraction_id')
   const eventsByAttraction = groupBy(allHeritageEvents, 'attraction_id')
 
@@ -284,7 +283,7 @@ export async function prefetchSSGData(): Promise<PrefetchResult> {
         timeline: (eventsByAttraction[a.id] || []).map(transformHeritageEvent),
         tips: tipsByAttraction[a.id] || [],
         secrets: secretsByAttraction[a.id] || [],
-        recommendations: recsByAttraction[a.id] || [],
+        recommendations: [], // AI recommendations held until fact-checked (T-0549)
       }
       heritageBySlug[a.slug] = site
       heritageList.push({
@@ -303,7 +302,7 @@ export async function prefetchSSGData(): Promise<PrefetchResult> {
         ...a,
         tips: tipsByAttraction[a.id] || [],
         secrets: secretsByAttraction[a.id] || [],
-        recommendations: recsByAttraction[a.id] || [],
+        recommendations: [], // AI recommendations held until fact-checked (T-0549)
       }
       attractionsBySlug[a.slug] = enriched
       attractionList.push(a) // List doesn't need tips/secrets/recs
