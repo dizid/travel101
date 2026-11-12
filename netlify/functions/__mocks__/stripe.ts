@@ -77,6 +77,7 @@ export function createMockWebhookEvent(
 export const webhookEvents = {
   checkoutCompleted: (userId: string, subscriptionId: string) =>
     createMockWebhookEvent('checkout.session.completed', {
+      mode: 'subscription',
       metadata: { user_id: userId },
       subscription: subscriptionId,
       customer: 'cus_mock123',

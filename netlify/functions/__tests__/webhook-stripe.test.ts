@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import '../__mocks__/db'
 import '../__mocks__/stripe'
-import { clearMockResults, getMockQueryLog, wasQueryMade } from '../__mocks__/db'
+import { clearMockResults, getMockQueryLog, wasQueryMade, getQueriesMatching } from '../__mocks__/db'
 import { mockStripe, webhookEvents } from '../__mocks__/stripe'
 import { setMockEnv, clearMockEnv } from './setup.js'
 import webhookHandler from '../webhook-stripe.mts'
@@ -248,6 +248,42 @@ describe('webhook-stripe function', () => {
       const response = await webhookHandler(req, mockContext as never)
 
       expect(response.status).toBe(400)
+    })
+  })
+
+  describe('shared Stripe account and old subscriptions', () => {
+    const send = async (event: unknown) => {
+      mockStripe.webhooks.constructEvent.mockReturnValueOnce(event)
+      return webhookHandler(new Request('https://example.com/api/webhook/stripe', {
+        method: 'POST', headers: { 'stripe-signature': 'sig_valid' }, body: JSON.stringify(event),
+      }), mockContext as never)
+    }
+
+    it('turns Pro on only for the user whose own Stripe customer paid', async () => {
+      await send(webhookEvents.checkoutCompleted('user-123', 'sub_mock123'))
+      const [update] = getQueriesMatching('UPDATE user_profiles')
+      expect(update.query).toContain('stripe_customer_id =')
+      expect(update.values).toContain('user-123')
+      expect(update.values).toContain('cus_mock123')
+    })
+
+    it("ignores another app's one-off checkout that names a user id", async () => {
+      const event = webhookEvents.checkoutCompleted('user-123', 'sub_mock123') as { data: { object: Record<string, unknown> } }
+      event.data.object.mode = 'payment'
+      const response = await send(event)
+      expect(response.status).toBe(200)
+      expect(wasQueryMade('UPDATE user_profiles')).toBe(false)
+    })
+
+    it("an OLD subscription's update or deletion only touches that subscription", async () => {
+      await send(webhookEvents.subscriptionUpdated('canceled'))
+      await send(webhookEvents.subscriptionDeleted())
+      const updates = getQueriesMatching('UPDATE user_profiles')
+      expect(updates).toHaveLength(2)
+      for (const u of updates) {
+        expect(u.query).toContain('stripe_subscription_id =')
+        expect(u.values).toContain('sub_mock123')
+      }
     })
   })
 })

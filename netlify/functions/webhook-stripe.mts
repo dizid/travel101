@@ -33,12 +33,16 @@ export default async (req: Request, context: Context) => {
         const session = event.data.object as Stripe.Checkout.Session
         const userId = session.metadata?.user_id
         const subscriptionId = session.subscription as string
+        const customerId = session.customer as string
 
-        if (userId && subscriptionId) {
+        // The Stripe account is shared with other apps and every app's checkouts
+        // arrive here: only a subscription checkout by this user's own HappyRoam
+        // customer (create-checkout always sets it) turns Pro on.
+        if (userId && subscriptionId && customerId && session.mode === 'subscription') {
           await db`
             UPDATE user_profiles
             SET is_pro = true, stripe_subscription_id = ${subscriptionId}, updated_at = NOW()
-            WHERE user_id = ${userId}
+            WHERE user_id = ${userId} AND stripe_customer_id = ${customerId}
           `
           console.log(`Pro activated for user ${userId}`)
         }
@@ -51,10 +55,13 @@ export default async (req: Request, context: Context) => {
 
         const isPro = ['active', 'trialing'].includes(subscription.status)
 
+        // Only the member's current subscription: a late event from an OLD one
+        // (e.g. its final cancellation) must not switch off a newer paid one.
         await db`
           UPDATE user_profiles
           SET is_pro = ${isPro}, updated_at = NOW()
           WHERE stripe_customer_id = ${customerId}
+            AND (stripe_subscription_id = ${subscription.id} OR stripe_subscription_id IS NULL)
         `
         console.log(`Subscription updated for customer ${customerId}: isPro=${isPro}`)
         break
@@ -68,6 +75,7 @@ export default async (req: Request, context: Context) => {
           UPDATE user_profiles
           SET is_pro = false, stripe_subscription_id = NULL, updated_at = NOW()
           WHERE stripe_customer_id = ${customerId}
+            AND (stripe_subscription_id = ${subscription.id} OR stripe_subscription_id IS NULL)
         `
         console.log(`Subscription canceled for customer ${customerId}`)
         break
