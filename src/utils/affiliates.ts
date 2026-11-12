@@ -47,9 +47,9 @@ const affiliateConfigs: Record<AffiliatePartner, AffiliateConfig> = {
   '12go': {
     baseUrl: 'https://12go.asia',
     buildUrl: (destination, _attractionName, affiliateId) => {
-      // 12Go booking URLs with referer tracking
+      // 12Go records a partner only through 'z' ('referer=' set no partner cookie; T-0578)
       const slug = destination.toLowerCase().replace(/\s+/g, '-')
-      const params = affiliateId ? `?referer=${affiliateId}` : ''
+      const params = affiliateId ? `?z=${encodeURIComponent(affiliateId)}` : ''
       return `https://12go.asia/en/travel/thailand/${slug}${params}`
     },
   },
@@ -185,7 +185,8 @@ export function generateHeritageHotelUrl(
  */
 export function generateTransportUrl(
   from: string,
-  to: string
+  to: string,
+  date?: string
 ): string {
   const affiliateId = typeof import.meta !== 'undefined'
     ? (import.meta.env?.VITE_12GO_AFFILIATE_ID as string | undefined)
@@ -193,8 +194,13 @@ export function generateTransportUrl(
 
   const fromSlug = from.toLowerCase().replace(/\s+/g, '-')
   const toSlug = to.toLowerCase().replace(/\s+/g, '-')
-  const params = affiliateId ? `?referer=${affiliateId}` : ''
-  return `https://12go.asia/en/travel/${fromSlug}/${toSlug}${params}`
+  // One proper query string (T-0578): '?date=...?z=...' made 12Go fall back to another
+  // day and drop the partner cookie; 12Go records a partner only through 'z'.
+  const params = new URLSearchParams()
+  if (date) params.set('date', date)
+  if (affiliateId) params.set('z', affiliateId)
+  const query = params.toString()
+  return `https://12go.asia/en/travel/${fromSlug}/${toSlug}${query ? `?${query}` : ''}`
 }
 
 /**

@@ -89,10 +89,11 @@ describe('affiliates', () => {
         expect(url).toContain('cid=agd456')
       })
 
-      it('adds referer param for 12Go', () => {
+      it('adds the z partner param for 12Go (12Go ignores referer=, T-0578)', () => {
         import.meta.env.VITE_12GO_AFFILIATE_ID = '12g789'
         const url = generateAffiliateUrl('12go', 'Bangkok')
-        expect(url).toContain('referer=12g789')
+        expect(url).toContain('?z=12g789')
+        expect(url).not.toContain('referer=')
       })
 
       it('adds partner_id for GetYourGuide', () => {
@@ -193,10 +194,22 @@ describe('affiliates', () => {
       expect(url).toBe('https://12go.asia/en/travel/chiang-mai/chiang-rai')
     })
 
-    it('includes affiliate ID when available', () => {
+    it('includes affiliate ID as z when available (T-0578)', () => {
       import.meta.env.VITE_12GO_AFFILIATE_ID = '12g789'
       const url = generateTransportUrl('Bangkok', 'Pattaya')
-      expect(url).toContain('referer=12g789')
+      expect(url).toBe('https://12go.asia/en/travel/bangkok/pattaya?z=12g789')
+    })
+
+    it('puts the travel date and the partner ID in ONE query string (T-0578)', () => {
+      import.meta.env.VITE_12GO_AFFILIATE_ID = '12g789'
+      const url = generateTransportUrl('bangkok', 'chiang-mai', '2026-12-05')
+      expect(url).toBe('https://12go.asia/en/travel/bangkok/chiang-mai?date=2026-12-05&z=12g789')
+      expect(url.split('?')).toHaveLength(2)
+    })
+
+    it('keeps the date without a partner ID', () => {
+      const url = generateTransportUrl('bangkok', 'chiang-mai', '2026-12-05')
+      expect(url).toBe('https://12go.asia/en/travel/bangkok/chiang-mai?date=2026-12-05')
     })
   })
 

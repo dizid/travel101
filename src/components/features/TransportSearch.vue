@@ -6,6 +6,7 @@ import {
   RightOutlined,
   EnvironmentOutlined,
 } from '@ant-design/icons-vue'
+import { generateTransportUrl } from '@/utils/affiliates'
 
 const props = defineProps<{
   fromCity?: string
@@ -63,12 +64,9 @@ function getSlug(cityName: string): string {
 function openBooking() {
   if (!canSearch.value) return
 
-  const fromSlug = getSlug(origin.value)
-  const toSlug = getSlug(destination.value)
-  const dateParam = travelDate.value ? `?date=${travelDate.value}` : ''
-
-  // 12Go Asia deep link
-  const url = `https://12go.asia/en/travel/${fromSlug}/${toSlug}${dateParam}?z=4704308`
+  // 12Go Asia deep link with Marc's partner ID (T-0578: this was a stranger's hard-coded
+  // ID, and '?date=...?z=...' made 12Go drop both the chosen date and the partner cookie)
+  const url = generateTransportUrl(getSlug(origin.value), getSlug(destination.value), travelDate.value || undefined)
   window.open(url, '_blank')
 }
 
