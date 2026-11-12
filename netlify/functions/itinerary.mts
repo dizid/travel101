@@ -56,6 +56,8 @@ async function requirePro(db: ReturnType<typeof getDb>, userId: string) {
 }
 
 // Ownership verification helpers
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 async function verifyItineraryOwnership(
   db: ReturnType<typeof getDb>,
   userId: string,
@@ -723,6 +725,15 @@ async function handleActivityOperations(
 
       // Handle reordering if sort_order is provided
       if (body.sortOrder !== undefined && body.dayId) {
+        // The target day must be a day of this same trip (T-0556): without this check an
+        // activity could be moved into any day id, including a day of another user's trip.
+        if (typeof body.dayId !== 'string' || !UUID_PATTERN.test(body.dayId)) {
+          return json({ error: 'Invalid day' }, 400)
+        }
+        const { itineraryId: targetItineraryId } = await verifyDayOwnership(db, userId, body.dayId)
+        if (targetItineraryId !== parentItineraryId) {
+          return json({ error: 'An activity can only move to a day of its own trip' }, 400)
+        }
         // Move activity to new day if day changed
         const [updated] = await db`
           UPDATE itinerary_activities SET

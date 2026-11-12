@@ -502,17 +502,22 @@ describe('itinerary function', () => {
       expect(data.activity.title).toBe('Updated Activity')
     })
 
+    const DAY_2 = '22222222-2222-4222-8222-222222222222'
+
     it('should reorder activity', async () => {
       setMockQueryResult('SELECT a.id, a.day_id, d.itinerary_id', [
         { id: 'act-1', day_id: 'day-1', itinerary_id: 'itin-1' },
       ])
+      setMockQueryResult('SELECT d.id, d.itinerary_id', [
+        { id: DAY_2, itinerary_id: 'itin-1' },
+      ])
       setMockQueryResult('UPDATE itinerary_activities SET', [
-        { id: 'act-1', sort_order: 0, day_id: 'day-2' },
+        { id: 'act-1', sort_order: 0, day_id: DAY_2 },
       ])
 
       const req = createMockRequest('PUT', '/api/itinerary?activityId=act-1&resource=activity', {
         headers: { 'x-user-id': 'user-123' },
-        body: { dayId: 'day-2', sortOrder: 0 },
+        body: { dayId: DAY_2, sortOrder: 0 },
       })
 
       const response = await itineraryHandler(req, mockContext as never)
@@ -521,6 +526,50 @@ describe('itinerary function', () => {
       expect(response.status).toBe(200)
       // Verify day_id was updated in the query
       expect(wasQueryMade('day_id')).toBe(true)
+    })
+
+    it("won't move an activity into a day the user doesn't own (T-0556)", async () => {
+      setMockQueryResult('SELECT a.id, a.day_id, d.itinerary_id', [
+        { id: 'act-1', day_id: 'day-1', itinerary_id: 'itin-1' },
+      ])
+      setMockQueryResult('SELECT d.id, d.itinerary_id', [])
+
+      const req = createMockRequest('PUT', '/api/itinerary?activityId=act-1&resource=activity', {
+        headers: { 'x-user-id': 'user-123' },
+        body: { dayId: DAY_2, sortOrder: 0 },
+      })
+
+      const response = await itineraryHandler(req, mockContext as never)
+      expect(response.status).toBe(404)
+      expect(wasQueryMade('UPDATE itinerary_activities SET')).toBe(false)
+    })
+
+    it("won't move an activity to a day of another of the user's trips, or to a bad id", async () => {
+      setMockQueryResult('SELECT a.id, a.day_id, d.itinerary_id', [
+        { id: 'act-1', day_id: 'day-1', itinerary_id: 'itin-1' },
+      ])
+      setMockQueryResult('SELECT d.id, d.itinerary_id', [
+        { id: DAY_2, itinerary_id: 'itin-other' },
+      ])
+
+      const otherTrip = await itineraryHandler(
+        createMockRequest('PUT', '/api/itinerary?activityId=act-1&resource=activity', {
+          headers: { 'x-user-id': 'user-123' },
+          body: { dayId: DAY_2, sortOrder: 0 },
+        }),
+        mockContext as never
+      )
+      expect(otherTrip.status).toBe(400)
+
+      const badId = await itineraryHandler(
+        createMockRequest('PUT', '/api/itinerary?activityId=act-1&resource=activity', {
+          headers: { 'x-user-id': 'user-123' },
+          body: { dayId: "x' OR 1=1", sortOrder: 0 },
+        }),
+        mockContext as never
+      )
+      expect(badId.status).toBe(400)
+      expect(wasQueryMade('UPDATE itinerary_activities SET')).toBe(false)
     })
 
     it('should delete activity and renumber remaining', async () => {

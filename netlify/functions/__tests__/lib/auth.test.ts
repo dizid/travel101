@@ -154,7 +154,7 @@ describe('auth lib', () => {
       expect(result.authenticated).toBe(false)
     })
 
-    it("checks the token's issuer (HappyRoam's Neon Auth)", async () => {
+    it("checks the token's issuer and audience (HappyRoam's Neon Auth)", async () => {
       mockCreateRemoteJWKSet.mockReturnValue(vi.fn())
       mockJwtVerify.mockResolvedValue({ payload: { sub: 'u1' } })
 
@@ -164,6 +164,7 @@ describe('auth lib', () => {
 
       expect(mockJwtVerify).toHaveBeenCalledWith('t', expect.anything(), {
         issuer: 'https://ep-royal-art-abpqmm55.neonauth.eu-west-2.aws.neon.tech',
+        audience: 'https://ep-royal-art-abpqmm55.neonauth.eu-west-2.aws.neon.tech',
       })
     })
 

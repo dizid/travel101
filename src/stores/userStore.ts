@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { UserProfile, UserPreferences, UserActivity } from '@/types'
+import { clearAuthToken } from '@/lib/authToken'
 
 const defaultPreferences: UserPreferences = {
   travelStyle: [],
@@ -87,6 +88,8 @@ export const useUserStore = defineStore('user', () => {
   }
 
   function setAuthUser(userId: string, email?: string, displayName?: string) {
+    // Another account signed in in this tab: never reuse the previous user's API token.
+    if (authUserId.value !== userId) clearAuthToken()
     authUserId.value = userId
     isAuthenticated.value = true
     if (email) {
@@ -99,6 +102,7 @@ export const useUserStore = defineStore('user', () => {
   }
 
   function clearAuthUser() {
+    clearAuthToken()
     authUserId.value = null
     isAuthenticated.value = false
   }

@@ -11,6 +11,7 @@ const mockPaymentIntent = {
   status: 'succeeded',
   amount: 1200,
   currency: 'usd',
+  metadata: { user_id: 'user-123', type: 'onward_ticket' },
 }
 
 const mockStripe = {
@@ -521,6 +522,36 @@ describe('onward-ticket function', () => {
         expect(res.status).toBe(400)
         const data = await parseResponse(res)
         expect(data.error).toContain('Payment not completed')
+      })
+
+      it("refuses a succeeded payment that isn't this user's onward-ticket fee (shared Stripe account, T-0556)", async () => {
+        const cases = [
+          { ...mockPaymentIntent, metadata: { user_id: 'someone-else', type: 'onward_ticket' } },
+          { ...mockPaymentIntent, metadata: { user_id: 'user-123', type: 'wuxing_reading' } },
+          { ...mockPaymentIntent, metadata: {} },
+          { ...mockPaymentIntent, amount: 990 },
+        ]
+        for (const paymentIntent of cases) {
+          clearMockResults()
+          setMockQueryResult('user_profiles', [{ is_pro: false }])
+          mockStripe.paymentIntents.retrieve.mockResolvedValue(paymentIntent)
+
+          const req = createMockRequest('POST', '/api/onward-ticket', {
+            body: {
+              action: 'book',
+              offerId: 'off_abc123',
+              passenger: validPassenger,
+              paymentIntentId: 'pi_other_app',
+            },
+            headers: { 'x-user-id': 'user-123' },
+          })
+          const res = await handler(req, mockContext)
+          expect(res.status).toBe(400)
+          const data = await parseResponse(res)
+          expect(data.error).toContain('not an onward ticket payment')
+        }
+        expect(mockStripe.refunds.create).not.toHaveBeenCalled()
+        mockStripe.paymentIntents.retrieve.mockResolvedValue(mockPaymentIntent)
       })
 
       it('creates booking after successful payment', async () => {

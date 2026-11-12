@@ -1,7 +1,8 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { useUserStore } from './userStore'
 import { localStorageMock } from '@/test/setup'
+import { clearAuthToken } from '@/lib/authToken'
 import {
   backpackerPrefs,
   luxuryCouplePrefs,
@@ -224,6 +225,21 @@ describe('userStore', () => {
 
       expect(store.authUserId).toBeNull()
       expect(store.isAuthenticated).toBe(false)
+    })
+
+    it("forgets the cached API token when another account signs in or the user signs out (T-0556)", () => {
+      const store = useUserStore()
+      store.setAuthUser('user-a')
+      vi.mocked(clearAuthToken).mockClear()
+
+      store.setAuthUser('user-a')
+      expect(clearAuthToken).not.toHaveBeenCalled()
+
+      store.setAuthUser('user-b')
+      expect(clearAuthToken).toHaveBeenCalledTimes(1)
+
+      store.clearAuthUser()
+      expect(clearAuthToken).toHaveBeenCalledTimes(2)
     })
 
     it('should set authenticated status', () => {

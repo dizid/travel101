@@ -401,6 +401,7 @@ async function handleBook(body: BookBody, userId: string): Promise<Response> {
            departure_time, arrival_time, hold_expires_at, passenger_name
     FROM onward_bookings
     WHERE stripe_payment_intent_id = ${paymentIntentId}
+      AND user_id = ${userId}
     LIMIT 1
   `
   if (existing.length > 0) {
@@ -423,6 +424,17 @@ async function handleBook(body: BookBody, userId: string): Promise<Response> {
   const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId)
   if (paymentIntent.status !== 'succeeded') {
     return errorResponse('Payment not completed', 400)
+  }
+  // The Stripe account is shared by several apps: only this user's own $12 onward-ticket
+  // fee (created by create-payment above) pays for a booking. Before T-0556 any succeeded
+  // payment on the account was accepted, and a failed Duffel booking would then refund it.
+  if (
+    paymentIntent.metadata?.type !== 'onward_ticket' ||
+    paymentIntent.metadata?.user_id !== userId ||
+    paymentIntent.amount !== SERVICE_FEE_CENTS ||
+    paymentIntent.currency !== 'usd'
+  ) {
+    return errorResponse('This payment is not an onward ticket payment for your account', 400)
   }
 
   return await createDuffelBooking(db, offerId, passenger, userId, paymentIntentId, 'paid')

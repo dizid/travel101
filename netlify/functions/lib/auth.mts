@@ -28,6 +28,7 @@ interface NeonAuthPayload extends JWTPayload {
 // HappyRoam's Neon Auth: the same host the /neon-auth/* proxy in netlify.toml points
 // at. Its JWKS and issuer are public, so they live in code (no env var needed);
 // NEON_AUTH_JWKS_URL / NEON_AUTH_ISSUER override them if the auth project ever moves.
+// Neon Auth sets both the issuer and the audience of its tokens to this origin.
 const NEON_AUTH_ORIGIN = 'https://ep-royal-art-abpqmm55.neonauth.eu-west-2.aws.neon.tech'
 const DEFAULT_JWKS_URL = `${NEON_AUTH_ORIGIN}/neondb/auth/.well-known/jwks.json`
 
@@ -67,7 +68,10 @@ export async function validateAuth(req: Request): Promise<AuthResult> {
 
   if (token) {
     try {
-      const { payload } = await jwtVerify(token, getJwks(), { issuer: expectedIssuer() })
+      const { payload } = await jwtVerify(token, getJwks(), {
+        issuer: expectedIssuer(),
+        audience: expectedIssuer(),
+      })
       const neonPayload = payload as NeonAuthPayload
       if (!neonPayload.sub) {
         return { authenticated: false, userId: null, error: 'Invalid or expired token' }
