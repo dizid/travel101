@@ -146,6 +146,21 @@ function transformGuide(row: any, includeContent = true) {
   }
 }
 
+// AI-generated attraction text (data_source = 'ai_generated') loses every sentence with a
+// phone number: a Nov 12 2026 check found invented numbers and contact people (T-0552).
+// Same rule as netlify/functions/lib/ai-content.mts (the API); keep the two in sync.
+const AI_PHONE_PATTERN = /(\+66[\s-]?\d[\d\s-]{6,12}\d|\b0\d{1,2}[\s-]\d{3}[\s-]?\d{3,4}\b|\b0[689]\d[\s-]?\d{3}[\s-]?\d{4}\b)/
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function cleanAiAttraction(row: any) {
+  if (row.data_source !== 'ai_generated' || !row.about) return row
+  const about = String(row.about)
+    .split('\n')
+    .map((line: string) => line.split(/(?<=[.!?])\s+/).filter((sentence: string) => !AI_PHONE_PATTERN.test(sentence)).join(' '))
+    .join('\n')
+    .trim()
+  return { ...row, about }
+}
+
 /**
  * Transform a heritage image row to camelCase.
  */
@@ -273,7 +288,9 @@ export async function prefetchSSGData(): Promise<PrefetchResult> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const heritageList: any[] = []
 
-  for (const a of allAttractions) {
+  for (const row of allAttractions) {
+    // AI-generated text loses invented phone numbers (netlify/functions/lib/ai-content.mts, T-0552)
+    const a = cleanAiAttraction(row)
     if (a.place_type === 'heritage') {
       // Heritage sites use the /api/heritage/:slug format
       const site = {
@@ -332,7 +349,7 @@ export async function prefetchSSGData(): Promise<PrefetchResult> {
   writeJSON('guides.json', guidesBySlug)
   writeJSON('attractions-list.json', attractionList)
   writeJSON('attractions-first-page.json', {
-    attractions: attractionsFirstPage,
+    attractions: attractionsFirstPage.map(cleanAiAttraction),
     total: parseInt(attractionsCount[0]?.total ?? String(attractionsFirstPage.length), 10),
   })
   writeJSON('heritage-list.json', heritageList)

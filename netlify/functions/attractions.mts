@@ -2,6 +2,7 @@ import type { Context, Config } from '@netlify/functions'
 import { getDb } from './lib/db.mts'
 import { calculateMatchScore, getMatchReasons, type UserPrefs } from './lib/matching.mts'
 import { optionalAuth } from './lib/auth.mts'
+import { cleanAiAttraction } from './lib/ai-content.mts'
 
 interface Attraction {
   id: string
@@ -354,7 +355,7 @@ async function handleList(req: Request, db: ReturnType<typeof getDb>, url: URL) 
       attractionsWithScores.sort((a, b) => b.matchScore - a.matchScore)
 
       return json({
-        attractions: attractionsWithScores,
+        attractions: attractionsWithScores.map(cleanAiAttraction),
         total,
         hasMore: offset + limit < total,
       })
@@ -362,7 +363,7 @@ async function handleList(req: Request, db: ReturnType<typeof getDb>, url: URL) 
   }
 
   return json({
-    attractions,
+    attractions: attractions.map(cleanAiAttraction),
     total,
     hasMore: offset + limit < total,
   })
@@ -429,7 +430,8 @@ async function handleDetail(
     return json({ error: 'Attraction not found' }, 404)
   }
 
-  const attraction = attractions[0]
+  // AI-generated text loses invented phone numbers (see lib/ai-content.mts)
+  const attraction = cleanAiAttraction(attractions[0])
 
   // Build response with optional includes
   const response: {
