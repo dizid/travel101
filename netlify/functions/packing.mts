@@ -4,6 +4,7 @@ import { getDb } from './lib/db.mts'
 import { checkAndIncrementUsage, checkAndIncrementAnonUsage } from './lib/usage.mts'
 import { optionalAuth } from './lib/auth.mts'
 import { validateAppSecret } from './lib/security.mts'
+import { shortText } from './lib/ai-input.mts'
 import { checkRateLimit, getClientIp } from './lib/rate-limit.mts'
 
 // Max combined length of user-supplied text fields, enforced before any DB
@@ -133,7 +134,17 @@ export default async (req: Request, context: Context) => {
 
   try {
     const body: PackingRequest = await req.json()
-    const { destinations, duration, activities, weather, travelStyle, includeTemples } = body
+    const { destinations, activities, includeTemples } = body
+    // Browser-sent values that reach the paid prompt are bounded (T-0569).
+    const duration = Number.isInteger(body.duration) && body.duration >= 1 ? Math.min(body.duration, 365) : 0
+    const travelStyle = shortText(body.travelStyle, 40)
+    const weather = body.weather && typeof body.weather === 'object'
+      ? {
+          avgTemp: Number.isFinite(Number(body.weather.avgTemp)) ? Math.round(Number(body.weather.avgTemp)) : 30,
+          rainChance: Number.isFinite(Number(body.weather.rainChance)) ? Math.round(Number(body.weather.rainChance)) : 0,
+          isMonsoon: body.weather.isMonsoon === true,
+        }
+      : undefined
 
     if (!destinations?.length || !duration) {
       return new Response(JSON.stringify({ error: 'Destinations and duration are required' }), {

@@ -62,6 +62,27 @@ describe('attraction-ai function', () => {
   })
 
   describe('cost-abuse protections', () => {
+    it('caps browser-sent chat history and profile text before they reach the prompt (T-0569)', async () => {
+      setMockQueryResult('SELECT id, slug', [mockAttraction])
+      setMockAIResponse('ok')
+      const history = Array.from({ length: 40 }, (_, i) => ({ role: i % 2 ? 'assistant' : 'user', content: 'y'.repeat(20_000) }))
+
+      const req = createMockRequest('POST', '/api/attraction-ai', {
+        headers: { 'x-user-id': 'user-123' },
+        body: {
+          action: 'chat', attractionSlug: 'wat-phra-kaew', message: 'Best time?',
+          conversationHistory: history,
+          userProfile: { nationality: 'z'.repeat(50_000), interests: Array(500).fill('q'.repeat(1000)) },
+        },
+      })
+      await attractionAiHandler(req, mockContext as never)
+
+      const call = mockAnthropic.messages.create.mock.calls.at(-1)?.[0]
+      expect(call).toBeDefined()
+      expect(call.messages.length).toBeLessThanOrEqual(11)
+      expect(JSON.stringify(call).length).toBeLessThan(60_000)
+    })
+
     it('should return 401 for an anonymous caller without the x-app-secret header', async () => {
       setMockEnv('APP_SHARED_SECRET', 'test-shared-secret')
 

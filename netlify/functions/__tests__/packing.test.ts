@@ -121,7 +121,7 @@ describe('packing function', () => {
     it('should return 429 with LIMIT_REACHED when an anonymous caller has already used today\'s anon quota', async () => {
       // ANON_LIMITS.packing = 1/day (see lib/usage.mts). Simulate a usage row
       // already at the day's limit so the check blocks before any Anthropic call.
-      setMockQueryResult('ai_anon_usage', [{ usage_count: 1 }])
+      setMockQueryResult('RETURNING usage_count', []) // quota refused (T-0569)
 
       const req = createMockRequest('POST', '/api/packing', {
         headers: {},

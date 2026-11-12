@@ -1,10 +1,11 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import '../../__mocks__/db'
 import { mockSql } from '../../__mocks__/db'
-import { setMockQueryResult, clearMockResults } from '../../__mocks__/db'
+import { setMockQueryResult, clearMockResults, getMockQueryLog, wasQueryMade } from '../../__mocks__/db'
 
 import {
   FREE_LIMITS,
+  FREE_GLOBAL_DAILY_LIMIT,
   checkAndIncrementUsage,
   getUsageStatus,
   checkUsage,
@@ -50,9 +51,22 @@ describe('usage lib', () => {
       expect(result.remaining).toBe(0) // limit is 1, used 1
     })
 
+    it('counts and checks in one statement, with the daily ceiling for all users (T-0569)', async () => {
+      setMockQueryResult('SELECT is_pro FROM user_profiles', [{ is_pro: false }])
+
+      await checkAndIncrementUsage(mockSql, 'user-free', 'general_chat')
+
+      const counting = getMockQueryLog().find(q => q.query.includes('INSERT INTO ai_usage'))!
+      expect(counting.query).toContain('WHERE ai_usage.usage_count <')
+      expect(counting.query).toContain('FROM ai_anon_usage WHERE usage_date = CURRENT_DATE')
+      expect(counting.values).toContain(FREE_GLOBAL_DAILY_LIMIT)
+      expect(wasQueryMade('SELECT usage_count FROM ai_usage')).toBe(false)
+    })
+
     it('should deny free user who reached limit', async () => {
       setMockQueryResult('SELECT is_pro FROM user_profiles', [{ is_pro: false }])
-      setMockQueryResult('SELECT usage_count FROM ai_usage', [{ usage_count: 1 }])
+      // The counting INSERT returns no row when the limit (or daily ceiling) is reached
+      setMockQueryResult('RETURNING usage_count', [])
 
       const result = await checkAndIncrementUsage(mockSql, 'user-free', 'general_chat')
 

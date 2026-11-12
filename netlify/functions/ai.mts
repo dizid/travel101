@@ -4,37 +4,13 @@ import { getDb } from './lib/db.mts'
 import { checkAndIncrementUsage, checkAndIncrementAnonUsage } from './lib/usage.mts'
 import { optionalAuth } from './lib/auth.mts'
 import { validateAppSecret } from './lib/security.mts'
+import { sanitizeHistory, shortText, shortList } from './lib/ai-input.mts'
 import { checkRateLimit, getClientIp } from './lib/rate-limit.mts'
 
 // Max length for the user-supplied chat message, enforced before any DB or
 // Claude API call to keep an oversized payload from running up token costs.
 const MAX_MESSAGE_LENGTH = 4000
 
-// Server-side limits on what the browser sends along with a chat message (T-0560).
-const MAX_HISTORY_MESSAGES = 10
-const MAX_PROFILE_TEXT = 60
-const MAX_PROFILE_LIST = 8
-
-/** Last MAX_HISTORY_MESSAGES user/assistant turns, each cut to MAX_MESSAGE_LENGTH characters. */
-function sanitizeHistory(history: unknown): { role: 'user' | 'assistant'; content: string }[] {
-  if (!Array.isArray(history)) return []
-  return history
-    .filter((msg): msg is { role: 'user' | 'assistant'; content: string } =>
-      !!msg && (msg.role === 'user' || msg.role === 'assistant') && typeof msg.content === 'string')
-    .slice(-MAX_HISTORY_MESSAGES)
-    .map(msg => ({ role: msg.role, content: msg.content.slice(0, MAX_MESSAGE_LENGTH) }))
-}
-
-function shortText(value: unknown): string {
-  return typeof value === 'string' ? value.slice(0, MAX_PROFILE_TEXT) : ''
-}
-
-function shortList(value: unknown): string {
-  return Array.isArray(value)
-    ? value.filter((item): item is string => typeof item === 'string')
-        .slice(0, MAX_PROFILE_LIST).map(item => item.slice(0, MAX_PROFILE_TEXT)).join(', ')
-    : ''
-}
 
 // neon() is itself the tagged-template function and returns a plain array of rows:
 // it has no .sql property and no .rows (the test mock used to add both, so the chat-history

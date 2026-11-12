@@ -4,6 +4,7 @@ import { getDb } from './lib/db.mts'
 import { checkAndIncrementUsage, type FeatureType } from './lib/usage.mts'
 import { optionalAuth } from './lib/auth.mts'
 import { validateAppSecret } from './lib/security.mts'
+import { sanitizeHistory, shortText, shortList } from './lib/ai-input.mts'
 import { checkRateLimit, getClientIp } from './lib/rate-limit.mts'
 
 // Max length for the user-supplied chat message, enforced before any DB or
@@ -58,13 +59,21 @@ function json(data: unknown, status = 200) {
 }
 
 function formatUserProfile(prefs: UserPrefs): string {
+  // Browser-sent: every field is cut short (T-0569), it goes into a paid prompt.
+  if (!prefs || typeof prefs !== 'object') return ''
   const parts: string[] = []
-  if (prefs.nationality) parts.push(`Nationality: ${prefs.nationality}`)
-  if (prefs.tripType) parts.push(`Trip type: ${prefs.tripType}`)
-  if (prefs.travelStyle?.length) parts.push(`Travel style: ${prefs.travelStyle.join(', ')}`)
-  if (prefs.budget) parts.push(`Budget: ${prefs.budget}`)
-  if (prefs.interests?.length) parts.push(`Interests: ${prefs.interests.join(', ')}`)
-  if (prefs.groupType) parts.push(`Traveling as: ${prefs.groupType}`)
+  const nationality = shortText(prefs.nationality)
+  const tripType = shortText(prefs.tripType)
+  const travelStyle = shortList(prefs.travelStyle)
+  const budget = shortText(prefs.budget)
+  const interests = shortList(prefs.interests)
+  const groupType = shortText(prefs.groupType)
+  if (nationality) parts.push(`Nationality: ${nationality}`)
+  if (tripType) parts.push(`Trip type: ${tripType}`)
+  if (travelStyle) parts.push(`Travel style: ${travelStyle}`)
+  if (budget) parts.push(`Budget: ${budget}`)
+  if (interests) parts.push(`Interests: ${interests}`)
+  if (groupType) parts.push(`Traveling as: ${groupType}`)
   return parts.join('\n')
 }
 
@@ -315,10 +324,7 @@ When relevant to the user's question, naturally mention our booking partners:
 Only mention partners when it genuinely helps answer the question — do not add a booking section to every response.`
 
   const messages = [
-    ...conversationHistory.map((msg) => ({
-      role: msg.role as 'user' | 'assistant',
-      content: msg.content,
-    })),
+    ...sanitizeHistory(conversationHistory),
     { role: 'user' as const, content: message },
   ]
 

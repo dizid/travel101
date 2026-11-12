@@ -11,6 +11,20 @@ export const FREE_LIMITS = {
 
 export type FeatureType = keyof typeof FREE_LIMITS
 
+// Ceiling per day for ALL counted AI calls together (free + anonymous; Pro calls are
+// counted too but never refused) (T-0569). Free accounts are instant, so per-account
+// limits alone didn't bound Marc's Anthropic bill. ~200 Haiku calls is well under $2.
+export const FREE_GLOBAL_DAILY_LIMIT = 200
+
+/** The quota result from a counting INSERT ... RETURNING usage_count (no row = refused). */
+function countedResult(rows: Record<string, unknown>[], limit: number): UsageCheckResult {
+  if (rows.length === 0) {
+    return { allowed: false, currentUsage: limit, limit, remaining: 0, isPro: false }
+  }
+  const currentUsage = Number(rows[0].usage_count) || 1
+  return { allowed: true, currentUsage, limit, remaining: Math.max(0, limit - currentUsage), isPro: false }
+}
+
 // Daily limits for anonymous (unauthenticated) callers, keyed by IP.
 // Lower than the free authenticated tier on purpose: anonymous traffic has
 // no account to upgrade and no way to tie abuse to a real identity, so the
@@ -71,45 +85,26 @@ export async function checkAndIncrementUsage(
     }
   }
 
-  // Get current usage for free user
-  const usageResult = await db`
-    SELECT usage_count FROM ai_usage
-    WHERE user_id = ${userId}
-      AND feature_type = ${featureType}
-      AND usage_date = CURRENT_DATE
-  `
-
-  const currentUsage = usageResult.length > 0 ? usageResult[0].usage_count : 0
   const limit = FREE_LIMITS[featureType]
 
-  // Check if limit reached
-  if (currentUsage >= limit) {
-    return {
-      allowed: false,
-      currentUsage,
-      limit,
-      remaining: 0,
-      isPro: false,
-    }
-  }
-
-  // Increment usage
-  await db`
+  // Count and check in ONE statement (T-0569): the old read-then-write let parallel
+  // requests from one account all read 0 and all pass. The row lock of ON CONFLICT makes
+  // the per-user limit exact; the daily ceiling for all free + anonymous calls is checked
+  // in the same statement (a few parallel calls may pass it by one or two).
+  const counted = await db`
     INSERT INTO ai_usage (user_id, feature_type, usage_date, usage_count)
-    VALUES (${userId}, ${featureType}, CURRENT_DATE, 1)
+    SELECT ${userId}, ${featureType}, CURRENT_DATE, 1
+    WHERE (SELECT COALESCE(SUM(usage_count), 0) FROM ai_usage WHERE usage_date = CURRENT_DATE)
+      + (SELECT COALESCE(SUM(usage_count), 0) FROM ai_anon_usage WHERE usage_date = CURRENT_DATE)
+      < ${FREE_GLOBAL_DAILY_LIMIT}
     ON CONFLICT (user_id, feature_type, usage_date)
     DO UPDATE SET
       usage_count = ai_usage.usage_count + 1,
       updated_at = NOW()
+    WHERE ai_usage.usage_count < ${limit}
+    RETURNING usage_count
   `
-
-  return {
-    allowed: true,
-    currentUsage: currentUsage + 1,
-    limit,
-    remaining: limit - currentUsage - 1,
-    isPro: false,
-  }
+  return countedResult(counted, limit)
 }
 
 /**
@@ -213,40 +208,21 @@ export async function checkAndIncrementAnonUsage(
   anonId: string,
   featureType: FeatureType,
 ): Promise<UsageCheckResult> {
-  const usageResult = await db`
-    SELECT usage_count FROM ai_anon_usage
-    WHERE anon_id = ${anonId}
-      AND feature_type = ${featureType}
-      AND usage_date = CURRENT_DATE
-  `
-
-  const currentUsage = usageResult.length > 0 ? usageResult[0].usage_count : 0
   const limit = ANON_LIMITS[featureType]
 
-  if (currentUsage >= limit) {
-    return {
-      allowed: false,
-      currentUsage,
-      limit,
-      remaining: 0,
-      isPro: false,
-    }
-  }
-
-  await db`
+  // One statement, same as checkAndIncrementUsage (T-0569).
+  const counted = await db`
     INSERT INTO ai_anon_usage (anon_id, feature_type, usage_date, usage_count)
-    VALUES (${anonId}, ${featureType}, CURRENT_DATE, 1)
+    SELECT ${anonId}, ${featureType}, CURRENT_DATE, 1
+    WHERE (SELECT COALESCE(SUM(usage_count), 0) FROM ai_usage WHERE usage_date = CURRENT_DATE)
+      + (SELECT COALESCE(SUM(usage_count), 0) FROM ai_anon_usage WHERE usage_date = CURRENT_DATE)
+      < ${FREE_GLOBAL_DAILY_LIMIT}
     ON CONFLICT (anon_id, feature_type, usage_date)
     DO UPDATE SET
       usage_count = ai_anon_usage.usage_count + 1,
       updated_at = NOW()
+    WHERE ai_anon_usage.usage_count < ${limit}
+    RETURNING usage_count
   `
-
-  return {
-    allowed: true,
-    currentUsage: currentUsage + 1,
-    limit,
-    remaining: limit - currentUsage - 1,
-    isPro: false,
-  }
+  return countedResult(counted, limit)
 }

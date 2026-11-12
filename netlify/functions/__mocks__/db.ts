@@ -39,6 +39,13 @@ export const mockSql = vi.fn(
       }
     }
 
+    // The AI quota counts with one INSERT ... RETURNING usage_count (T-0569): by default
+    // that call is allowed (first use today). Tests simulate a refusal (limit or daily
+    // ceiling reached) with setMockQueryResult('RETURNING usage_count', []).
+    if (query.includes('RETURNING usage_count')) {
+      return Promise.resolve(createQueryResult([{ usage_count: 1 }]))
+    }
+
     // Default empty result
     return Promise.resolve(createQueryResult([]))
   }

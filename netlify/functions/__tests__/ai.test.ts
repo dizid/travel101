@@ -289,7 +289,7 @@ describe('ai function', () => {
       // ANON_LIMITS.general_chat = 1/day (see lib/usage.mts). Simulate a usage
       // row already at the day's limit so the check blocks before any
       // Anthropic call is made.
-      setMockQueryResult('ai_anon_usage', [{ usage_count: 1 }])
+      setMockQueryResult('RETURNING usage_count', []) // quota refused (T-0569)
 
       const req = createMockRequest('POST', '/api/ai', {
         headers: {},
