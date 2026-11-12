@@ -10,7 +10,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Routing**: Vue Router 4.3
 - **Database**: Neon PostgreSQL (@neondatabase/serverless)
 - **Backend**: Netlify Functions (serverless, Node 20)
-- **Auth**: Neon Auth (@neondatabase/neon-js)
+- **Auth**: Neon Auth (@neondatabase/neon-js). API calls carry a 15-min Neon Auth JWT minted at /neon-auth/token (src/lib/authToken.ts, sent by useApi with one retry on 401); functions verify it in lib/auth.mts. Unit tests set ALLOW_UNVERIFIED_USER_ID=true (src/test/setup.ts) to keep using x-user-id; never set it on Netlify. Test account: claude-test-t0555@dizid.com (password in ~/.config/dizid-keys/happyroam-test.env)
 - **Payments**: Stripe 14.0
 - **AI**: Anthropic Claude SDK (claude-sonnet-4-20250514)
 
@@ -179,7 +179,7 @@ netlify/functions/       # Serverless backend (26 functions)
 ├── webhook-stripe.mts   # Stripe webhook handler
 ├── __tests__/           # Function unit tests (Vitest)
 └── lib/
-    ├── auth.mts         # Auth utilities
+    ├── auth.mts         # Who is calling: ONLY a verified Neon Auth JWT (Authorization: Bearer; public JWKS + issuer in code). A bare x-user-id header is ignored (T-0555, Nov 12 2026; before that anyone could act as any user id)
     ├── db.mts           # Neon database wrapper
     ├── matching.mts     # Backend matching logic
     ├── responses.mts    # HTTP response helpers

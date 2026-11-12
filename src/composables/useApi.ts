@@ -1,5 +1,6 @@
 import { ref } from 'vue'
 import { useUserStore } from '@/stores/userStore'
+import { getAuthToken, clearAuthToken } from '@/lib/authToken'
 
 const API_BASE = '/api'
 
@@ -27,8 +28,13 @@ export function useApi() {
         ...customHeaders,
       }
 
-      if (requiresAuth && userStore.authUserId) {
+      // Signed in: send the Neon Auth JWT; the server decides who is calling from it
+      // alone (T-0555). x-user-id is still sent but the server ignores it.
+      const sendAuth = requiresAuth && !!userStore.authUserId
+      if (sendAuth && userStore.authUserId) {
         headers['x-user-id'] = userStore.authUserId
+        const token = await getAuthToken()
+        if (token) headers['Authorization'] = `Bearer ${token}`
       }
 
       // Speed-bump shared secret expected by the AI endpoints' validateAppSecret()
@@ -39,11 +45,25 @@ export function useApi() {
         headers['x-app-secret'] = appSecret
       }
 
-      const response = await fetch(`${API_BASE}${endpoint}`, {
-        method,
-        headers,
-        body: body ? JSON.stringify(body) : undefined,
-      })
+      const send = () =>
+        fetch(`${API_BASE}${endpoint}`, {
+          method,
+          headers,
+          body: body ? JSON.stringify(body) : undefined,
+        })
+
+      let response = await send()
+
+      // A token can expire or be revoked between minting and use: mint a fresh one
+      // and try once more before reporting the 401.
+      if (response.status === 401 && sendAuth) {
+        clearAuthToken()
+        const freshToken = await getAuthToken()
+        if (freshToken) {
+          headers['Authorization'] = `Bearer ${freshToken}`
+          response = await send()
+        }
+      }
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}))

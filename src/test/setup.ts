@@ -6,6 +6,11 @@ import { createPinia, setActivePinia } from 'pinia'
 // Global Mocks
 // ============================================
 
+// Function tests identify users with the x-user-id header; production only trusts a
+// verified Neon Auth JWT (netlify/functions/lib/auth.mts, T-0555). This test-only switch
+// keeps the header working here. Never set it on Netlify.
+process.env.ALLOW_UNVERIFIED_USER_ID = 'true'
+
 // Mock Netlify global (used by serverless functions via Netlify.env.get)
 ;(globalThis as any).Netlify = {
   env: {
@@ -16,6 +21,15 @@ import { createPinia, setActivePinia } from 'pinia'
     has: (key: string) => key in process.env,
   },
 }
+
+// The API client gets its Neon Auth JWT from src/lib/authToken.ts, which calls
+// /neon-auth/token with fetch. Tests stub it, so mocked fetch responses stay meant
+// for the API call under test (authToken.test.ts tests the real module).
+vi.mock('@/lib/authToken', () => ({
+  getAuthToken: vi.fn(async () => 'test-jwt'),
+  clearAuthToken: vi.fn(),
+  readTokenExpiry: vi.fn(() => Math.floor(Date.now() / 1000) + 900),
+}))
 
 // Mock fetch API
 export const mockFetch = vi.fn()

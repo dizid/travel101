@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { useApi } from './useApi'
 import { useUserStore } from '@/stores/userStore'
+import { getAuthToken, clearAuthToken } from '@/lib/authToken'
 import {
   mockFetch,
   createMockResponse,
@@ -41,6 +42,63 @@ describe('useApi', () => {
           'x-user-id': 'user-123',
         }),
       }))
+    })
+
+    it('sends the Neon Auth JWT as a Bearer token when signed in (T-0555)', async () => {
+      userStore.setAuthUser('user-123', 'test@example.com')
+      mockFetch.mockResolvedValueOnce(createMockResponse({ data: 'test' }))
+      const { get } = useApi()
+
+      await get('/test')
+
+      expect(mockFetch).toHaveBeenCalledWith('/api/test', expect.objectContaining({
+        headers: expect.objectContaining({ Authorization: 'Bearer test-jwt' }),
+      }))
+    })
+
+    it('does not ask for a token when signed out', async () => {
+      mockFetch.mockResolvedValueOnce(createMockResponse({ data: 'test' }))
+      const { get } = useApi()
+
+      await get('/test')
+
+      expect(getAuthToken).not.toHaveBeenCalled()
+      const callArgs = mockFetch.mock.calls[0][1] as RequestInit
+      expect(callArgs.headers).not.toHaveProperty('Authorization')
+    })
+
+    it('mints a fresh token and retries once after a 401', async () => {
+      userStore.setAuthUser('user-123')
+      vi.mocked(getAuthToken)
+        .mockResolvedValueOnce('expired-jwt')
+        .mockResolvedValueOnce('fresh-jwt')
+      mockFetch
+        .mockResolvedValueOnce(createErrorResponse('Invalid or expired token', 401))
+        .mockResolvedValueOnce(createMockResponse({ ok: true }))
+      const { get } = useApi()
+
+      const result = await get<{ ok: boolean }>('/test')
+
+      expect(result).toEqual({ ok: true })
+      expect(clearAuthToken).toHaveBeenCalled()
+      expect(mockFetch).toHaveBeenCalledTimes(2)
+      const retryHeaders = (mockFetch.mock.calls[1][1] as RequestInit).headers as Record<string, string>
+      expect(retryHeaders.Authorization).toBe('Bearer fresh-jwt')
+    })
+
+    it('reports the 401 when no fresh token can be minted (session gone)', async () => {
+      userStore.setAuthUser('user-123')
+      vi.mocked(getAuthToken)
+        .mockResolvedValueOnce('expired-jwt')
+        .mockResolvedValueOnce(null)
+      mockFetch.mockResolvedValueOnce(createErrorResponse('Invalid or expired token', 401))
+      const { get, error } = useApi()
+
+      const result = await get('/test')
+
+      expect(result).toBeNull()
+      expect(mockFetch).toHaveBeenCalledTimes(1)
+      expect(error.value).toBe('Invalid or expired token')
     })
 
     it('should not add auth header when user is not authenticated', async () => {

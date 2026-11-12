@@ -3,10 +3,14 @@ import { createRemoteJWKSet, jwtVerify, type JWTPayload } from 'jose'
 /**
  * Authentication helper for Netlify Functions.
  *
- * SECURITY NOTE: The x-user-id header is currently client-controlled and NOT verified.
- * This helper provides infrastructure for proper JWT validation.
+ * Who is calling is decided ONLY by a Neon Auth JWT in the Authorization header
+ * (T-0555, Nov 2026). The browser mints it at /neon-auth/token (src/lib/authToken.ts)
+ * and we verify it against Neon Auth's public JWKS. Before T-0555 the functions
+ * believed a bare `x-user-id` header, so anyone who knew a user's id could act as
+ * that user (read trips and chats, open their billing page).
  *
- * TODO: Configure Neon Auth JWKS endpoint and enable JWT validation in production.
+ * The x-user-id header is still sent by the app but ignored, unless
+ * ALLOW_UNVERIFIED_USER_ID=true (set only by the unit tests; never on Netlify).
  */
 
 interface AuthResult {
@@ -21,71 +25,72 @@ interface NeonAuthPayload extends JWTPayload {
   email?: string
 }
 
-// Neon Auth JWKS endpoint - set via environment variable
-// Example: https://your-project.auth.neon.tech/.well-known/jwks.json
+// HappyRoam's Neon Auth: the same host the /neon-auth/* proxy in netlify.toml points
+// at. Its JWKS and issuer are public, so they live in code (no env var needed);
+// NEON_AUTH_JWKS_URL / NEON_AUTH_ISSUER override them if the auth project ever moves.
+const NEON_AUTH_ORIGIN = 'https://ep-royal-art-abpqmm55.neonauth.eu-west-2.aws.neon.tech'
+const DEFAULT_JWKS_URL = `${NEON_AUTH_ORIGIN}/neondb/auth/.well-known/jwks.json`
+
 let jwks: ReturnType<typeof createRemoteJWKSet> | null = null
 
 function getJwks() {
   if (!jwks) {
-    const neonAuthUrl = Netlify.env.get('NEON_AUTH_JWKS_URL')
-    if (neonAuthUrl) {
-      jwks = createRemoteJWKSet(new URL(neonAuthUrl))
-    }
+    const jwksUrl = Netlify.env.get('NEON_AUTH_JWKS_URL') || DEFAULT_JWKS_URL
+    jwks = createRemoteJWKSet(new URL(jwksUrl))
   }
   return jwks
+}
+
+function expectedIssuer(): string {
+  return Netlify.env.get('NEON_AUTH_ISSUER') || NEON_AUTH_ORIGIN
+}
+
+/** Test-only escape hatch: accept the unverified x-user-id header. */
+function allowUnverifiedUserId(): boolean {
+  return Netlify.env.get('ALLOW_UNVERIFIED_USER_ID') === 'true'
 }
 
 /**
  * Validates the Authorization header and extracts user information.
  *
- * If NEON_AUTH_JWKS_URL is configured, it will verify JWT tokens.
- * Otherwise, falls back to trusting the x-user-id header (NOT RECOMMENDED FOR PRODUCTION).
+ * - `Authorization: Bearer <Neon Auth JWT>` that verifies (signature, expiry, issuer)
+ *   -> authenticated as the token's `sub` (the Neon Auth user id).
+ * - A token that doesn't verify -> not authenticated (never falls back).
+ * - No token -> not authenticated (anonymous), except in unit tests.
  *
  * @param req - The incoming request
  * @returns AuthResult with authentication status and user info
  */
 export async function validateAuth(req: Request): Promise<AuthResult> {
-  // Try JWT validation first if JWKS is configured
-  const authHeader = req.headers.get('authorization')
-  const jwksUrl = getJwks()
+  const authHeader = req.headers.get('authorization') || ''
+  const token = authHeader.match(/^Bearer\s+(\S+)$/i)?.[1]
 
-  if (authHeader && jwksUrl) {
-    const token = authHeader.replace(/^Bearer\s+/i, '')
-    if (token) {
-      try {
-        const { payload } = await jwtVerify(token, jwksUrl, {
-          // Add issuer validation when known
-          // issuer: 'https://your-project.auth.neon.tech',
-        })
-        const neonPayload = payload as NeonAuthPayload
-        return {
-          authenticated: true,
-          userId: neonPayload.sub,
-          email: neonPayload.email,
-        }
-      } catch (error) {
-        console.error('JWT validation failed:', error)
-        return {
-          authenticated: false,
-          userId: null,
-          error: 'Invalid or expired token',
-        }
+  if (token) {
+    try {
+      const { payload } = await jwtVerify(token, getJwks(), { issuer: expectedIssuer() })
+      const neonPayload = payload as NeonAuthPayload
+      if (!neonPayload.sub) {
+        return { authenticated: false, userId: null, error: 'Invalid or expired token' }
+      }
+      return {
+        authenticated: true,
+        userId: neonPayload.sub,
+        email: neonPayload.email,
+      }
+    } catch (error) {
+      console.error('JWT validation failed:', error instanceof Error ? error.message : error)
+      return {
+        authenticated: false,
+        userId: null,
+        error: 'Invalid or expired token',
       }
     }
   }
 
-  // Fallback: Trust x-user-id header (INSECURE - for development only)
-  // WARNING: This allows any client to impersonate any user!
+  // Unit tests only: trust x-user-id (see allowUnverifiedUserId).
   const userId = req.headers.get('x-user-id')
-  if (userId) {
-    console.warn(
-      'SECURITY WARNING: Using unverified x-user-id header. ' +
-      'Configure NEON_AUTH_JWKS_URL for production.'
-    )
-    return {
-      authenticated: true,
-      userId,
-    }
+  if (userId && allowUnverifiedUserId()) {
+    return { authenticated: true, userId }
   }
 
   return {

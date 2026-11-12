@@ -14,8 +14,9 @@
 # and sign-in silently failed there. Through this rewrite the cookie is
 # first-party for happyroam.travel (Better Auth's recommended fix for Safari).
 # Neon answers with Cache-Control: no-store, so the CDN keeps nothing. Must
-# stay above the SPA catch-all. The JWT issuer stays Neon's own origin, so the
-# functions' NEON_AUTH_JWKS_URL check is unchanged.
+# stay above the SPA catch-all. The app also mints its API token here
+# (/neon-auth/token, src/lib/authToken.ts); the JWT issuer stays Neon's own
+# origin, which netlify/functions/lib/auth.mts checks (T-0555).
 [[redirects]]
   from = "/neon-auth/*"
   to = "https://ep-royal-art-abpqmm55.neonauth.eu-west-2.aws.neon.tech/neondb/auth/:splat"
