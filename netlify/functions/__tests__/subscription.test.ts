@@ -276,6 +276,23 @@ describe('subscription function', () => {
       expect(mockStripe.checkout.sessions.create).not.toHaveBeenCalled()
     })
 
+    it('refuses (no second subscription) when the billing page for a past-due member cannot be opened (T-0577)', async () => {
+      setMockQueryResult('SELECT * FROM user_profiles', [{ user_id: 'user-123', stripe_customer_id: 'cus_existing', stripe_subscription_id: 'sub_pastdue', is_pro: false }])
+      mockStripe.subscriptions.retrieve.mockResolvedValueOnce({ id: 'sub_pastdue', status: 'unpaid' })
+      mockStripe.billingPortal.sessions.create.mockRejectedValueOnce(new Error('No configuration provided'))
+
+      const req = createMockRequest('POST', '/api/subscription', {
+        headers: { 'x-user-id': 'user-123' },
+        body: { action: 'create-checkout' },
+      })
+      const response = await subscriptionHandler(req, mockContext as never)
+      const data = await parseResponse(response)
+
+      expect(response.status).toBe(409)
+      expect(data.paymentProblem).toBe(true)
+      expect(mockStripe.checkout.sessions.create).not.toHaveBeenCalled()
+    })
+
     it('opens a checkout without a trial when the stored subscription has ended (T-0572)', async () => {
       setMockQueryResult('SELECT * FROM user_profiles', [{ user_id: 'user-123', stripe_customer_id: 'cus_existing', stripe_subscription_id: 'sub_done', is_pro: false }])
       mockStripe.subscriptions.retrieve.mockResolvedValueOnce({ id: 'sub_done', status: 'incomplete_expired' })

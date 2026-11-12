@@ -413,7 +413,7 @@ describe('ai function', () => {
     it('should save conversation to DB when saveToDb is true and user is Pro', async () => {
       setMockAIResponse('AI response')
       setMockQueryResult('SELECT is_pro', [{ is_pro: true }])
-      setMockQueryResult('SELECT id FROM ai_conversations', [])
+      setMockQueryResult('SELECT id, messages FROM ai_conversations', [])
       setMockQueryResult('INSERT INTO ai_conversations', [{ id: 'conv-new' }])
 
       const req = createMockRequest('POST', '/api/ai', {
@@ -429,15 +429,18 @@ describe('ai function', () => {
       expect(wasQueryMade('INSERT INTO ai_conversations')).toBe(true)
     })
 
-    it("saving keeps a Pro member's longer chat, while the AI gets only the last 10 turns (T-0571)", async () => {
+    it("saving adds the new turns to a Pro member's saved chat instead of replacing it (T-0577)", async () => {
       setMockAIResponse('AI response')
       setMockQueryResult('SELECT is_pro', [{ is_pro: true }])
-      setMockQueryResult('SELECT id FROM ai_conversations', [{ id: 'conv-existing' }])
-      setMockQueryResult('UPDATE ai_conversations', [])
-      const conversationHistory = Array.from({ length: 30 }, (_, i) => ({
+      const saved = Array.from({ length: 40 }, (_, i) => ({
         role: i % 2 === 0 ? 'user' : 'assistant',
-        content: `turn ${i}`,
+        content: `saved ${i}`,
+        timestamp: '2026-11-01T00:00:00.000Z',
       }))
+      setMockQueryResult('SELECT id, messages FROM ai_conversations', [{ id: 'conv-existing', messages: saved }])
+      setMockQueryResult('UPDATE ai_conversations', [])
+      // Like the real app: the browser sends only its last 10 turns
+      const conversationHistory = saved.slice(-10).map(({ role, content }) => ({ role, content }))
 
       const req = createMockRequest('POST', '/api/ai', {
         headers: { 'x-user-id': 'user-123' },
@@ -450,14 +453,35 @@ describe('ai function', () => {
       expect(sent).toHaveLength(11)
       const update = getMockQueryLog().find(q => q.query.includes('UPDATE ai_conversations'))!
       const stored = JSON.parse(String(update.values.find(v => typeof v === 'string' && v.startsWith('['))))
-      expect(stored).toHaveLength(32) // 30 earlier turns + question + answer
-      expect(stored[0].content).toBe('turn 0')
+      expect(stored).toHaveLength(42) // 40 saved + question + answer
+      expect(stored[0].content).toBe('saved 0')
+      expect(stored[0].timestamp).toBe('2026-11-01T00:00:00.000Z')
+      expect(stored.slice(-2).map((m: { content: string }) => m.content)).toEqual(['Next question', 'AI response'])
+    })
+
+    it('a saved Pro chat keeps at most 100 messages (T-0577)', async () => {
+      setMockAIResponse('AI response')
+      setMockQueryResult('SELECT is_pro', [{ is_pro: true }])
+      const saved = Array.from({ length: 100 }, (_, i) => ({ role: i % 2 === 0 ? 'user' : 'assistant', content: `saved ${i}` }))
+      setMockQueryResult('SELECT id, messages FROM ai_conversations', [{ id: 'conv-existing', messages: saved }])
+      setMockQueryResult('UPDATE ai_conversations', [])
+
+      const req = createMockRequest('POST', '/api/ai', {
+        headers: { 'x-user-id': 'user-123' },
+        body: { message: 'One more', saveToDb: true },
+      })
+      await aiHandler(req, mockContext as never)
+
+      const update = getMockQueryLog().find(q => q.query.includes('UPDATE ai_conversations'))!
+      const stored = JSON.parse(String(update.values.find(v => typeof v === 'string' && v.startsWith('['))))
+      expect(stored).toHaveLength(100)
+      expect(stored[0].content).toBe('saved 2')
     })
 
     it('should update existing conversation when one exists', async () => {
       setMockAIResponse('AI response')
       setMockQueryResult('SELECT is_pro', [{ is_pro: true }])
-      setMockQueryResult('SELECT id FROM ai_conversations', [{ id: 'conv-existing' }])
+      setMockQueryResult('SELECT id, messages FROM ai_conversations', [{ id: 'conv-existing' }])
       setMockQueryResult('UPDATE ai_conversations', [])
 
       const req = createMockRequest('POST', '/api/ai', {

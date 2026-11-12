@@ -83,20 +83,35 @@ export default async (req: Request, context: Context) => {
           // first (possible double charge), so send them to the billing page to fix the card
           // instead (T-0572). If Stripe can't be asked, the checkout goes ahead as before.
           let hadSubscription = Boolean(user.stripe_subscription_id)
+          let paymentProblem = false
           if (user.stripe_subscription_id) {
             try {
               const current = await stripe.subscriptions.retrieve(user.stripe_subscription_id)
-              if (current.status === 'past_due' || current.status === 'unpaid') {
-                const portal = await stripe.billingPortal.sessions.create({
-                  customer: customerId,
-                  return_url: `${baseUrl}/dashboard`,
-                })
-                return new Response(JSON.stringify({ url: portal.url, billingPortal: true }), {
-                  headers: { 'Content-Type': 'application/json' },
-                })
-              }
+              paymentProblem = current.status === 'past_due' || current.status === 'unpaid'
             } catch (lookupError) {
               console.error('Checkout: could not read the current subscription:', lookupError instanceof Error ? lookupError.message : lookupError)
+            }
+          }
+          if (paymentProblem) {
+            // Never fall through to a new checkout here (T-0577): that is the second
+            // subscription this guard exists to prevent.
+            try {
+              const portal = await stripe.billingPortal.sessions.create({
+                customer: customerId,
+                return_url: `${baseUrl}/dashboard`,
+              })
+              return new Response(JSON.stringify({ url: portal.url, billingPortal: true }), {
+                headers: { 'Content-Type': 'application/json' },
+              })
+            } catch (portalError) {
+              console.error('Checkout: could not open the billing page:', portalError instanceof Error ? portalError.message : portalError)
+              return new Response(JSON.stringify({
+                error: "Your last Pro payment didn't go through. Please update your card from the billing page in your dashboard, or reach us through the Contact page.",
+                paymentProblem: true,
+              }), {
+                status: 409,
+                headers: { 'Content-Type': 'application/json' },
+              })
             }
           }
 

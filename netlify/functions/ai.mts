@@ -325,17 +325,10 @@ export default async (req: Request, context: Context) => {
         const isPro = await requirePro(db, userId)
 
         if (isPro) {
-          // Build updated messages array. The stored copy keeps up to MAX_STORED_MESSAGES
-          // turns; only the AI prompt uses the shorter safeHistory (T-0571).
-          const storedHistory = sanitizeHistory(conversationHistory, MAX_STORED_MESSAGES)
-          const updatedMessages = [
-            ...storedHistory.map((msg: { role: string; content: string }) => ({
-              role: msg.role,
-              content: msg.content,
-              timestamp: new Date().toISOString(),
-            })),
-            { role: 'user', content: message, timestamp: new Date().toISOString() },
-            { role: 'assistant', content: assistantMessage, timestamp: new Date().toISOString() },
+          const now = new Date().toISOString()
+          const newTurns = [
+            { role: 'user', content: message, timestamp: now },
+            { role: 'assistant', content: assistantMessage, timestamp: now },
           ]
 
           // Generate title from first message if needed
@@ -343,7 +336,7 @@ export default async (req: Request, context: Context) => {
 
           // Find existing active conversation or create new
           const existing = await db`
-            SELECT id FROM ai_conversations
+            SELECT id, messages FROM ai_conversations
             WHERE user_id = ${userId}
               AND conversation_type = ${conversationType}
               AND (context_slug = ${contextSlug} OR (context_slug IS NULL AND ${contextSlug}::text IS NULL))
@@ -352,7 +345,11 @@ export default async (req: Request, context: Context) => {
           `
 
           if (existing.length > 0) {
-            // Update existing conversation
+            // Add the new question and answer to the SAVED copy (T-0577): the browser sends
+            // only its last 10 turns, so replacing the saved chat with what it sent cut a Pro
+            // member's history to 12 messages on every save. Kept to MAX_STORED_MESSAGES.
+            const saved = Array.isArray(existing[0].messages) ? existing[0].messages : []
+            const updatedMessages = [...saved, ...newTurns].slice(-MAX_STORED_MESSAGES)
             await db`
               UPDATE ai_conversations
               SET messages = ${JSON.stringify(updatedMessages)}::jsonb, updated_at = NOW()
@@ -360,7 +357,15 @@ export default async (req: Request, context: Context) => {
             `
             conversationId = existing[0].id
           } else {
-            // Create new conversation
+            // First save: what the browser had so far (bounded) plus the new turns
+            const updatedMessages = [
+              ...sanitizeHistory(conversationHistory, MAX_STORED_MESSAGES).map(msg => ({
+                role: msg.role,
+                content: msg.content,
+                timestamp: now,
+              })),
+              ...newTurns,
+            ]
             const result = await db`
               INSERT INTO ai_conversations (user_id, conversation_type, context_slug, title, messages)
               VALUES (${userId}, ${conversationType}, ${contextSlug}, ${title}, ${JSON.stringify(updatedMessages)}::jsonb)
