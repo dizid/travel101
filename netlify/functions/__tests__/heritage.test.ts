@@ -99,6 +99,30 @@ describe('heritage function', () => {
       expect(body.site.heritageMetadata).toBeDefined()
     })
 
+    it('sends tips and recommendations in camelCase (the page reads priceRange, whySpecial, googleMapsUrl, tipType)', async () => {
+      setMockQueryResult('WHERE slug', [mockHeritageSite])
+      setMockQueryResult('heritage_images', [])
+      setMockQueryResult('heritage_events', [])
+      setMockQueryResult('attraction_tips', [
+        { id: 't1', tip_type: 'timing', title: 'Go early', content: 'Before 9 am', is_pro_only: false, sort_order: 1 },
+      ])
+      setMockQueryResult('attraction_secrets', [])
+      setMockQueryResult('attraction_recommendations', [
+        { id: 'r1', rec_type: 'cafe', name: 'Cafe', description: 'Coffee', why_special: 'Near the gate', price_range: '$', google_maps_url: 'https://maps.example/x', is_pro_only: false, sort_order: 1 },
+      ])
+
+      const req = createMockRequest('GET', '/api/heritage/ayutthaya-historical-park')
+      const body = await parseResponse<{ site: any }>(await heritageHandler(req, mockContext))
+
+      expect(body.site.tips[0]).toMatchObject({ tipType: 'timing', title: 'Go early', isProOnly: false })
+      // Recommendations stay held (T-0549) until the T-0548 data fixes are applied. When the
+      // hold in heritage.mts is lifted, restore this check:
+      // expect(body.site.recommendations[0]).toMatchObject({
+      //   recType: 'cafe', whySpecial: 'Near the gate', priceRange: '$', googleMapsUrl: 'https://maps.example/x', isProOnly: false,
+      // })
+      expect(body.site.recommendations).toEqual([])
+    })
+
     it('should return 404 for unknown slug', async () => {
       // No results for heritage query, and no results for general attraction query
       setMockQueryResult('SELECT id FROM attractions', [])

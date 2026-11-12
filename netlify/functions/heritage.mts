@@ -384,15 +384,39 @@ async function handleDetail(db: ReturnType<typeof getDb>, slug: string) {
     sortOrder: evt.sort_order,
   }))
 
+  // Tips and recommendations in camelCase too: HeritageDetailView reads tip.tipType,
+  // rec.recType, rec.priceRange, rec.whySpecial and rec.googleMapsUrl (they were sent raw,
+  // so the tip icons, price range, 'why special' line and Maps link never showed).
+  const transformedTips = tips.map(tip => ({
+    id: tip.id,
+    tipType: tip.tip_type,
+    title: tip.title,
+    content: tip.content,
+    isProOnly: tip.is_pro_only,
+    sortOrder: tip.sort_order,
+  }))
+
+  const transformedRecommendations = recommendations.map(rec => ({
+    id: rec.id,
+    recType: rec.rec_type,
+    name: rec.name,
+    description: rec.description,
+    whySpecial: rec.why_special,
+    priceRange: rec.price_range,
+    googleMapsUrl: rec.google_maps_url,
+    isProOnly: rec.is_pro_only,
+    sortOrder: rec.sort_order,
+  }))
+
   return json({
     site: {
       ...site,
       heritageMetadata: site.metadata || {},
       images: transformedImages,
       timeline: transformedTimeline,
-      tips,
+      tips: transformedTips,
       secrets,
-      recommendations,
+      recommendations: transformedRecommendations,
     },
   })
 }

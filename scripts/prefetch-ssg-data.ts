@@ -186,6 +186,35 @@ function transformHeritageImage(row: any) {
   }
 }
 
+// Heritage tips and recommendations in the same camelCase shape as GET /api/heritage/:slug
+// (HeritageDetailView reads tipType, recType, priceRange, whySpecial, googleMapsUrl).
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function transformHeritageTip(row: any) {
+  return {
+    id: row.id,
+    tipType: row.tip_type,
+    title: row.title,
+    content: row.content,
+    isProOnly: row.is_pro_only,
+    sortOrder: row.sort_order,
+  }
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function transformHeritageRecommendation(row: any) {
+  return {
+    id: row.id,
+    recType: row.rec_type,
+    name: row.name,
+    description: row.description,
+    whySpecial: row.why_special,
+    priceRange: row.price_range,
+    googleMapsUrl: row.google_maps_url,
+    isProOnly: row.is_pro_only,
+    sortOrder: row.sort_order,
+  }
+}
+
 /**
  * Transform a heritage event row to camelCase.
  */
@@ -298,9 +327,11 @@ export async function prefetchSSGData(): Promise<PrefetchResult> {
         heritageMetadata: a.metadata || {},
         images: (imagesByAttraction[a.id] || []).map(transformHeritageImage),
         timeline: (eventsByAttraction[a.id] || []).map(transformHeritageEvent),
-        tips: tipsByAttraction[a.id] || [],
+        tips: (tipsByAttraction[a.id] || []).map(transformHeritageTip),
         secrets: secretsByAttraction[a.id] || [],
-        recommendations: [], // AI recommendations held until fact-checked (T-0549)
+        // AI recommendations held until fact-checked (T-0549). After the T-0548 data fixes:
+        // recommendations: (recsByAttraction[a.id] || []).map(transformHeritageRecommendation),
+        recommendations: [],
       }
       heritageBySlug[a.slug] = site
       heritageList.push({
