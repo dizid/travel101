@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import '../__mocks__/db'
-import { setMockQueryResult, clearMockResults } from '../__mocks__/db'
+import { setMockQueryResult, clearMockResults, getMockQueryLog } from '../__mocks__/db'
 import { setMockEnv, clearMockEnv } from './setup.js'
 import { createMockRequest, parseResponse } from './helpers.js'
 import attractionsHandler from '../attractions.mts'
@@ -192,8 +192,20 @@ describe('attractions function', () => {
   })
 
   describe('GET /api/attractions/matched', () => {
+    it('never lists AI-written hidden gems while they are held (T-0553)', async () => {
+      for (const path of ['/api/attractions', '/api/attractions?hidden_gems=true', '/api/attractions?province=Bangkok']) {
+        clearMockResults()
+        setMockQueryResult('COUNT(*)', [{ total: '0' }])
+        setMockQueryResult('SELECT * FROM attractions', [])
+        await attractionsHandler(createMockRequest('GET', path), mockContext as never)
+        const reads = getMockQueryLog().filter(q => q.query.includes('FROM attractions'))
+        expect(reads.length).toBeGreaterThan(0)
+        for (const q of reads) expect(q.query).toContain("COALESCE(data_source, '') = 'ai_generated' AND is_hidden_gem IS TRUE")
+      }
+    })
+
     it('should return top matched attractions', async () => {
-      setMockQueryResult('SELECT * FROM attractions ORDER BY', [
+      setMockQueryResult('SELECT * FROM attractions WHERE NOT', [
         mockAttraction,
         { ...mockAttraction, id: 'attr-2', slug: 'wat-pho', categories: { beach: 0.9 } },
       ])
