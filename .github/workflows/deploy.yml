@@ -28,6 +28,11 @@ jobs:
           VITE_12GO_AFFILIATE_ID: ${{ secrets.VITE_12GO_AFFILIATE_ID }}
           VITE_GETYOURGUIDE_AFFILIATE_ID: ${{ secrets.VITE_GETYOURGUIDE_AFFILIATE_ID }}
           VITE_SAFETYWING_AFFILIATE_ID: ${{ secrets.VITE_SAFETYWING_AFFILIATE_ID }}
+          # Public partner IDs (they appear in every tracked link), so plain values, not
+          # secrets. Missing here since the Action took over the build, so Viator and NordVPN
+          # links carried no partner ID (T-0568); same values as the Netlify site settings.
+          VITE_VIATOR_AFFILIATE_ID: P00284724
+          VITE_NORDVPN_AFFILIATE_ID: xxDLCBJrkfs
 
       - name: Deploy to Netlify
         run: npx netlify-cli deploy --dir=dist --prod --functions=netlify/functions
