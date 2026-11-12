@@ -136,11 +136,13 @@ export default async (req: Request, context: Context) => {
       case 'create-payment': {
         const userId = await requireAuthSafe(req)
         if (userId instanceof Response) return userId
+        if (!duffelIsLive()) return bookingUnavailable()
         return await handleCreatePayment(userId)
       }
       case 'book': {
         const userId = await requireAuthSafe(req)
         if (userId instanceof Response) return userId
+        if (!duffelIsLive()) return bookingUnavailable()
         return await handleBook(body, userId)
       }
       default:
@@ -150,6 +152,23 @@ export default async (req: Request, context: Context) => {
     console.error(`Onward ticket error (action: ${body.action}):`, error)
     return serverError('Failed to process onward ticket request')
   }
+}
+
+/**
+ * True only with a live Duffel token. With a test token (duffel_test_...) Duffel makes
+ * sandbox orders that are not real reservations, so no one may pay $12 for one (T-0561;
+ * the site's token was a test token on Nov 12 2026 and no booking had been made).
+ */
+function duffelIsLive(): boolean {
+  return (Netlify.env.get('DUFFEL_API_TOKEN') || '').startsWith('duffel_live_')
+}
+
+function bookingUnavailable(): Response {
+  return errorResponse(
+    'Onward ticket booking is not available right now. No payment was taken.',
+    503,
+    'BOOKING_UNAVAILABLE'
+  )
 }
 
 // Helper to require auth without throwing

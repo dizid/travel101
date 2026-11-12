@@ -270,8 +270,24 @@ describe('flights function', () => {
 
       await flightsHandler(req, mockContext as never)
 
-      expect(wasQueryMade('INSERT INTO ai_cache')).toBe(true)
+      // Sample flights (no flight API key) are not stored (T-0561); the cache is still read.
       expect(wasQueryMade('flights_LHR_BKK_2025-02-01_oneway_1_economy')).toBe(true)
+      expect(wasQueryMade('INSERT INTO ai_cache')).toBe(false)
+    })
+
+    it('refuses malformed or oversized searches without touching the database (T-0561)', async () => {
+      const bad = [
+        { origin: 'LHR'.repeat(1000), destination: 'BKK', departureDate: '2025-02-01' },
+        { origin: 'LHR', destination: 'BKK', departureDate: 'tomorrow' },
+        { origin: 'LHR', destination: 'BKK', departureDate: '2025-02-01', adults: 500 },
+        { origin: 'LHR', destination: 'BKK', departureDate: '2025-02-01', cabinClass: 'x'.repeat(5000) },
+      ]
+      for (const body of bad) {
+        clearMockResults()
+        const res = await flightsHandler(createMockRequest('POST', '/api/flights', { headers: {}, body }), mockContext as never)
+        expect(res.status).toBe(400)
+        expect(wasQueryMade('ai_cache')).toBe(false)
+      }
     })
 
     it('should return search params in response', async () => {

@@ -159,6 +159,34 @@ function generateMockFlights(params: FlightSearchRequest): Flight[] {
   return flights.sort((a, b) => a.price - b.price)
 }
 
+const IATA_CODE = /^[A-Z]{3}$/
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/
+const CABIN_CLASSES = ['economy', 'premium_economy', 'business', 'first'] as const
+
+/** A clean, bounded search request, or null when anything is malformed (T-0561). */
+export function parseFlightSearch(input: unknown): FlightSearchRequest | null {
+  if (!input || typeof input !== 'object') return null
+  const raw = input as Record<string, unknown>
+  const origin = typeof raw.origin === 'string' ? raw.origin.trim().toUpperCase() : ''
+  const destination = typeof raw.destination === 'string' ? raw.destination.trim().toUpperCase() : ''
+  const departureDate = typeof raw.departureDate === 'string' ? raw.departureDate : ''
+  const returnDate = raw.returnDate == null || raw.returnDate === '' ? undefined : raw.returnDate
+  const adults = raw.adults == null ? 1 : raw.adults
+  const cabinClass = raw.cabinClass == null ? 'economy' : raw.cabinClass
+  if (!IATA_CODE.test(origin) || !IATA_CODE.test(destination) || !ISO_DATE.test(departureDate)) return null
+  if (returnDate !== undefined && (typeof returnDate !== 'string' || !ISO_DATE.test(returnDate))) return null
+  if (typeof adults !== 'number' || !Number.isInteger(adults) || adults < 1 || adults > 9) return null
+  if (typeof cabinClass !== 'string' || !(CABIN_CLASSES as readonly string[]).includes(cabinClass)) return null
+  return {
+    origin,
+    destination,
+    departureDate,
+    ...(returnDate ? { returnDate } : {}),
+    adults,
+    cabinClass: cabinClass as FlightSearchRequest['cabinClass'],
+  }
+}
+
 export default async (req: Request, context: Context) => {
   const db = await getDb()
 
@@ -179,7 +207,26 @@ export default async (req: Request, context: Context) => {
   }
 
   try {
-    const body: FlightSearchRequest = await req.json()
+    const rawBody = await req.json()
+    if (!rawBody?.origin || !rawBody?.destination || !rawBody?.departureDate) {
+      return new Response(JSON.stringify({
+        error: 'Missing required fields: origin, destination, departureDate'
+      }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    }
+    // Strict input (T-0561): this public endpoint used to cache whatever it was sent
+    // (any key, any size, never deleted), so a script could fill the database.
+    const body = parseFlightSearch(rawBody)
+    if (!body) {
+      return new Response(JSON.stringify({
+        error: 'Invalid search: use 3-letter airport codes, dates as YYYY-MM-DD, 1-9 adults'
+      }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    }
     const { origin, destination, departureDate, returnDate, adults = 1, cabinClass = 'economy' } = body
 
     if (!origin || !destination || !departureDate) {
@@ -210,6 +257,8 @@ export default async (req: Request, context: Context) => {
     const kiwiApiKey = Netlify.env.get('KIWI_API_KEY')
 
     let flights: Flight[]
+    // Only real API results are cached; generated sample flights are not stored.
+    let fromRealApi = false
     if (kiwiApiKey) {
       // Use real Kiwi API (Tequila)
       try {
@@ -236,6 +285,7 @@ export default async (req: Request, context: Context) => {
 
         if (response.ok) {
           const data = await response.json()
+          fromRealApi = true
           flights = data.data?.map((f: any) => ({
             id: f.id,
             price: f.price,
@@ -288,14 +338,16 @@ export default async (req: Request, context: Context) => {
       searchParams: body,
     }
 
-    // Cache the response
-    await db`
-      INSERT INTO ai_cache (cache_key, data)
-      VALUES (${cacheKey}, ${JSON.stringify(response)})
-      ON CONFLICT (cache_key) DO UPDATE SET
-        data = EXCLUDED.data,
-        created_at = NOW()
-    `
+    // Cache real results only (validated params make the key bounded)
+    if (fromRealApi) {
+      await db`
+        INSERT INTO ai_cache (cache_key, data)
+        VALUES (${cacheKey}, ${JSON.stringify(response)})
+        ON CONFLICT (cache_key) DO UPDATE SET
+          data = EXCLUDED.data,
+          created_at = NOW()
+      `
+    }
 
     return new Response(JSON.stringify(response), {
       headers: { 'Content-Type': 'application/json' },

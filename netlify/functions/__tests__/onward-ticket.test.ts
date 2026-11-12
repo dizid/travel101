@@ -106,7 +106,8 @@ describe('onward-ticket function', () => {
     vi.clearAllMocks()
 
     setMockEnv('STRIPE_SECRET_KEY', 'sk_test_123')
-    setMockEnv('DUFFEL_API_TOKEN', 'duffel_test_token')
+    // Booking needs a LIVE Duffel token (T-0561); the test-token guard has its own test below.
+    setMockEnv('DUFFEL_API_TOKEN', 'duffel_live_token')
 
     // Reset auth mocks to defaults
     vi.mocked(requireAuth).mockResolvedValue('user-123')
@@ -116,6 +117,25 @@ describe('onward-ticket function', () => {
     mockStripe.paymentIntents.create.mockResolvedValue(mockPaymentIntent)
     mockStripe.paymentIntents.retrieve.mockResolvedValue(mockPaymentIntent)
     mockStripe.refunds.create.mockResolvedValue({ id: 'ref_mock123' })
+  })
+
+  // --- Test-mode guard (T-0561) ---
+
+  describe('Duffel test token', () => {
+    it('takes no payment and makes no booking while the Duffel token is a test token', async () => {
+      setMockEnv('DUFFEL_API_TOKEN', 'duffel_test_token')
+      for (const body of [
+        { action: 'create-payment' },
+        { action: 'book', offerId: 'off_abc123', passenger: { given_name: 'A', family_name: 'B' }, paymentIntentId: 'pi_mock123' },
+      ]) {
+        const res = await handler(createMockRequest('POST', '/api/onward-ticket', { body, headers: { 'x-user-id': 'user-123' } }), mockContext)
+        expect(res.status).toBe(503)
+        const data = await parseResponse(res)
+        expect(data.code).toBe('BOOKING_UNAVAILABLE')
+      }
+      expect(mockStripe.paymentIntents.create).not.toHaveBeenCalled()
+      expect(mockStripe.paymentIntents.retrieve).not.toHaveBeenCalled()
+    })
   })
 
   // --- Request validation ---
