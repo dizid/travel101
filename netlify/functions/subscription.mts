@@ -77,6 +77,42 @@ export default async (req: Request, context: Context) => {
           }
 
           const baseUrl = Netlify.env.get('URL') || 'http://localhost:8888'
+
+          // A member whose renewal failed has is_pro = false but keeps their subscription id.
+          // A new checkout would open a SECOND subscription while Stripe keeps retrying the
+          // first (possible double charge), so send them to the billing page to fix the card
+          // instead (T-0572). If Stripe can't be asked, the checkout goes ahead as before.
+          let hadSubscription = Boolean(user.stripe_subscription_id)
+          if (user.stripe_subscription_id) {
+            try {
+              const current = await stripe.subscriptions.retrieve(user.stripe_subscription_id)
+              if (current.status === 'past_due' || current.status === 'unpaid') {
+                const portal = await stripe.billingPortal.sessions.create({
+                  customer: customerId,
+                  return_url: `${baseUrl}/dashboard`,
+                })
+                return new Response(JSON.stringify({ url: portal.url, billingPortal: true }), {
+                  headers: { 'Content-Type': 'application/json' },
+                })
+              }
+            } catch (lookupError) {
+              console.error('Checkout: could not read the current subscription:', lookupError instanceof Error ? lookupError.message : lookupError)
+            }
+          }
+
+          // The 7-day trial is for first-time members only (T-0572): every checkout used to
+          // add one, so cancelling before day 7 and starting again gave Pro for free forever.
+          // (A cancelled subscription's id is cleared, so ask Stripe for this customer's
+          // history; when Stripe can't be asked, keep the trial rather than block a buyer.)
+          if (!hadSubscription) {
+            try {
+              const previous = await stripe.subscriptions.list({ customer: customerId, status: 'all', limit: 1 })
+              hadSubscription = previous.data.length > 0
+            } catch (listError) {
+              console.error('Checkout: could not read subscription history:', listError instanceof Error ? listError.message : listError)
+            }
+          }
+
           const session = await stripe.checkout.sessions.create({
             customer: customerId,
             mode: 'subscription',
@@ -88,9 +124,7 @@ export default async (req: Request, context: Context) => {
               plugaff_ref: (req.headers.get('cookie') || '').match(/plugaff_ref=([^;]+)/)?.[1] || '',
               plugaff_app: 'happyroam',
             },
-            subscription_data: {
-              trial_period_days: 7,
-            },
+            ...(hadSubscription ? {} : { subscription_data: { trial_period_days: 7 } }),
           })
 
           return new Response(JSON.stringify({ url: session.url }), {

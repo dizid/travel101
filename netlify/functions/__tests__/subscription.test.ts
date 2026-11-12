@@ -44,6 +44,7 @@ const mockStripe = {
   },
   subscriptions: {
     retrieve: vi.fn().mockResolvedValue(mockStripeResponses.subscription),
+    list: vi.fn().mockResolvedValue({ data: [] }),
   },
 }
 
@@ -212,6 +213,83 @@ describe('subscription function', () => {
       expect(data.alreadyPro).toBe(true)
       expect(mockStripe.checkout.sessions.create).not.toHaveBeenCalled()
       expect(mockStripe.customers.create).not.toHaveBeenCalled()
+    })
+
+    it('gives the 7-day trial to a first-time member (T-0572)', async () => {
+      setMockQueryResult('SELECT * FROM user_profiles', [{ user_id: 'user-123', stripe_customer_id: 'cus_existing', is_pro: false }])
+      mockStripe.subscriptions.list.mockResolvedValueOnce({ data: [] })
+
+      const req = createMockRequest('POST', '/api/subscription', {
+        headers: { 'x-user-id': 'user-123' },
+        body: { action: 'create-checkout' },
+      })
+      const response = await subscriptionHandler(req, mockContext as never)
+
+      expect(response.status).toBe(200)
+      expect(mockStripe.subscriptions.list).toHaveBeenCalledWith({ customer: 'cus_existing', status: 'all', limit: 1 })
+      expect(mockStripe.checkout.sessions.create.mock.calls[0][0].subscription_data).toEqual({ trial_period_days: 7 })
+    })
+
+    it('gives no second trial to a customer who had a subscription before (T-0572)', async () => {
+      setMockQueryResult('SELECT * FROM user_profiles', [{ user_id: 'user-123', stripe_customer_id: 'cus_existing', is_pro: false }])
+      mockStripe.subscriptions.list.mockResolvedValueOnce({ data: [{ id: 'sub_old', status: 'canceled' }] })
+
+      const req = createMockRequest('POST', '/api/subscription', {
+        headers: { 'x-user-id': 'user-123' },
+        body: { action: 'create-checkout' },
+      })
+      const response = await subscriptionHandler(req, mockContext as never)
+
+      expect(response.status).toBe(200)
+      expect(mockStripe.checkout.sessions.create.mock.calls[0][0].subscription_data).toBeUndefined()
+    })
+
+    it('keeps the trial when Stripe cannot list the history, so a buyer is never blocked (T-0572)', async () => {
+      setMockQueryResult('SELECT * FROM user_profiles', [{ user_id: 'user-123', stripe_customer_id: 'cus_existing', is_pro: false }])
+      mockStripe.subscriptions.list.mockRejectedValueOnce(new Error('stripe down'))
+
+      const req = createMockRequest('POST', '/api/subscription', {
+        headers: { 'x-user-id': 'user-123' },
+        body: { action: 'create-checkout' },
+      })
+      const response = await subscriptionHandler(req, mockContext as never)
+
+      expect(response.status).toBe(200)
+      expect(mockStripe.checkout.sessions.create.mock.calls[0][0].subscription_data).toEqual({ trial_period_days: 7 })
+    })
+
+    it('sends a member with a failed renewal to the billing page, not a second subscription (T-0572)', async () => {
+      setMockQueryResult('SELECT * FROM user_profiles', [{ user_id: 'user-123', stripe_customer_id: 'cus_existing', stripe_subscription_id: 'sub_pastdue', is_pro: false }])
+      mockStripe.subscriptions.retrieve.mockResolvedValueOnce({ id: 'sub_pastdue', status: 'past_due' })
+
+      const req = createMockRequest('POST', '/api/subscription', {
+        headers: { 'x-user-id': 'user-123' },
+        body: { action: 'create-checkout' },
+      })
+      const response = await subscriptionHandler(req, mockContext as never)
+      const data = await parseResponse(response)
+
+      expect(response.status).toBe(200)
+      expect(data.url).toBe(mockStripeResponses.portalSession.url)
+      expect(data.billingPortal).toBe(true)
+      expect(mockStripe.subscriptions.retrieve).toHaveBeenCalledWith('sub_pastdue')
+      expect(mockStripe.checkout.sessions.create).not.toHaveBeenCalled()
+    })
+
+    it('opens a checkout without a trial when the stored subscription has ended (T-0572)', async () => {
+      setMockQueryResult('SELECT * FROM user_profiles', [{ user_id: 'user-123', stripe_customer_id: 'cus_existing', stripe_subscription_id: 'sub_done', is_pro: false }])
+      mockStripe.subscriptions.retrieve.mockResolvedValueOnce({ id: 'sub_done', status: 'incomplete_expired' })
+
+      const req = createMockRequest('POST', '/api/subscription', {
+        headers: { 'x-user-id': 'user-123' },
+        body: { action: 'create-checkout' },
+      })
+      const response = await subscriptionHandler(req, mockContext as never)
+      const data = await parseResponse(response)
+
+      expect(response.status).toBe(200)
+      expect(data.url).toBe(mockStripeResponses.checkoutSession.url)
+      expect(mockStripe.checkout.sessions.create.mock.calls[0][0].subscription_data).toBeUndefined()
     })
 
     it('should create customer if not exists', async () => {
