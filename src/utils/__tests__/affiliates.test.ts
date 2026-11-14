@@ -96,6 +96,18 @@ describe('affiliates', () => {
         expect(url).not.toContain('referer=')
       })
 
+      it('uses Nord affiliate tracking for NordVPN, not a refer-a-friend code (T-0579)', () => {
+        import.meta.env.VITE_NORDVPN_AFFILIATE_ID = '139291'
+        const url = generateAffiliateUrl('nordvpn', 'anywhere')
+        expect(url).toBe('https://go.nordvpn.net/aff_c?offer_id=15&aff_id=139291&url_id=902')
+      })
+
+      it('falls back to plain nordvpn.com for a non-numeric NordVPN ID (old refer code)', () => {
+        import.meta.env.VITE_NORDVPN_AFFILIATE_ID = 'xxDLCBJrkfs'
+        const url = generateAffiliateUrl('nordvpn', 'anywhere')
+        expect(url).toBe('https://nordvpn.com')
+      })
+
       it('adds partner_id for GetYourGuide', () => {
         import.meta.env.VITE_GETYOURGUIDE_AFFILIATE_ID = 'gyg101'
         const url = generateAffiliateUrl('getyourguide', 'Bangkok')

@@ -97,10 +97,14 @@ const affiliateConfigs: Record<AffiliatePartner, AffiliateConfig> = {
     },
   },
   nordvpn: {
-    baseUrl: 'https://refer-nordvpn.com',
+    baseUrl: 'https://go.nordvpn.net',
     buildUrl: (_destination, _attractionName, affiliateId) => {
-      if (affiliateId) {
-        return `https://refer-nordvpn.com/${affiliateId}`
+      // Nord's affiliate tracking link (offer 15 = NordVPN, url_id 902 = the
+      // landing page from Marc's Jan 19 2026 welcome email). The ID is the
+      // numeric aff_id; anything else (e.g. the old refer-a-friend code, which
+      // pays no commission) falls back to the plain site.
+      if (affiliateId && /^\d+$/.test(affiliateId)) {
+        return `https://go.nordvpn.net/aff_c?offer_id=15&aff_id=${affiliateId}&url_id=902`
       }
       return 'https://nordvpn.com'
     },

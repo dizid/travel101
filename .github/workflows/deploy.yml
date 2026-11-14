@@ -32,7 +32,8 @@ jobs:
           # secrets. Missing here since the Action took over the build, so Viator and NordVPN
           # links carried no partner ID (T-0568); same values as the Netlify site settings.
           VITE_VIATOR_AFFILIATE_ID: P00284724
-          VITE_NORDVPN_AFFILIATE_ID: xxDLCBJrkfs
+          # Nord affiliate aff_id (T-0579; the old value was a refer-a-friend code, no commission).
+          VITE_NORDVPN_AFFILIATE_ID: '139291'
 
       - name: Deploy to Netlify
         run: npx netlify-cli deploy --dir=dist --prod --functions=netlify/functions
