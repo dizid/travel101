@@ -19,7 +19,7 @@ export default async function handler(_req: Request, _context: Context) {
     FROM attractions
     WHERE verification_status != 'rejected'
       AND (place_type IS NULL OR place_type != 'heritage')
-      AND NOT (COALESCE(data_source, '') = 'ai_generated' AND is_hidden_gem IS TRUE) -- AI-written 'hidden gem' places are held until fact-checked (T-0553)
+      AND NOT (COALESCE(data_source, '') = 'ai_generated' AND is_hidden_gem IS TRUE AND metadata->>'factCheckedAt' IS NULL) AND verification_status IS DISTINCT FROM 'rejected' -- AI-written 'hidden gem' places are held until fact-checked (T-0553)
     ORDER BY updated_at DESC
   `
 

@@ -200,7 +200,12 @@ describe('attractions function', () => {
         await attractionsHandler(createMockRequest('GET', path), mockContext as never)
         const reads = getMockQueryLog().filter(q => q.query.includes('FROM attractions'))
         expect(reads.length).toBeGreaterThan(0)
-        for (const q of reads) expect(q.query).toContain("COALESCE(data_source, '') = 'ai_generated' AND is_hidden_gem IS TRUE")
+        for (const q of reads) {
+          // Held until fact-checked (T-0553); a checked gem carries metadata.factCheckedAt (T-0580)
+          expect(q.query).toContain("COALESCE(data_source, '') = 'ai_generated' AND is_hidden_gem IS TRUE AND metadata->>'factCheckedAt' IS NULL")
+          // Pages found wrong or nonexistent are unpublished with verification_status = 'rejected' (T-0580)
+          expect(q.query).toContain("verification_status IS DISTINCT FROM 'rejected'")
+        }
       }
     })
 

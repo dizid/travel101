@@ -174,171 +174,171 @@ async function handleList(req: Request, db: ReturnType<typeof getDb>, url: URL) 
   if (hasCategory && hiddenGemsOnly && hasProvince && hasPlaceType) {
     attractions = await db`
       SELECT * FROM attractions
-      WHERE category = ${category} AND is_hidden_gem = true AND province = ${province} AND place_type = ${placeType} AND NOT (COALESCE(data_source, '') = 'ai_generated' AND is_hidden_gem IS TRUE)
+      WHERE category = ${category} AND is_hidden_gem = true AND province = ${province} AND place_type = ${placeType} AND NOT (COALESCE(data_source, '') = 'ai_generated' AND is_hidden_gem IS TRUE AND metadata->>'factCheckedAt' IS NULL) AND verification_status IS DISTINCT FROM 'rejected'
       ORDER BY (CASE WHEN province IS NULL THEN 1 ELSE 0 END), name LIMIT ${limit} OFFSET ${offset}
     `
     const countResult = await db`
       SELECT COUNT(*) as total FROM attractions
-      WHERE category = ${category} AND is_hidden_gem = true AND province = ${province} AND place_type = ${placeType} AND NOT (COALESCE(data_source, '') = 'ai_generated' AND is_hidden_gem IS TRUE)
+      WHERE category = ${category} AND is_hidden_gem = true AND province = ${province} AND place_type = ${placeType} AND NOT (COALESCE(data_source, '') = 'ai_generated' AND is_hidden_gem IS TRUE AND metadata->>'factCheckedAt' IS NULL) AND verification_status IS DISTINCT FROM 'rejected'
     `
     total = parseInt(countResult[0].total)
   } else if (hasCategory && hiddenGemsOnly && hasProvince) {
     attractions = await db`
       SELECT * FROM attractions
-      WHERE category = ${category} AND is_hidden_gem = true AND province = ${province} AND NOT (COALESCE(data_source, '') = 'ai_generated' AND is_hidden_gem IS TRUE)
+      WHERE category = ${category} AND is_hidden_gem = true AND province = ${province} AND NOT (COALESCE(data_source, '') = 'ai_generated' AND is_hidden_gem IS TRUE AND metadata->>'factCheckedAt' IS NULL) AND verification_status IS DISTINCT FROM 'rejected'
       ORDER BY (CASE WHEN province IS NULL THEN 1 ELSE 0 END), name LIMIT ${limit} OFFSET ${offset}
     `
     const countResult = await db`
       SELECT COUNT(*) as total FROM attractions
-      WHERE category = ${category} AND is_hidden_gem = true AND province = ${province} AND NOT (COALESCE(data_source, '') = 'ai_generated' AND is_hidden_gem IS TRUE)
+      WHERE category = ${category} AND is_hidden_gem = true AND province = ${province} AND NOT (COALESCE(data_source, '') = 'ai_generated' AND is_hidden_gem IS TRUE AND metadata->>'factCheckedAt' IS NULL) AND verification_status IS DISTINCT FROM 'rejected'
     `
     total = parseInt(countResult[0].total)
   } else if (hasCategory && hiddenGemsOnly && hasPlaceType) {
     attractions = await db`
       SELECT * FROM attractions
-      WHERE category = ${category} AND is_hidden_gem = true AND place_type = ${placeType} AND NOT (COALESCE(data_source, '') = 'ai_generated' AND is_hidden_gem IS TRUE)
+      WHERE category = ${category} AND is_hidden_gem = true AND place_type = ${placeType} AND NOT (COALESCE(data_source, '') = 'ai_generated' AND is_hidden_gem IS TRUE AND metadata->>'factCheckedAt' IS NULL) AND verification_status IS DISTINCT FROM 'rejected'
       ORDER BY (CASE WHEN province IS NULL THEN 1 ELSE 0 END), name LIMIT ${limit} OFFSET ${offset}
     `
     const countResult = await db`
       SELECT COUNT(*) as total FROM attractions
-      WHERE category = ${category} AND is_hidden_gem = true AND place_type = ${placeType} AND NOT (COALESCE(data_source, '') = 'ai_generated' AND is_hidden_gem IS TRUE)
+      WHERE category = ${category} AND is_hidden_gem = true AND place_type = ${placeType} AND NOT (COALESCE(data_source, '') = 'ai_generated' AND is_hidden_gem IS TRUE AND metadata->>'factCheckedAt' IS NULL) AND verification_status IS DISTINCT FROM 'rejected'
     `
     total = parseInt(countResult[0].total)
   } else if (hasCategory && hasProvince && hasPlaceType) {
     attractions = await db`
       SELECT * FROM attractions
-      WHERE category = ${category} AND province = ${province} AND place_type = ${placeType} AND NOT (COALESCE(data_source, '') = 'ai_generated' AND is_hidden_gem IS TRUE)
+      WHERE category = ${category} AND province = ${province} AND place_type = ${placeType} AND NOT (COALESCE(data_source, '') = 'ai_generated' AND is_hidden_gem IS TRUE AND metadata->>'factCheckedAt' IS NULL) AND verification_status IS DISTINCT FROM 'rejected'
       ORDER BY (CASE WHEN province IS NULL THEN 1 ELSE 0 END), name LIMIT ${limit} OFFSET ${offset}
     `
     const countResult = await db`
       SELECT COUNT(*) as total FROM attractions
-      WHERE category = ${category} AND province = ${province} AND place_type = ${placeType} AND NOT (COALESCE(data_source, '') = 'ai_generated' AND is_hidden_gem IS TRUE)
+      WHERE category = ${category} AND province = ${province} AND place_type = ${placeType} AND NOT (COALESCE(data_source, '') = 'ai_generated' AND is_hidden_gem IS TRUE AND metadata->>'factCheckedAt' IS NULL) AND verification_status IS DISTINCT FROM 'rejected'
     `
     total = parseInt(countResult[0].total)
   } else if (hiddenGemsOnly && hasProvince && hasPlaceType) {
     attractions = await db`
       SELECT * FROM attractions
-      WHERE is_hidden_gem = true AND province = ${province} AND place_type = ${placeType} AND NOT (COALESCE(data_source, '') = 'ai_generated' AND is_hidden_gem IS TRUE)
+      WHERE is_hidden_gem = true AND province = ${province} AND place_type = ${placeType} AND NOT (COALESCE(data_source, '') = 'ai_generated' AND is_hidden_gem IS TRUE AND metadata->>'factCheckedAt' IS NULL) AND verification_status IS DISTINCT FROM 'rejected'
       ORDER BY (CASE WHEN province IS NULL THEN 1 ELSE 0 END), name LIMIT ${limit} OFFSET ${offset}
     `
     const countResult = await db`
       SELECT COUNT(*) as total FROM attractions
-      WHERE is_hidden_gem = true AND province = ${province} AND place_type = ${placeType} AND NOT (COALESCE(data_source, '') = 'ai_generated' AND is_hidden_gem IS TRUE)
+      WHERE is_hidden_gem = true AND province = ${province} AND place_type = ${placeType} AND NOT (COALESCE(data_source, '') = 'ai_generated' AND is_hidden_gem IS TRUE AND metadata->>'factCheckedAt' IS NULL) AND verification_status IS DISTINCT FROM 'rejected'
     `
     total = parseInt(countResult[0].total)
   } else if (hasCategory && hiddenGemsOnly) {
     attractions = await db`
       SELECT * FROM attractions
-      WHERE category = ${category} AND is_hidden_gem = true AND NOT (COALESCE(data_source, '') = 'ai_generated' AND is_hidden_gem IS TRUE)
+      WHERE category = ${category} AND is_hidden_gem = true AND NOT (COALESCE(data_source, '') = 'ai_generated' AND is_hidden_gem IS TRUE AND metadata->>'factCheckedAt' IS NULL) AND verification_status IS DISTINCT FROM 'rejected'
       ORDER BY (CASE WHEN province IS NULL THEN 1 ELSE 0 END), name LIMIT ${limit} OFFSET ${offset}
     `
     const countResult = await db`
       SELECT COUNT(*) as total FROM attractions
-      WHERE category = ${category} AND is_hidden_gem = true AND NOT (COALESCE(data_source, '') = 'ai_generated' AND is_hidden_gem IS TRUE)
+      WHERE category = ${category} AND is_hidden_gem = true AND NOT (COALESCE(data_source, '') = 'ai_generated' AND is_hidden_gem IS TRUE AND metadata->>'factCheckedAt' IS NULL) AND verification_status IS DISTINCT FROM 'rejected'
     `
     total = parseInt(countResult[0].total)
   } else if (hasCategory && hasProvince) {
     attractions = await db`
       SELECT * FROM attractions
-      WHERE category = ${category} AND province = ${province} AND NOT (COALESCE(data_source, '') = 'ai_generated' AND is_hidden_gem IS TRUE)
+      WHERE category = ${category} AND province = ${province} AND NOT (COALESCE(data_source, '') = 'ai_generated' AND is_hidden_gem IS TRUE AND metadata->>'factCheckedAt' IS NULL) AND verification_status IS DISTINCT FROM 'rejected'
       ORDER BY (CASE WHEN province IS NULL THEN 1 ELSE 0 END), name LIMIT ${limit} OFFSET ${offset}
     `
     const countResult = await db`
       SELECT COUNT(*) as total FROM attractions
-      WHERE category = ${category} AND province = ${province} AND NOT (COALESCE(data_source, '') = 'ai_generated' AND is_hidden_gem IS TRUE)
+      WHERE category = ${category} AND province = ${province} AND NOT (COALESCE(data_source, '') = 'ai_generated' AND is_hidden_gem IS TRUE AND metadata->>'factCheckedAt' IS NULL) AND verification_status IS DISTINCT FROM 'rejected'
     `
     total = parseInt(countResult[0].total)
   } else if (hasCategory && hasPlaceType) {
     attractions = await db`
       SELECT * FROM attractions
-      WHERE category = ${category} AND place_type = ${placeType} AND NOT (COALESCE(data_source, '') = 'ai_generated' AND is_hidden_gem IS TRUE)
+      WHERE category = ${category} AND place_type = ${placeType} AND NOT (COALESCE(data_source, '') = 'ai_generated' AND is_hidden_gem IS TRUE AND metadata->>'factCheckedAt' IS NULL) AND verification_status IS DISTINCT FROM 'rejected'
       ORDER BY (CASE WHEN province IS NULL THEN 1 ELSE 0 END), name LIMIT ${limit} OFFSET ${offset}
     `
     const countResult = await db`
       SELECT COUNT(*) as total FROM attractions
-      WHERE category = ${category} AND place_type = ${placeType} AND NOT (COALESCE(data_source, '') = 'ai_generated' AND is_hidden_gem IS TRUE)
+      WHERE category = ${category} AND place_type = ${placeType} AND NOT (COALESCE(data_source, '') = 'ai_generated' AND is_hidden_gem IS TRUE AND metadata->>'factCheckedAt' IS NULL) AND verification_status IS DISTINCT FROM 'rejected'
     `
     total = parseInt(countResult[0].total)
   } else if (hiddenGemsOnly && hasProvince) {
     attractions = await db`
       SELECT * FROM attractions
-      WHERE is_hidden_gem = true AND province = ${province} AND NOT (COALESCE(data_source, '') = 'ai_generated' AND is_hidden_gem IS TRUE)
+      WHERE is_hidden_gem = true AND province = ${province} AND NOT (COALESCE(data_source, '') = 'ai_generated' AND is_hidden_gem IS TRUE AND metadata->>'factCheckedAt' IS NULL) AND verification_status IS DISTINCT FROM 'rejected'
       ORDER BY (CASE WHEN province IS NULL THEN 1 ELSE 0 END), name LIMIT ${limit} OFFSET ${offset}
     `
     const countResult = await db`
       SELECT COUNT(*) as total FROM attractions
-      WHERE is_hidden_gem = true AND province = ${province} AND NOT (COALESCE(data_source, '') = 'ai_generated' AND is_hidden_gem IS TRUE)
+      WHERE is_hidden_gem = true AND province = ${province} AND NOT (COALESCE(data_source, '') = 'ai_generated' AND is_hidden_gem IS TRUE AND metadata->>'factCheckedAt' IS NULL) AND verification_status IS DISTINCT FROM 'rejected'
     `
     total = parseInt(countResult[0].total)
   } else if (hiddenGemsOnly && hasPlaceType) {
     attractions = await db`
       SELECT * FROM attractions
-      WHERE is_hidden_gem = true AND place_type = ${placeType} AND NOT (COALESCE(data_source, '') = 'ai_generated' AND is_hidden_gem IS TRUE)
+      WHERE is_hidden_gem = true AND place_type = ${placeType} AND NOT (COALESCE(data_source, '') = 'ai_generated' AND is_hidden_gem IS TRUE AND metadata->>'factCheckedAt' IS NULL) AND verification_status IS DISTINCT FROM 'rejected'
       ORDER BY (CASE WHEN province IS NULL THEN 1 ELSE 0 END), name LIMIT ${limit} OFFSET ${offset}
     `
     const countResult = await db`
       SELECT COUNT(*) as total FROM attractions
-      WHERE is_hidden_gem = true AND place_type = ${placeType} AND NOT (COALESCE(data_source, '') = 'ai_generated' AND is_hidden_gem IS TRUE)
+      WHERE is_hidden_gem = true AND place_type = ${placeType} AND NOT (COALESCE(data_source, '') = 'ai_generated' AND is_hidden_gem IS TRUE AND metadata->>'factCheckedAt' IS NULL) AND verification_status IS DISTINCT FROM 'rejected'
     `
     total = parseInt(countResult[0].total)
   } else if (hasProvince && hasPlaceType) {
     attractions = await db`
       SELECT * FROM attractions
-      WHERE province = ${province} AND place_type = ${placeType} AND NOT (COALESCE(data_source, '') = 'ai_generated' AND is_hidden_gem IS TRUE)
+      WHERE province = ${province} AND place_type = ${placeType} AND NOT (COALESCE(data_source, '') = 'ai_generated' AND is_hidden_gem IS TRUE AND metadata->>'factCheckedAt' IS NULL) AND verification_status IS DISTINCT FROM 'rejected'
       ORDER BY (CASE WHEN province IS NULL THEN 1 ELSE 0 END), name LIMIT ${limit} OFFSET ${offset}
     `
     const countResult = await db`
       SELECT COUNT(*) as total FROM attractions
-      WHERE province = ${province} AND place_type = ${placeType} AND NOT (COALESCE(data_source, '') = 'ai_generated' AND is_hidden_gem IS TRUE)
+      WHERE province = ${province} AND place_type = ${placeType} AND NOT (COALESCE(data_source, '') = 'ai_generated' AND is_hidden_gem IS TRUE AND metadata->>'factCheckedAt' IS NULL) AND verification_status IS DISTINCT FROM 'rejected'
     `
     total = parseInt(countResult[0].total)
   } else if (hasCategory) {
     attractions = await db`
       SELECT * FROM attractions
-      WHERE category = ${category} AND NOT (COALESCE(data_source, '') = 'ai_generated' AND is_hidden_gem IS TRUE)
+      WHERE category = ${category} AND NOT (COALESCE(data_source, '') = 'ai_generated' AND is_hidden_gem IS TRUE AND metadata->>'factCheckedAt' IS NULL) AND verification_status IS DISTINCT FROM 'rejected'
       ORDER BY (CASE WHEN province IS NULL THEN 1 ELSE 0 END), name LIMIT ${limit} OFFSET ${offset}
     `
     const countResult = await db`
-      SELECT COUNT(*) as total FROM attractions WHERE category = ${category} AND NOT (COALESCE(data_source, '') = 'ai_generated' AND is_hidden_gem IS TRUE)
+      SELECT COUNT(*) as total FROM attractions WHERE category = ${category} AND NOT (COALESCE(data_source, '') = 'ai_generated' AND is_hidden_gem IS TRUE AND metadata->>'factCheckedAt' IS NULL) AND verification_status IS DISTINCT FROM 'rejected'
     `
     total = parseInt(countResult[0].total)
   } else if (hiddenGemsOnly) {
     attractions = await db`
       SELECT * FROM attractions
-      WHERE is_hidden_gem = true AND NOT (COALESCE(data_source, '') = 'ai_generated' AND is_hidden_gem IS TRUE)
+      WHERE is_hidden_gem = true AND NOT (COALESCE(data_source, '') = 'ai_generated' AND is_hidden_gem IS TRUE AND metadata->>'factCheckedAt' IS NULL) AND verification_status IS DISTINCT FROM 'rejected'
       ORDER BY (CASE WHEN province IS NULL THEN 1 ELSE 0 END), name LIMIT ${limit} OFFSET ${offset}
     `
     const countResult = await db`
-      SELECT COUNT(*) as total FROM attractions WHERE is_hidden_gem = true AND NOT (COALESCE(data_source, '') = 'ai_generated' AND is_hidden_gem IS TRUE)
+      SELECT COUNT(*) as total FROM attractions WHERE is_hidden_gem = true AND NOT (COALESCE(data_source, '') = 'ai_generated' AND is_hidden_gem IS TRUE AND metadata->>'factCheckedAt' IS NULL) AND verification_status IS DISTINCT FROM 'rejected'
     `
     total = parseInt(countResult[0].total)
   } else if (hasProvince) {
     attractions = await db`
       SELECT * FROM attractions
-      WHERE province = ${province} AND NOT (COALESCE(data_source, '') = 'ai_generated' AND is_hidden_gem IS TRUE)
+      WHERE province = ${province} AND NOT (COALESCE(data_source, '') = 'ai_generated' AND is_hidden_gem IS TRUE AND metadata->>'factCheckedAt' IS NULL) AND verification_status IS DISTINCT FROM 'rejected'
       ORDER BY (CASE WHEN province IS NULL THEN 1 ELSE 0 END), name LIMIT ${limit} OFFSET ${offset}
     `
     const countResult = await db`
-      SELECT COUNT(*) as total FROM attractions WHERE province = ${province} AND NOT (COALESCE(data_source, '') = 'ai_generated' AND is_hidden_gem IS TRUE)
+      SELECT COUNT(*) as total FROM attractions WHERE province = ${province} AND NOT (COALESCE(data_source, '') = 'ai_generated' AND is_hidden_gem IS TRUE AND metadata->>'factCheckedAt' IS NULL) AND verification_status IS DISTINCT FROM 'rejected'
     `
     total = parseInt(countResult[0].total)
   } else if (hasPlaceType) {
     attractions = await db`
       SELECT * FROM attractions
-      WHERE place_type = ${placeType} AND NOT (COALESCE(data_source, '') = 'ai_generated' AND is_hidden_gem IS TRUE)
+      WHERE place_type = ${placeType} AND NOT (COALESCE(data_source, '') = 'ai_generated' AND is_hidden_gem IS TRUE AND metadata->>'factCheckedAt' IS NULL) AND verification_status IS DISTINCT FROM 'rejected'
       ORDER BY (CASE WHEN province IS NULL THEN 1 ELSE 0 END), name LIMIT ${limit} OFFSET ${offset}
     `
     const countResult = await db`
-      SELECT COUNT(*) as total FROM attractions WHERE place_type = ${placeType} AND NOT (COALESCE(data_source, '') = 'ai_generated' AND is_hidden_gem IS TRUE)
+      SELECT COUNT(*) as total FROM attractions WHERE place_type = ${placeType} AND NOT (COALESCE(data_source, '') = 'ai_generated' AND is_hidden_gem IS TRUE AND metadata->>'factCheckedAt' IS NULL) AND verification_status IS DISTINCT FROM 'rejected'
     `
     total = parseInt(countResult[0].total)
   } else {
     attractions = await db`
       SELECT * FROM attractions
-      WHERE NOT (COALESCE(data_source, '') = 'ai_generated' AND is_hidden_gem IS TRUE)
+      WHERE NOT (COALESCE(data_source, '') = 'ai_generated' AND is_hidden_gem IS TRUE AND metadata->>'factCheckedAt' IS NULL) AND verification_status IS DISTINCT FROM 'rejected'
       ORDER BY (CASE WHEN province IS NULL THEN 1 ELSE 0 END), name LIMIT ${limit} OFFSET ${offset}
     `
-    const countResult = await db`SELECT COUNT(*) as total FROM attractions WHERE NOT (COALESCE(data_source, '') = 'ai_generated' AND is_hidden_gem IS TRUE)`
+    const countResult = await db`SELECT COUNT(*) as total FROM attractions WHERE NOT (COALESCE(data_source, '') = 'ai_generated' AND is_hidden_gem IS TRUE AND metadata->>'factCheckedAt' IS NULL) AND verification_status IS DISTINCT FROM 'rejected'`
     total = parseInt(countResult[0].total)
   }
 
@@ -378,7 +378,7 @@ async function handleMatched(req: Request, db: ReturnType<typeof getDb>) {
   }
 
   const attractions: Attraction[] = await db`
-    SELECT * FROM attractions WHERE NOT (COALESCE(data_source, '') = 'ai_generated' AND is_hidden_gem IS TRUE) ORDER BY (CASE WHEN province IS NULL THEN 1 ELSE 0 END), name
+    SELECT * FROM attractions WHERE NOT (COALESCE(data_source, '') = 'ai_generated' AND is_hidden_gem IS TRUE AND metadata->>'factCheckedAt' IS NULL) AND verification_status IS DISTINCT FROM 'rejected' ORDER BY (CASE WHEN province IS NULL THEN 1 ELSE 0 END), name
   `
 
   const matches = attractions
@@ -424,7 +424,7 @@ async function handleDetail(
 
   // Get attraction by slug
   const attractions: Attraction[] = await db`
-    SELECT * FROM attractions WHERE slug = ${slug} AND NOT (COALESCE(data_source, '') = 'ai_generated' AND is_hidden_gem IS TRUE)
+    SELECT * FROM attractions WHERE slug = ${slug} AND NOT (COALESCE(data_source, '') = 'ai_generated' AND is_hidden_gem IS TRUE AND metadata->>'factCheckedAt' IS NULL) AND verification_status IS DISTINCT FROM 'rejected'
   `
 
   if (attractions.length === 0) {

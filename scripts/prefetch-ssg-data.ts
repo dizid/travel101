@@ -235,7 +235,7 @@ export async function prefetchSSGData(): Promise<PrefetchResult> {
   try {
     // Batch fetch all data in parallel (~10 queries)
     results = await Promise.all([
-      sql`SELECT * FROM attractions WHERE verification_status != 'rejected' AND NOT (COALESCE(data_source, '') = 'ai_generated' AND is_hidden_gem IS TRUE) ORDER BY name`,
+      sql`SELECT * FROM attractions WHERE verification_status != 'rejected' AND NOT (COALESCE(data_source, '') = 'ai_generated' AND is_hidden_gem IS TRUE AND metadata->>'factCheckedAt' IS NULL) AND verification_status IS DISTINCT FROM 'rejected' ORDER BY name`,
       sql`SELECT id, attraction_id, tip_type, title, content, is_pro_only, sort_order, created_at FROM attraction_tips ORDER BY attraction_id, sort_order, created_at`,
       // Pro-only secret text stays out of the public HTML (same redaction as attractions.mts)
       sql`SELECT id, attraction_id, secret_type, title, CASE WHEN is_pro_only THEN NULL ELSE content END AS content, CASE WHEN is_pro_only THEN NULL ELSE location_hint END AS location_hint, is_pro_only, sort_order, created_at FROM attraction_secrets ORDER BY attraction_id, sort_order, created_at`,
@@ -246,8 +246,8 @@ export async function prefetchSSGData(): Promise<PrefetchResult> {
       sql`SELECT * FROM travel_guides WHERE is_published = true ORDER BY published_at DESC`,
       // /attractions shows the API's first page (netlify/functions/attractions.mts, no
       // filters): same query, so the prerendered list is exactly what the browser shows
-      sql`SELECT * FROM attractions WHERE NOT (COALESCE(data_source, '') = 'ai_generated' AND is_hidden_gem IS TRUE) ORDER BY (CASE WHEN province IS NULL THEN 1 ELSE 0 END), name LIMIT 50`,
-      sql`SELECT COUNT(*) as total FROM attractions WHERE NOT (COALESCE(data_source, '') = 'ai_generated' AND is_hidden_gem IS TRUE)`,
+      sql`SELECT * FROM attractions WHERE NOT (COALESCE(data_source, '') = 'ai_generated' AND is_hidden_gem IS TRUE AND metadata->>'factCheckedAt' IS NULL) AND verification_status IS DISTINCT FROM 'rejected' ORDER BY (CASE WHEN province IS NULL THEN 1 ELSE 0 END), name LIMIT 50`,
+      sql`SELECT COUNT(*) as total FROM attractions WHERE NOT (COALESCE(data_source, '') = 'ai_generated' AND is_hidden_gem IS TRUE AND metadata->>'factCheckedAt' IS NULL) AND verification_status IS DISTINCT FROM 'rejected'`,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     ]) as any[][]
   } catch (err) {

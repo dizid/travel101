@@ -32,7 +32,7 @@ export async function fetchDynamicRoutes(): Promise<DynamicRoutes> {
 
     // Attractions and heritage are in the same table, differentiated by place_type
     const [attractions, heritage, festivals, guides] = await Promise.all([
-      sql`SELECT slug FROM attractions WHERE verification_status != 'rejected' AND (place_type IS NULL OR place_type != 'heritage') AND NOT (COALESCE(data_source, '') = 'ai_generated' AND is_hidden_gem IS TRUE)`,
+      sql`SELECT slug FROM attractions WHERE verification_status != 'rejected' AND (place_type IS NULL OR place_type != 'heritage') AND NOT (COALESCE(data_source, '') = 'ai_generated' AND is_hidden_gem IS TRUE AND metadata->>'factCheckedAt' IS NULL) AND verification_status IS DISTINCT FROM 'rejected'`,
       sql`SELECT slug FROM attractions WHERE place_type = 'heritage'`,
       sql`SELECT slug FROM thai_festivals`,
       sql`SELECT slug FROM travel_guides WHERE is_published = true`,
