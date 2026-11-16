@@ -391,7 +391,7 @@ function downloadPdf() {
           <h1 class="text-3xl md:text-4xl font-display font-bold text-gray-900 mb-3">
             Proof of Onward Travel
           </h1>
-          <p class="text-gray-600">
+          <p v-if="!bookingPaused" class="text-gray-600">
             Get a verified flight reservation for Thai immigration in minutes.
           </p>
         </div>
@@ -399,7 +399,18 @@ function downloadPdf() {
     </div>
 
     <!-- Signed-out gate: DB requires user_id on bookings, so anonymous flow can't complete -->
-    <div v-if="!userStore.isAuthenticated" class="max-w-2xl mx-auto px-4 sm:px-6 py-12">
+    <!-- Paused (T-0597): shown to everyone, signed in or not, while booking isn't live -->
+    <div v-if="bookingPaused" class="max-w-2xl mx-auto px-4 sm:px-6 py-12">
+      <div class="card-thai p-6 md:p-8 text-center" role="status">
+        <h2 class="text-2xl font-display font-bold text-gray-900 mb-3">Onward ticket booking is paused</h2>
+        <p class="text-gray-600">
+          We're not taking onward ticket reservations right now, so nothing can be booked or charged here.
+          Please check back soon.
+        </p>
+      </div>
+    </div>
+
+    <div v-else-if="!userStore.isAuthenticated" class="max-w-2xl mx-auto px-4 sm:px-6 py-12">
       <div class="card-thai text-center p-8">
         <div class="text-5xl mb-4">✈️</div>
         <h2 class="text-2xl font-display font-bold text-gray-900 mb-3">
@@ -424,7 +435,7 @@ function downloadPdf() {
     <template v-else>
 
     <!-- Landing section for non-Pro users (before they start searching) -->
-    <div v-if="!isPro && !bookingPaused && step === 1 && searchResults.length === 0" class="bg-gradient-to-br from-primary-50 to-amber-50 border-b border-primary-100">
+    <div v-if="!isPro && step === 1 && searchResults.length === 0" class="bg-gradient-to-br from-primary-50 to-amber-50 border-b border-primary-100">
       <div class="max-w-3xl mx-auto px-4 sm:px-6 py-8">
         <!-- Benefits grid -->
         <div class="grid grid-cols-2 gap-4 mb-6">
@@ -487,7 +498,7 @@ function downloadPdf() {
     </div>
 
     <!-- Pro status banner -->
-    <div v-if="isPro && !bookingPaused && step === 1" class="bg-gradient-to-r from-primary-50 to-amber-50 border-b border-primary-100">
+    <div v-if="isPro && step === 1" class="bg-gradient-to-r from-primary-50 to-amber-50 border-b border-primary-100">
       <div class="max-w-3xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
         <div class="flex items-center gap-2">
           <CrownFilled class="text-primary-500" />
@@ -500,7 +511,7 @@ function downloadPdf() {
     </div>
 
     <!-- Stepper -->
-    <div v-if="!bookingPaused" class="bg-white border-b border-gray-100 sticky top-16 md:top-20 z-10">
+    <div class="bg-white border-b border-gray-100 sticky top-16 md:top-20 z-10">
       <div class="max-w-3xl mx-auto px-4 sm:px-6 py-4">
         <div class="flex items-center justify-between">
           <div
@@ -539,14 +550,7 @@ function downloadPdf() {
 
       <!-- Step 1: Search -->
       <div v-if="step === 1" class="animate-fade-in">
-        <div v-if="bookingPaused" class="card-thai p-6 md:p-8 mb-6" role="status">
-          <h2 class="text-xl font-semibold text-gray-900 mb-2">Onward ticket booking is paused</h2>
-          <p class="text-gray-600">
-            We're not taking onward ticket reservations right now, so nothing can be booked or charged here.
-            Please check back soon.
-          </p>
-        </div>
-        <div v-else ref="searchCard" class="card-thai p-6 md:p-8 mb-6">
+        <div ref="searchCard" class="card-thai p-6 md:p-8 mb-6">
           <h2 class="text-xl font-semibold text-gray-900 mb-2">Find Your Onward Flight</h2>
           <p class="text-gray-500 mb-6">Search for one-way flights from Thailand for your proof of onward travel.</p>
 

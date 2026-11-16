@@ -315,6 +315,27 @@ test.describe('Onward Ticket - Flight Search', () => {
     await expect(page.getByText('$35.00')).toBeVisible()
     await expect(page.getByText('$85.00')).toBeVisible()
     await expect(page.getByText('You pay $12.00').first()).toBeVisible()
+    // T-0597: Duffel's ISO duration is shown as hours and minutes, never raw.
+    await expect(page.getByText('3h 30m').first()).toBeVisible()
+    await expect(page.getByText('PT3H30M')).toHaveCount(0)
+  })
+
+  test('says booking is paused, with no search, while the server reports bookingLive false (T-0597)', async ({ page }) => {
+    await page.route('**/api/onward-ticket', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          success: true,
+          data: { isPro: false, bookingsThisMonth: 0, monthlyLimit: 2, serviceFee: 1200, bookingLive: false },
+        }),
+      })
+    })
+    await page.goto('/onward-ticket')
+
+    await expect(page.getByRole('heading', { name: 'Onward ticket booking is paused' })).toBeVisible({ timeout: 10000 })
+    await expect(page.getByRole('button', { name: /search flights/i })).toHaveCount(0)
+    await expect(page.getByText(/verified flight reservation for Thai immigration in minutes/)).toHaveCount(0)
   })
 
   test('clicking a flight result moves to step 2', async ({ page }) => {
