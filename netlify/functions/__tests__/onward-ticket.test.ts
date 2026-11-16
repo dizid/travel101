@@ -125,6 +125,7 @@ describe('onward-ticket function', () => {
     it('takes no payment and makes no booking while the Duffel token is a test token', async () => {
       setMockEnv('DUFFEL_API_TOKEN', 'duffel_test_token')
       for (const body of [
+        { action: 'search', origin: 'BKK', destination: 'KUL', date: '2026-08-01' },
         { action: 'create-payment' },
         { action: 'book', offerId: 'off_abc123', passenger: { given_name: 'A', family_name: 'B' }, paymentIntentId: 'pi_mock123' },
       ]) {
@@ -135,6 +136,15 @@ describe('onward-ticket function', () => {
       }
       expect(mockStripe.paymentIntents.create).not.toHaveBeenCalled()
       expect(mockStripe.paymentIntents.retrieve).not.toHaveBeenCalled()
+    })
+
+    it('tells the page booking is paused (status bookingLive false) with a test token, true with a live one (T-0597)', async () => {
+      setMockEnv('DUFFEL_API_TOKEN', 'duffel_test_token')
+      const paused = await parseResponse(await handler(createMockRequest('POST', '/api/onward-ticket', { body: { action: 'status' } }), mockContext))
+      expect(paused.data.bookingLive).toBe(false)
+      setMockEnv('DUFFEL_API_TOKEN', 'duffel_live_token')
+      const live = await parseResponse(await handler(createMockRequest('POST', '/api/onward-ticket', { body: { action: 'status' } }), mockContext))
+      expect(live.data.bookingLive).toBe(true)
     })
   })
 

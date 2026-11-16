@@ -124,6 +124,9 @@ export default async (req: Request, context: Context) => {
     switch (body.action) {
       // Public actions — no auth required
       case 'search':
+        // T-0597: with a test token Duffel returns sandbox flights ("Duffel Airways"),
+        // which travellers took for real offers; nothing is searched until booking is live.
+        if (!duffelIsLive()) return bookingUnavailable()
         return await handleSearch(body)
 
       // Optional auth — returns defaults for unauthenticated users
@@ -192,6 +195,7 @@ async function handleStatus(userId: string | null): Promise<Response> {
       bookingsThisMonth: 0,
       monthlyLimit: PRO_MONTHLY_LIMIT,
       serviceFee: SERVICE_FEE_CENTS,
+      bookingLive: duffelIsLive(),
     })
   }
 
@@ -219,6 +223,8 @@ async function handleStatus(userId: string | null): Promise<Response> {
     bookingsThisMonth,
     monthlyLimit: PRO_MONTHLY_LIMIT,
     serviceFee: SERVICE_FEE_CENTS,
+    // The page shows a 'paused' notice instead of the search while this is false (T-0597).
+    bookingLive: duffelIsLive(),
   })
 }
 

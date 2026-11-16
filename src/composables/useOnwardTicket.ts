@@ -39,6 +39,8 @@ export interface OnwardTicketStatus {
   bookingsThisMonth: number
   monthlyLimit: number
   serviceFee: number
+  /** False while the site's Duffel token is a test token: no searches, payments or bookings (T-0597). */
+  bookingLive?: boolean
 }
 
 interface SearchResponse {

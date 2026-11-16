@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
+import { formatIsoDuration, arrivalDayOffset } from '@/utils/flightFormat'
 import { useOnwardTicket } from '@/composables/useOnwardTicket'
 import type { FlightOffer, PassengerDetails } from '@/composables/useOnwardTicket'
 import { useUserStore } from '@stores/userStore'
@@ -124,6 +125,10 @@ function scrollToSearch() {
 
 // Computed helpers
 const isPro = computed(() => proStatus.value?.isPro === true)
+// T-0597: false while the site's Duffel token is a test token. The server then refuses
+// searches, payments and bookings, so the page says so up front instead of letting a
+// traveller pick a sandbox flight and fail at the payment step.
+const bookingPaused = computed(() => proStatus.value?.bookingLive === false)
 const proBookingsRemaining = computed(() => {
   if (!proStatus.value?.isPro) return 0
   return Math.max(0, proStatus.value.monthlyLimit - proStatus.value.bookingsThisMonth)
@@ -169,6 +174,10 @@ const effectiveDestination = computed(() =>
 const canSearch = computed(() =>
   origin.value && effectiveDestination.value.length === 3 && departureDate.value
 )
+
+// Each step starts at the top: on a phone the next step otherwise opens wherever the
+// previous one was scrolled to (step 3 opened at the footer, its message out of view; T-0597).
+watch(step, () => nextTick(() => window.scrollTo({ top: 0, behavior: 'smooth' })))
 
 // Fetch status on mount, then check for a Stripe 3DS return-redirect to finalize the booking
 onMounted(async () => {
@@ -415,7 +424,7 @@ function downloadPdf() {
     <template v-else>
 
     <!-- Landing section for non-Pro users (before they start searching) -->
-    <div v-if="!isPro && step === 1 && searchResults.length === 0" class="bg-gradient-to-br from-primary-50 to-amber-50 border-b border-primary-100">
+    <div v-if="!isPro && !bookingPaused && step === 1 && searchResults.length === 0" class="bg-gradient-to-br from-primary-50 to-amber-50 border-b border-primary-100">
       <div class="max-w-3xl mx-auto px-4 sm:px-6 py-8">
         <!-- Benefits grid -->
         <div class="grid grid-cols-2 gap-4 mb-6">
@@ -478,7 +487,7 @@ function downloadPdf() {
     </div>
 
     <!-- Pro status banner -->
-    <div v-if="isPro && step === 1" class="bg-gradient-to-r from-primary-50 to-amber-50 border-b border-primary-100">
+    <div v-if="isPro && !bookingPaused && step === 1" class="bg-gradient-to-r from-primary-50 to-amber-50 border-b border-primary-100">
       <div class="max-w-3xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
         <div class="flex items-center gap-2">
           <CrownFilled class="text-primary-500" />
@@ -491,7 +500,7 @@ function downloadPdf() {
     </div>
 
     <!-- Stepper -->
-    <div class="bg-white border-b border-gray-100 sticky top-16 md:top-20 z-10">
+    <div v-if="!bookingPaused" class="bg-white border-b border-gray-100 sticky top-16 md:top-20 z-10">
       <div class="max-w-3xl mx-auto px-4 sm:px-6 py-4">
         <div class="flex items-center justify-between">
           <div
@@ -530,7 +539,14 @@ function downloadPdf() {
 
       <!-- Step 1: Search -->
       <div v-if="step === 1" class="animate-fade-in">
-        <div ref="searchCard" class="card-thai p-6 md:p-8 mb-6">
+        <div v-if="bookingPaused" class="card-thai p-6 md:p-8 mb-6" role="status">
+          <h2 class="text-xl font-semibold text-gray-900 mb-2">Onward ticket booking is paused</h2>
+          <p class="text-gray-600">
+            We're not taking onward ticket reservations right now, so nothing can be booked or charged here.
+            Please check back soon.
+          </p>
+        </div>
+        <div v-else ref="searchCard" class="card-thai p-6 md:p-8 mb-6">
           <h2 class="text-xl font-semibold text-gray-900 mb-2">Find Your Onward Flight</h2>
           <p class="text-gray-500 mb-6">Search for one-way flights from Thailand for your proof of onward travel.</p>
 
@@ -626,9 +642,12 @@ function downloadPdf() {
               </div>
             </div>
             <div class="text-sm mt-1 text-gray-600">
-              {{ formatTime(offer.departureTime) }} &rarr; {{ formatTime(offer.arrivalTime) }}
+              {{ formatTime(offer.departureTime) }} &rarr; {{ formatTime(offer.arrivalTime) }}<sup
+                v-if="arrivalDayOffset(offer.departureTime, offer.arrivalTime) > 0"
+                class="ml-0.5 text-amber-600 font-semibold"
+              >+{{ arrivalDayOffset(offer.departureTime, offer.arrivalTime) }}</sup>
               <span class="text-gray-400 mx-2">|</span>
-              {{ offer.duration }}
+              {{ formatIsoDuration(offer.duration) }}
               <span v-if="offer.stops > 0" class="text-amber-500 ml-2">{{ offer.stops }} stop{{ offer.stops > 1 ? 's' : '' }}</span>
               <span v-else class="text-green-500 ml-2">Direct</span>
             </div>
@@ -654,9 +673,12 @@ function downloadPdf() {
             <div>
               <h3 class="font-bold text-gray-900">{{ selectedOffer.airline }}</h3>
               <p class="text-sm text-gray-600">
-                {{ formatTime(selectedOffer.departureTime) }} &rarr; {{ formatTime(selectedOffer.arrivalTime) }}
+                {{ formatTime(selectedOffer.departureTime) }} &rarr; {{ formatTime(selectedOffer.arrivalTime) }}<sup
+                  v-if="arrivalDayOffset(selectedOffer.departureTime, selectedOffer.arrivalTime) > 0"
+                  class="ml-0.5 text-amber-600 font-semibold"
+                >+{{ arrivalDayOffset(selectedOffer.departureTime, selectedOffer.arrivalTime) }}</sup>
                 <span class="text-gray-400 mx-1">|</span>
-                {{ selectedOffer.duration }}
+                {{ formatIsoDuration(selectedOffer.duration) }}
               </p>
             </div>
             <div class="text-right">
