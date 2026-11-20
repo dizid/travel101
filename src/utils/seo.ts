@@ -248,6 +248,7 @@ export function generateEventSchema(event: EventSchema): string {
     image: event.image || DEFAULT_IMAGE,
     startDate: event.startDate,
     ...(event.endDate && { endDate: event.endDate }),
+    eventStatus: 'https://schema.org/EventScheduled',
     eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
     location: {
       '@type': 'Place',
@@ -259,11 +260,8 @@ export function generateEventSchema(event: EventSchema): string {
       },
     },
     url: `${BASE_URL}/festivals/${event.slug}`,
-    organizer: {
-      '@type': 'Organization',
-      name: SITE_NAME,
-      url: BASE_URL,
-    },
+    // No `organizer`: it named HappyRoam as the organiser of every Thai festival, which is
+    // false structured data (temples, provinces and TAT run these). Google doesn't require it.
   }
   return JSON.stringify(schema)
 }

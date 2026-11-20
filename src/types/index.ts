@@ -542,6 +542,8 @@ export interface Festival {
   durationDays: number
   date2025?: string
   date2026?: string
+  /** From src/data/festivalDates.ts (the table has no 2027 column); null = not announced yet */
+  date2027?: string | null
   provinces?: string[]
   isNationwide: boolean
   bestLocations?: string[]

@@ -52,4 +52,7 @@ vite.config.js
 .ssg-data/
 scripts/*.js
 scripts/*.d.ts
+# vue-tsc -b emits these from tsconfig.node.json (the SSG prefetch imports it); code imports the .ts
+src/data/festivalDates.js
+src/data/festivalDates.d.ts
 .gstack/

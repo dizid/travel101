@@ -215,7 +215,9 @@ export function useFestivals() {
   // Format date for display
   function formatFestivalDate(dateStr: string, durationDays = 1): string {
     const date = new Date(dateStr)
-    const options: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric' }
+    // Festival dates are calendar days stored as UTC midnight ("2026-11-24T00:00:00.000Z");
+    // formatting them in the visitor's own zone showed them a day early in the Americas.
+    const options: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric', timeZone: 'UTC' }
 
     if (durationDays === 1) {
       return date.toLocaleDateString('en-US', options)

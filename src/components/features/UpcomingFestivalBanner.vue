@@ -2,6 +2,7 @@
 import { ref, onMounted } from 'vue'
 import { CalendarOutlined, EnvironmentOutlined, RightOutlined } from '@ant-design/icons-vue'
 import { useFestivals } from '@/composables/useFestivals'
+import { nextFestivalOccurrence, thailandToday } from '@/data/festivalDates.ts'
 import type { UpcomingFestival } from '@/types'
 
 const props = defineProps<{
@@ -19,29 +20,12 @@ onMounted(async () => {
   if (props.province) {
     // Fetch festivals for specific province
     const provinceFestivals = await fetchByProvince(props.province)
-    // Use Thailand time for date comparisons (all festivals are in Thailand)
-    const now = new Date()
-    const thai = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Bangkok' }))
-    const year = thai.getFullYear()
+    // Next date in any known year, counted in Thailand time (all festivals are there)
+    const today = thailandToday()
     result = provinceFestivals
-      .filter((f) => {
-        const dateStr = year === 2025 ? f.date2025 : f.date2026
-        if (!dateStr) return false
-        const startDate = new Date(dateStr)
-        const endDate = new Date(startDate.getTime() + ((f.durationDays || 1) - 1) * 86400000)
-        return endDate >= thai
-      })
-      .map((f) => {
-        const dateStr = (year === 2025 ? f.date2025 : f.date2026)!
-        const startDate = new Date(dateStr)
-        const endDate = new Date(startDate.getTime() + ((f.durationDays || 1) - 1) * 86400000)
-        const daysUntilStart = Math.ceil((startDate.getTime() - thai.getTime()) / 86400000)
-        return {
-          ...f,
-          nextDate: dateStr,
-          daysUntil: Math.max(0, daysUntilStart),
-          isOngoing: daysUntilStart < 0 && endDate >= thai,
-        }
+      .flatMap((f) => {
+        const next = nextFestivalOccurrence(f, today)
+        return next ? [{ ...f, ...next }] : []
       })
       .sort((a, b) => a.daysUntil - b.daysUntil)
   } else {

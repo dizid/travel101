@@ -1,5 +1,10 @@
 import type { Context, Config } from '@netlify/functions'
 import { getDb } from './lib/db.mts'
+import {
+  festivalDateForYear,
+  nextFestivalOccurrence,
+  thailandToday,
+} from '../../src/data/festivalDates.ts'
 
 interface Festival {
   id: string
@@ -13,6 +18,8 @@ interface Festival {
   durationDays: number
   date2025: string | null
   date2026: string | null
+  /** From src/data/festivalDates.ts (the table has no 2027 column); null = not announced yet */
+  date2027: string | null
   provinces: string[] | null
   isNationwide: boolean
   bestLocations: string[] | null
@@ -40,8 +47,11 @@ function transformFestival(row: any): Festival {
     dateType: row.date_type,
     dateFixed: row.date_fixed,
     durationDays: row.duration_days,
-    date2025: row.date_2025,
-    date2026: row.date_2026,
+    // Dates as "YYYY-MM-DDT00:00:00.000Z" whatever the server's time zone; a date in
+    // src/data/festivalDates.ts wins over the column (e.g. a corrected 2026 date)
+    date2025: festivalDateForYear(row.slug, 2025, row.date_2025),
+    date2026: festivalDateForYear(row.slug, 2026, row.date_2026),
+    date2027: festivalDateForYear(row.slug, 2027),
     provinces: row.provinces,
     isNationwide: row.is_nationwide,
     bestLocations: row.best_locations,
@@ -56,16 +66,6 @@ function transformFestival(row: any): Festival {
     crowdLevel: row.crowd_level,
     foreignerFriendly: row.foreigner_friendly,
   }
-}
-
-// Get current date in Thailand timezone (UTC+7) since all festivals are in Thailand
-function getThailandToday(): { today: Date; todayStr: string; year: number } {
-  const now = new Date()
-  const thai = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Bangkok' }))
-  const year = thai.getFullYear()
-  const month = String(thai.getMonth() + 1).padStart(2, '0')
-  const day = String(thai.getDate()).padStart(2, '0')
-  return { today: thai, todayStr: `${year}-${month}-${day}`, year }
 }
 
 // CORS headers helper
@@ -151,22 +151,9 @@ export default async function handler(req: Request, context: Context) {
         })
       }
 
-      // Add next date and days until for the single festival
+      // Add next date and days until (left out once every known date has passed)
       const festival = transformFestival(result[0])
-      const thai = getThailandToday()
-      const dateStr = thai.year === 2025 ? festival.date2025 : festival.date2026
-
-      let enriched: any = { ...festival }
-      if (dateStr) {
-        const nextDate = new Date(dateStr)
-        const endDate = new Date(nextDate.getTime() + ((festival.durationDays || 1) - 1) * 86400000)
-        if (endDate >= thai.today) {
-          const daysUntilStart = Math.ceil((nextDate.getTime() - thai.today.getTime()) / 86400000)
-          enriched.nextDate = dateStr
-          enriched.daysUntil = Math.max(0, daysUntilStart)
-          enriched.isOngoing = daysUntilStart < 0
-        }
-      }
+      const enriched = { ...festival, ...nextFestivalOccurrence(festival) }
 
       return new Response(JSON.stringify(enriched), {
         status: 200,
@@ -174,94 +161,33 @@ export default async function handler(req: Request, context: Context) {
       })
     }
 
-    // Upcoming festivals
+    // Upcoming festivals: on now, or starting within `days` days (Thailand date).
+    // The next date can come from any year (database columns or src/data/festivalDates.ts),
+    // so it's worked out here rather than in SQL; the table is small (~60 rows).
     if (upcoming === 'true' || lastPart === 'upcoming') {
-      const thai = getThailandToday()
-      const { today, todayStr, year } = thai
-      const futureDate = new Date(today.getTime() + days * 86400000)
-      const futureDateStr = `${futureDate.getFullYear()}-${String(futureDate.getMonth() + 1).padStart(2, '0')}-${String(futureDate.getDate()).padStart(2, '0')}`
+      const windowDays = Number.isFinite(days) && days >= 0 ? days : 60
 
-      // Build dynamic query with optional filters
-      let query = sql`
-        SELECT *,
-          CASE
-            WHEN ${year} = 2025 THEN date_2025
-            ELSE date_2026
-          END as next_date
-        FROM thai_festivals
-        WHERE (
-          (${year} = 2025 AND (date_2025 + COALESCE(duration_days, 1) - 1) >= ${todayStr}::date AND date_2025 <= ${futureDateStr}::date)
-          OR (${year} = 2026 AND (date_2026 + COALESCE(duration_days, 1) - 1) >= ${todayStr}::date AND date_2026 <= ${futureDateStr}::date)
-        )
-      `
-
-      // Add filters if provided
+      let rows
       if (type) {
-        query = sql`
-          SELECT *,
-            CASE WHEN ${year} = 2025 THEN date_2025 ELSE date_2026 END as next_date
-          FROM thai_festivals
-          WHERE (
-            (${year} = 2025 AND (date_2025 + COALESCE(duration_days, 1) - 1) >= ${todayStr}::date AND date_2025 <= ${futureDateStr}::date)
-            OR (${year} = 2026 AND (date_2026 + COALESCE(duration_days, 1) - 1) >= ${todayStr}::date AND date_2026 <= ${futureDateStr}::date)
-          )
-          AND festival_type = ${type}
-          ORDER BY CASE WHEN ${year} = 2025 THEN date_2025 ELSE date_2026 END ASC
-          LIMIT ${limit} OFFSET ${offset}
-        `
+        rows = await sql`SELECT * FROM thai_festivals WHERE festival_type = ${type}`
       } else if (region) {
-        query = sql`
-          SELECT *,
-            CASE WHEN ${year} = 2025 THEN date_2025 ELSE date_2026 END as next_date
-          FROM thai_festivals
-          WHERE (
-            (${year} = 2025 AND (date_2025 + COALESCE(duration_days, 1) - 1) >= ${todayStr}::date AND date_2025 <= ${futureDateStr}::date)
-            OR (${year} = 2026 AND (date_2026 + COALESCE(duration_days, 1) - 1) >= ${todayStr}::date AND date_2026 <= ${futureDateStr}::date)
-          )
-          AND region = ${region}
-          ORDER BY CASE WHEN ${year} = 2025 THEN date_2025 ELSE date_2026 END ASC
-          LIMIT ${limit} OFFSET ${offset}
-        `
+        rows = await sql`SELECT * FROM thai_festivals WHERE region = ${region}`
       } else if (hidden === 'true') {
-        query = sql`
-          SELECT *,
-            CASE WHEN ${year} = 2025 THEN date_2025 ELSE date_2026 END as next_date
-          FROM thai_festivals
-          WHERE (
-            (${year} = 2025 AND (date_2025 + COALESCE(duration_days, 1) - 1) >= ${todayStr}::date AND date_2025 <= ${futureDateStr}::date)
-            OR (${year} = 2026 AND (date_2026 + COALESCE(duration_days, 1) - 1) >= ${todayStr}::date AND date_2026 <= ${futureDateStr}::date)
-          )
-          AND is_hidden_gem = true
-          ORDER BY CASE WHEN ${year} = 2025 THEN date_2025 ELSE date_2026 END ASC
-          LIMIT ${limit} OFFSET ${offset}
-        `
+        rows = await sql`SELECT * FROM thai_festivals WHERE is_hidden_gem = true`
       } else {
-        query = sql`
-          SELECT *,
-            CASE WHEN ${year} = 2025 THEN date_2025 ELSE date_2026 END as next_date
-          FROM thai_festivals
-          WHERE (
-            (${year} = 2025 AND (date_2025 + COALESCE(duration_days, 1) - 1) >= ${todayStr}::date AND date_2025 <= ${futureDateStr}::date)
-            OR (${year} = 2026 AND (date_2026 + COALESCE(duration_days, 1) - 1) >= ${todayStr}::date AND date_2026 <= ${futureDateStr}::date)
-          )
-          ORDER BY CASE WHEN ${year} = 2025 THEN date_2025 ELSE date_2026 END ASC
-          LIMIT ${limit} OFFSET ${offset}
-        `
+        rows = await sql`SELECT * FROM thai_festivals`
       }
 
-      const result = await query
-
-      const festivals = result.map((row: any) => {
-        const startDate = new Date(row.next_date)
-        const endDate = new Date(startDate.getTime() + ((row.duration_days || 1) - 1) * 86400000)
-        const daysUntilStart = Math.ceil((startDate.getTime() - today.getTime()) / 86400000)
-        return {
-          ...transformFestival(row),
-          nextDate: row.next_date,
-          daysUntil: Math.max(0, daysUntilStart),
-          isOngoing: daysUntilStart < 0 && endDate >= today,
-        }
-      })
+      const today = thailandToday()
+      const festivals = rows
+        .map((row: any) => {
+          const festival = transformFestival(row)
+          const next = nextFestivalOccurrence(festival, today)
+          return next ? { ...festival, ...next } : null
+        })
+        .filter((f): f is NonNullable<typeof f> => f !== null && f.daysUntil <= windowDays)
+        .sort((a, b) => a.nextDate.localeCompare(b.nextDate) || a.name.localeCompare(b.name))
+        .slice(offset, offset + limit)
 
       return new Response(JSON.stringify({ festivals, count: festivals.length }), {
         status: 200,

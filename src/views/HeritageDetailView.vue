@@ -5,6 +5,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useApi } from '@/composables/useApi'
 import { useWeather } from '@/composables/useWeather'
 import { useFestivals } from '@/composables/useFestivals'
+import { nextFestivalOccurrence, thailandToday } from '@/data/festivalDates.ts'
 import { useLandmarkSchema, useBreadcrumbs, usePageMeta } from '@/composables/useSeo'
 import type { LandmarkSchema } from '@/utils/seo'
 import type { HeritageDetail, HeritageImage, HeritageEvent, HeritageMetadata, UpcomingFestival } from '@/types'
@@ -159,20 +160,12 @@ watch(() => site.value?.province, async (province) => {
 
     // Fetch upcoming festivals in this province
     const festivals = await fetchByProvince(province)
-    const today = new Date()
-    const year = today.getFullYear()
+    // Next date in any known year, counted in Thailand time (all festivals are there)
+    const today = thailandToday()
     provinceFestivals.value = festivals
-      .filter((f) => {
-        const dateStr = year === 2025 ? f.date2025 : f.date2026
-        return dateStr && new Date(dateStr) >= today
-      })
-      .map((f) => {
-        const dateStr = (year === 2025 ? f.date2025 : f.date2026)!
-        return {
-          ...f,
-          nextDate: dateStr,
-          daysUntil: Math.ceil((new Date(dateStr).getTime() - today.getTime()) / (1000 * 60 * 60 * 24)),
-        }
+      .flatMap((f) => {
+        const next = nextFestivalOccurrence(f, today)
+        return next ? [{ ...f, ...next }] : []
       })
       .sort((a, b) => a.daysUntil - b.daysUntil)
       .slice(0, 2)

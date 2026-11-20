@@ -6,6 +6,7 @@ import { useFestivals } from '@/composables/useFestivals'
 import { useEventSchema, useBreadcrumbs, usePageMeta } from '@/composables/useSeo'
 import type { UpcomingFestival } from '@/types'
 import type { EventSchema } from '@/utils/seo'
+import { addDaysYmd, toYmd } from '@/data/festivalDates.ts'
 import AffiliateCard from '@/components/common/AffiliateCard.vue'
 import LoadingSpinner from '@/components/ui/LoadingSpinner.vue'
 import ShareButton from '@/components/ui/ShareButton.vue'
@@ -49,17 +50,28 @@ const relatedGuides = ref<Guide[]>(prerendered?.related ?? [])
 const eventSchema = computed<EventSchema | null>(() => {
   if (!festival.value) return null
   const f = festival.value
+  // The next date, or the latest known one once it has passed; no dates at all = no Event
+  const startYmd = toYmd(f.nextDate || f.date2027 || f.date2026 || f.date2025)
+  if (!startYmd) return null
   const location = f.isNationwide ? 'Thailand' : (f.bestLocations?.[0] || f.provinces?.[0] || 'Thailand')
   const province = f.provinces?.[0] || f.region || 'Thailand'
   return {
     name: f.name,
     description: f.description || `Discover the ${f.name} festival in Thailand`,
-    startDate: f.nextDate || f.date2026 || f.date2025 || '',
+    // Calendar dates in Thailand ("2026-11-24"), not UTC timestamps
+    startDate: startYmd,
+    ...(f.durationDays > 1 && { endDate: addDaysYmd(startYmd, f.durationDays - 1) }),
     location,
     province,
     slug: f.slug,
     eventType: f.festivalType,
   }
+})
+
+// "2027: not announced yet" for a yearly festival whose next date isn't known yet
+const nextYearNotAnnounced = computed(() => {
+  const f = festival.value
+  return !!f && !!f.date2026 && !f.date2027
 })
 useEventSchema(eventSchema)
 
@@ -445,6 +457,12 @@ onMounted(() => {
                   </p>
                   <p v-if="festival.date2026">
                     <strong>2026:</strong> {{ formatFestivalDate(festival.date2026, festival.durationDays) }}
+                  </p>
+                  <p v-if="festival.date2027">
+                    <strong>2027:</strong> {{ formatFestivalDate(festival.date2027, festival.durationDays) }}
+                  </p>
+                  <p v-else-if="nextYearNotAnnounced">
+                    <strong>2027:</strong> not announced yet{{ festival.monthTypical ? ` (usually ${getMonthName(festival.monthTypical)})` : '' }}
                   </p>
                   <p v-if="festival.durationDays > 1">
                     <strong>Duration:</strong> {{ festival.durationDays }} days

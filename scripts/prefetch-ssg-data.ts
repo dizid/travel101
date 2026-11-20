@@ -11,6 +11,7 @@ import { neon } from '@neondatabase/serverless'
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs'
 import { resolve } from 'node:path'
 import dotenv from 'dotenv'
+import { festivalDateForYear, nextFestivalOccurrence } from '../src/data/festivalDates'
 
 // Load env vars (same as fetch-routes.ts)
 dotenv.config({ path: '.env.local' })
@@ -61,26 +62,19 @@ function writeJSON(filename: string, data: any): void {
 }
 
 /**
- * Compute the next upcoming date for a festival and days until it.
+ * Next date for a festival and days until it, counted in Thailand time. Same logic as the
+ * festivals API (src/data/festivalDates.ts), so the prerendered page matches what the
+ * browser gets when it refreshes. nextDate is null once every known date has passed.
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function computeFestivalDates(f: any): { nextDate: string | null; daysUntil: number; isOngoing: boolean } {
-  const now = new Date()
-  const year = now.getFullYear()
-
-  // Try this year's date first, then next year's
-  const dateStr = year === 2025 ? f.date_2025 : f.date_2026
-  if (!dateStr) return { nextDate: null, daysUntil: -1, isOngoing: false }
-
-  const festDate = new Date(dateStr)
-  const endDate = new Date(festDate)
-  endDate.setDate(endDate.getDate() + (f.duration_days || 1) - 1)
-
-  const isOngoing = now >= festDate && now <= endDate
-  const diffMs = festDate.getTime() - now.getTime()
-  const daysUntil = Math.ceil(diffMs / (1000 * 60 * 60 * 24))
-
-  return { nextDate: dateStr, daysUntil, isOngoing }
+  const next = nextFestivalOccurrence({
+    slug: f.slug,
+    date2025: f.date_2025,
+    date2026: f.date_2026,
+    durationDays: f.duration_days,
+  })
+  return next ?? { nextDate: null, daysUntil: -1, isOngoing: false }
 }
 
 /**
@@ -99,8 +93,10 @@ function transformFestival(row: any) {
     dateType: row.date_type,
     dateFixed: row.date_fixed,
     durationDays: row.duration_days,
-    date2025: row.date_2025,
-    date2026: row.date_2026,
+    // Same date format and 2027/corrected dates as the festivals API
+    date2025: festivalDateForYear(row.slug, 2025, row.date_2025),
+    date2026: festivalDateForYear(row.slug, 2026, row.date_2026),
+    date2027: festivalDateForYear(row.slug, 2027),
     provinces: row.provinces,
     isNationwide: row.is_nationwide,
     bestLocations: row.best_locations,

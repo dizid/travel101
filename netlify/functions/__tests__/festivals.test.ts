@@ -1,6 +1,6 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import '../__mocks__/db'
-import { setMockQueryResult, clearMockResults } from '../__mocks__/db'
+import { setMockQueryResult, clearMockResults, getMockQueryLog } from '../__mocks__/db'
 import { setMockEnv, clearMockEnv } from './setup.js'
 import { createMockRequest, createMockContext, parseResponse } from './helpers.js'
 
@@ -118,6 +118,94 @@ describe('festivals function', () => {
       const response = await festivalsHandler(req, mockContext)
 
       expect(response.status).toBe(404)
+    })
+
+    it('should give the 2027 date as next date once 2026 has passed', async () => {
+      vi.useFakeTimers({ toFake: ['Date'] })
+      vi.setSystemTime(new Date('2027-01-05T03:00:00Z'))
+      try {
+        setMockQueryResult('WHERE slug', [mockFestivalRow])
+
+        const req = createMockRequest('GET', '/api/festivals/songkran')
+        const body = await parseResponse<any>(await festivalsHandler(req, mockContext))
+
+        expect(body.date2026).toBe('2026-04-13T00:00:00.000Z')
+        expect(body.date2027).toBe('2027-04-13T00:00:00.000Z')
+        expect(body.nextDate).toBe('2027-04-13T00:00:00.000Z')
+        expect(body.daysUntil).toBe(98)
+        expect(body.isOngoing).toBe(false)
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+  })
+
+  describe('GET /api/festivals/upcoming', () => {
+    // Driver-style rows: the Neon driver returns a DATE as a Date at local midnight
+    const row = (slug: string, d2026: Date | null, duration = 1, extra: Record<string, unknown> = {}) => ({
+      ...mockFestivalRow,
+      id: slug,
+      slug,
+      name: slug,
+      date_2025: null,
+      date_2026: d2026,
+      duration_days: duration,
+      ...extra,
+    })
+
+    afterEach(() => {
+      vi.useRealTimers()
+    })
+
+    it('still lists festivals in January 2027 (the old query only knew 2025/2026)', async () => {
+      vi.useFakeTimers({ toFake: ['Date'] })
+      vi.setSystemTime(new Date('2027-01-10T03:00:00Z'))
+      setMockQueryResult('SELECT * FROM thai_festivals', [
+        row('makha-bucha', new Date(2026, 2, 3)),
+        row('chinese-new-year', new Date(2026, 1, 17), 3),
+        row('naga-fireballs', new Date(2026, 9, 26)), // no 2027 date yet: left out
+        row('songkran', new Date(2026, 3, 13), 3), // Apr 13: outside 60 days
+      ])
+
+      const req = createMockRequest('GET', '/api/festivals/upcoming?days=60')
+      const body = await parseResponse<{ festivals: any[]; count: number }>(await festivalsHandler(req, mockContext))
+
+      expect(body.festivals.map((f) => [f.slug, f.nextDate, f.daysUntil])).toEqual([
+        ['chinese-new-year', '2027-02-06T00:00:00.000Z', 27],
+        ['makha-bucha', '2027-02-21T00:00:00.000Z', 42],
+      ])
+      expect(body.count).toBe(2)
+    })
+
+    it('includes a festival that is on now and sorts by date', async () => {
+      vi.useFakeTimers({ toFake: ['Date'] })
+      vi.setSystemTime(new Date('2026-11-20T03:00:00Z'))
+      setMockQueryResult('SELECT * FROM thai_festivals', [
+        row('loy-krathong', new Date(2026, 10, 25)), // corrected to 24 Nov in code
+        row('saraburi-sunflowers', new Date(2026, 10, 14), 30),
+      ])
+
+      const req = createMockRequest('GET', '/api/festivals/upcoming')
+      const body = await parseResponse<{ festivals: any[] }>(await festivalsHandler(req, mockContext))
+
+      expect(body.festivals[0]).toMatchObject({ slug: 'saraburi-sunflowers', daysUntil: 0, isOngoing: true })
+      expect(body.festivals[1]).toMatchObject({
+        slug: 'loy-krathong',
+        nextDate: '2026-11-24T00:00:00.000Z',
+        date2026: '2026-11-24T00:00:00.000Z',
+        daysUntil: 4,
+        isOngoing: false,
+      })
+    })
+
+    it('filters by type in SQL', async () => {
+      setMockQueryResult('festival_type =', [])
+
+      const req = createMockRequest('GET', '/api/festivals/upcoming?type=religious')
+      const response = await festivalsHandler(req, mockContext)
+
+      expect(response.status).toBe(200)
+      expect(getMockQueryLog().some((q) => q.query.includes('festival_type = $1') && q.values[0] === 'religious')).toBe(true)
     })
   })
 

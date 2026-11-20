@@ -144,6 +144,13 @@ describe('seo utils', () => {
       expect(schema.eventAttendanceMode).toContain('OfflineEventAttendanceMode')
     })
 
+    it('should not claim HappyRoam organises the festival', () => {
+      const schema = JSON.parse(generateEventSchema(event))
+
+      expect(schema.organizer).toBeUndefined()
+      expect(schema.eventStatus).toBe('https://schema.org/EventScheduled')
+    })
+
     it('should generate correct URL from slug', () => {
       const schema = JSON.parse(generateEventSchema(event))
 
