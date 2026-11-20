@@ -262,6 +262,13 @@ vite-ssg's default is to throw the prerendered HTML away and render again in the
 - the browser has no `user-profile`, `visa-checklist` or `happyroam_visa_countdown` in localStorage (those change the first render).
 Rules that keep it working: `ssgOptions.formatting` must stay `'none'` (minify strips Vue's comment markers → every page mismatches); use `<BodyTeleport>` (`src/components/common/BodyTeleport.vue`), never a bare `<Teleport to="body">` (vite-ssg doesn't write teleported HTML, and hydrating one wipes the whole app); don't read localStorage/dates/random ids in a component's first render on a hydrated page (do it in `onMounted`, or add the key to `PERSONAL_STORAGE_KEYS`). To check: build, serve `dist`, and compare the prerendered `h1` node with the one after load (same node = hydrated); a production build logs "Hydration completed but contains mismatches." on any mismatch.
 
+## Festival dates (since 2026-11-20, T-0636)
+
+`thai_festivals` only has `date_2025` / `date_2026` columns. Dates for later years (and corrections) live in code: `FESTIVAL_DATE_OVERRIDES` in `src/data/festivalDates.ts`, keyed by slug and year; a code date wins over the column for the same year (Loy Krathong 2026 is corrected there: 24 Nov, the DB says 25). Everything that needs "the next date" (festivals API, SSG prefetch, banners, heritage pages) uses `nextFestivalOccurrence()` from that file, never `year === 2025 ? date2025 : date2026` (that emptied every upcoming list from 1 Jan 2027).
+- Add a year's date only from an official source (Bank of Thailand/cabinet holiday list, TAT, the organiser) and note the source in a comment. Lunar and organiser-set festivals without one show "2027: not announced yet (usually <month>)". As of Nov 20 2026 still missing for 2027: Loy Krathong, Yi Peng, Ok Phansa and the festivals tied to it, the vegetarian festivals, and all organiser-set events.
+- Dates travel as `YYYY-MM-DDT00:00:00.000Z` (a calendar day at UTC midnight) and are formatted with `timeZone: 'UTC'`. The Neon driver returns a DATE as local midnight, so `toYmd()` reads it with local getters; never `toISOString()` a raw DB date (wrong day on any server east of UTC).
+- Code imports the module as `festivalDates.ts` with the extension: `vue-tsc -b` emits a `festivalDates.js` next to it (tsconfig.node.json includes it for the prefetch script; gitignored), and Vite would otherwise prefer the `.js`.
+
 ## Key Patterns
 
 **Composables**: Logic separation - useApi for HTTP, useAI for AI calls with caching, useMatcher for weighted scoring (interests 3x, styles 2.5x, budget 2x)
