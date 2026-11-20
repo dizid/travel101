@@ -269,6 +269,10 @@ Rules that keep it working: `ssgOptions.formatting` must stay `'none'` (minify s
 - Dates travel as `YYYY-MM-DDT00:00:00.000Z` (a calendar day at UTC midnight) and are formatted with `timeZone: 'UTC'`. The Neon driver returns a DATE as local midnight, so `toYmd()` reads it with local getters; never `toISOString()` a raw DB date (wrong day on any server east of UTC).
 - Code imports the module as `festivalDates.ts` with the extension: `vue-tsc -b` emits a `festivalDates.js` next to it (tsconfig.node.json includes it for the prefetch script; gitignored), and Vite would otherwise prefer the `.js`.
 
+## Duplicate pages (since 2026-11-20, T-0636)
+
+The DB holds ~30 places/festivals twice (e.g. `phuket` + `phuket-attraction`, an `/attractions/` row next to the curated `/heritage/` page, `bun-bang-fai` + `rocket-festival`). `src/data/duplicatePages.ts` maps each copy to its main page: `usePageHead` (src/utils/seo.ts) writes the main page as canonical/og:url, and `sitemap.mts` leaves the copy out. Rows are untouched (deleting copies is Marc's data call). A new duplicate: add it there (heritage page > human-verified > manual > Google Places > AI-written); the test fails on chains or bad paths. The sitemap's heritage query must keep the same "AI hidden gem not fact-checked" hold as the prefetch, or it lists pages that aren't pre-built.
+
 ## Key Patterns
 
 **Composables**: Logic separation - useApi for HTTP, useAI for AI calls with caching, useMatcher for weighted scoring (interests 3x, styles 2.5x, budget 2x)

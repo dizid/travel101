@@ -7,7 +7,7 @@ import { useWeather } from '@/composables/useWeather'
 import { useFestivals } from '@/composables/useFestivals'
 import { nextFestivalOccurrence, thailandToday } from '@/data/festivalDates.ts'
 import { useLandmarkSchema, useBreadcrumbs, usePageMeta } from '@/composables/useSeo'
-import type { LandmarkSchema } from '@/utils/seo'
+import { placeTitle, type LandmarkSchema } from '@/utils/seo'
 import type { HeritageDetail, HeritageImage, HeritageEvent, HeritageMetadata, UpcomingFestival } from '@/types'
 import HeritageGallery from '@/components/features/heritage/HeritageGallery.vue'
 import HeritageTimeline from '@/components/features/heritage/HeritageTimeline.vue'
@@ -74,7 +74,7 @@ usePageMeta(computed(() => {
   const s = site.value
   if (!s) return { title: 'Heritage Site', description: 'Thailand heritage site guide', url: '/heritage' }
   return {
-    title: `${s.name} - ${s.province}`,
+    title: placeTitle(s.name, s.province),
     description: (s.description || '').slice(0, 160),
     url: `/heritage/${s.slug}`,
     type: 'place' as const,

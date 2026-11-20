@@ -13,6 +13,7 @@ import {
   generateLandmarkSchema,
   generateBreadcrumbSchema,
   usePageHead,
+  placeTitle,
   type PageMeta,
   type AttractionSchema,
   type EventSchema,
@@ -119,7 +120,7 @@ export function useAttractionMeta(attraction: Ref<{
     const attr = attraction.value
     if (!attr) return null
     return {
-      title: `${attr.name} - ${attr.province}`,
+      title: placeTitle(attr.name, attr.province),
       description: attr.description.slice(0, 160),
       url: `/attractions/${attr.slug}`,
       image: attr.image_url,

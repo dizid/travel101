@@ -22,6 +22,11 @@ import {
   CrownFilled,
   RightOutlined,
 } from '@ant-design/icons-vue'
+import { useRouteSeo } from '@/composables/useSeo'
+
+// Own title, description and canonical (the page used to ship the home page's, so its
+// canonical told Google it was a copy of the home page)
+useRouteSeo('onwardTicket')
 
 const userStore = useUserStore()
 

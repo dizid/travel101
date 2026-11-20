@@ -8,6 +8,7 @@
 import { useHead } from '@unhead/vue'
 import type { MaybeRefOrGetter } from 'vue'
 import { computed, toValue } from 'vue'
+import { canonicalPathFor } from '@/data/duplicatePages'
 
 export interface PageMeta {
   title: string
@@ -33,6 +34,16 @@ const DEFAULT_IMAGE = `${BASE_URL}/og-image.png`
 const SITE_NAME = 'HappyRoam Thailand'
 
 /**
+ * Title for a place page: "Name - Province", but just "Name" when the name already
+ * says the province ("Phuket", "Ayutthaya Historical Park"), so no "Phuket - Phuket".
+ */
+export function placeTitle(name: string, province?: string | null): string {
+  const where = (province ?? '').trim()
+  if (!where || name.toLowerCase().includes(where.toLowerCase())) return name
+  return `${name} - ${where}`
+}
+
+/**
  * Apply page meta tags via @unhead/vue (SSR-safe).
  * Call inside a component's setup() or <script setup>.
  */
@@ -43,7 +54,9 @@ export function usePageHead(meta: MaybeRefOrGetter<PageMeta | null>) {
 
     const { title, description, image = DEFAULT_IMAGE, url, type = 'website' } = m
     const fullTitle = `${title} | ${SITE_NAME}`
-    const fullUrl = url ? `${BASE_URL}${url}` : BASE_URL
+    // A page that shows the same place as another page names that page as canonical
+    // (src/data/duplicatePages.ts), so Google ranks one of the two instead of guessing
+    const fullUrl = url ? `${BASE_URL}${canonicalPathFor(url)}` : BASE_URL
 
     return {
       title: fullTitle,
@@ -454,7 +467,9 @@ export const pageMeta: Record<string, PageMeta> = {
   },
   onwardTicket: {
     title: 'Onward Ticket — Proof of Onward Travel for Thailand',
-    description: 'Book a verified onward flight reservation for Thai immigration. Pro members get 2 free bookings/month, or pay just $12 per ticket. Real airline PNR, instant delivery.',
+    // Written so it stays true while booking is paused (status bookingLive false, T-0597):
+    // describes the service and its price, no "book now" promise
+    description: 'Proof of onward travel for Thailand: a flight reservation with a real airline PNR, valid 48+ hours, for a $12 service fee, or 2 a month included with Pro.',
     url: '/onward-ticket',
   },
   heritage: {

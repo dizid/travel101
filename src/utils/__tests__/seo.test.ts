@@ -12,6 +12,7 @@ import {
   generateHowToSchema,
   getPageMeta,
   pageMeta,
+  placeTitle,
   type AttractionSchema,
   type EventSchema,
   type LandmarkSchema,
@@ -301,6 +302,35 @@ describe('seo utils', () => {
         expect(meta.title).toBeTruthy()
         expect(meta.description).toBeTruthy()
       }
+    })
+
+    // Booking is paused (T-0597); the description is baked into the page at build time,
+    // so it must not promise a booking (T-0636)
+    it('describes the onward ticket page without a "book now" promise', () => {
+      const meta = getPageMeta('onwardTicket')
+      expect(meta.url).toBe('/onward-ticket')
+      expect(meta.description).toContain('$12')
+      expect(meta.description).not.toMatch(/\bbook\b|instant/i)
+      expect(meta.description.length).toBeLessThanOrEqual(160)
+    })
+  })
+
+  // "Phuket - Phuket" and "Ayutthaya Historical Park - Ayutthaya" said the province twice (T-0636)
+  describe('placeTitle', () => {
+    it('adds the province when the name does not say it', () => {
+      expect(placeTitle('Koh Tao', 'Surat Thani')).toBe('Koh Tao - Surat Thani')
+    })
+
+    it('skips the province when the name already contains it', () => {
+      expect(placeTitle('Phuket', 'Phuket')).toBe('Phuket')
+      expect(placeTitle('Ayutthaya Historical Park', 'Ayutthaya')).toBe('Ayutthaya Historical Park')
+      expect(placeTitle('Chiang Mai Night Bazaar', 'chiang mai')).toBe('Chiang Mai Night Bazaar')
+    })
+
+    it('handles a missing province', () => {
+      expect(placeTitle('Somewhere', '')).toBe('Somewhere')
+      expect(placeTitle('Somewhere', null)).toBe('Somewhere')
+      expect(placeTitle('Somewhere', undefined)).toBe('Somewhere')
     })
   })
 })

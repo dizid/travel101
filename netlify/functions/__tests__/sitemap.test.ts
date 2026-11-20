@@ -304,5 +304,49 @@ describe('sitemap function', () => {
       expect(attractionsQuery).toBeDefined()
       expect(attractionsQuery).toContain("(place_type IS NULL OR place_type != 'heritage')")
     })
+
+    // An AI-written heritage 'hidden gem' isn't pre-built until fact-checked, so listing it
+    // sent crawlers to the home page HTML (baan-chinpracha, T-0636)
+    it('holds back unchecked AI-written heritage sites, like the pre-build does', async () => {
+      const request = createMockRequest({ method: 'GET', url: '/api/sitemap' })
+      await handler(request, createMockContext())
+
+      const heritageQuery = getMockNeonQueryLog()
+        .map((entry) => entry.query)
+        .find((query) => query.includes("WHERE place_type = 'heritage'"))
+      expect(heritageQuery).toBeDefined()
+      expect(heritageQuery).toContain("metadata->>'factCheckedAt' IS NULL")
+      expect(heritageQuery).toContain("verification_status IS DISTINCT FROM 'rejected'")
+    })
+  })
+
+  // Copies of another page (src/data/duplicatePages.ts) point their canonical at the main
+  // page, so only the main page is listed (T-0636)
+  describe('duplicate pages', () => {
+    it('lists the main page and leaves the copy out', async () => {
+      setMockNeonResult('SELECT slug, updated_at', [
+        { slug: 'phuket', updated_at: '2024-01-15T10:00:00Z' },
+        { slug: 'phuket-attraction', updated_at: '2024-01-15T10:00:00Z' },
+      ])
+
+      const response = await handler(createMockRequest({ method: 'GET', url: '/api/sitemap' }), createMockContext())
+      const xml = await response.text()
+
+      expect(xml).toContain('<loc>https://happyroam.travel/attractions/phuket</loc>')
+      expect(xml).not.toContain('/attractions/phuket-attraction</loc>')
+    })
+  })
+
+  describe('pre-built pages that were missing', () => {
+    it('lists the phrasebook, emergency and visa countdown pages', async () => {
+      setMockNeonResult('SELECT slug, updated_at', [])
+
+      const response = await handler(createMockRequest({ method: 'GET', url: '/api/sitemap' }), createMockContext())
+      const xml = await response.text()
+
+      for (const path of ['/phrasebook', '/emergency', '/visa-countdown']) {
+        expect(xml).toContain(`<loc>https://happyroam.travel${path}</loc>`)
+      }
+    })
   })
 })
