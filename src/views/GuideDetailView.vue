@@ -13,6 +13,7 @@ import NewsletterSignup from '@/components/ui/NewsletterSignup.vue'
 import { useGuides, type Guide } from '@/composables/useGuides'
 import { useSSGState } from '@/lib/ssg-state'
 import { renderMarkdown, extractTOC } from '@/utils/markdown'
+import { pickRelatedGuides } from '@/utils/relatedGuides'
 import {
   generateBreadcrumbSchema,
   generateArticleSchema,
@@ -101,15 +102,9 @@ async function loadGuide() {
   }
   guide.value = result
 
-  // Related guides: same category first, excluding current
-  relatedGuides.value = allGuides
-    .filter(g => g.slug !== result.slug)
-    .sort((a, b) => {
-      const aMatch = a.category === result.category ? 1 : 0
-      const bMatch = b.category === result.category ? 1 : 0
-      return bMatch - aMatch
-    })
-    .slice(0, 3)
+  // Related guides: same province, shared tags, same category; every guide gets linked
+  // from at least one other guide (see src/utils/relatedGuides.ts)
+  relatedGuides.value = pickRelatedGuides(result, allGuides, 3)
   ssg.put(`guide:${result.slug}`, { guide: result, related: relatedGuides.value })
 }
 
