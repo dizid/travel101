@@ -14,7 +14,7 @@
 # and sign-in silently failed there. Through this rewrite the cookie is
 # first-party for happyroam.travel (Better Auth's recommended fix for Safari).
 # Neon answers with Cache-Control: no-store, so the CDN keeps nothing. Must
-# stay above the SPA catch-all. The app also mints its API token here
+# stay above the SPA fallback rules. The app also mints its API token here
 # (/neon-auth/token, src/lib/authToken.ts); the JWT issuer stays Neon's own
 # origin, which netlify/functions/lib/auth.mts checks (T-0555).
 [[redirects]]
@@ -155,9 +155,48 @@
   to = "/AgodaPartnerVerification.html"
   status = 200
 
-# SPA redirect - all other routes go to index.html
+# SPA fallback, only for the app routes in src/router/routes.ts that are not prerendered
+# (vite.config.ts skips them: they need a signed-in user). Every public page is a
+# prerendered file and needs no rule. Every other path gets dist/404.html (the prerendered
+# "Lost in Thailand?" page, noindex) with a real 404 status, which Netlify serves on its
+# own; before Nov 21 2026 (T-0636) junk URLs such as /wp-login.php or a mistyped
+# /attractions/<slug> answered 200 with the home page, so Google saw them as copies of it.
+# A new route that isn't prerendered needs a line here too, or a hard refresh on it shows
+# the 404 page (the app still opens it, but with a 404 status).
+# The 404 page's own address answers 404 too (as a plain file it would be a 200 page).
 [[redirects]]
-  from = "/*"
+  from = "/404"
+  to = "/404.html"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/dashboard"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/profile"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/saved"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/alerts"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/smart-match"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/auth/*"
   to = "/index.html"
   status = 200
 

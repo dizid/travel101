@@ -3,8 +3,9 @@ import { RouterLink } from 'vue-router'
 import { useHead } from '@unhead/vue'
 import { HomeOutlined, SearchOutlined } from '@ant-design/icons-vue'
 
-// Unknown URLs get this page with status 200 (SPA fallback): its own title and
-// noindex keep Google from indexing it as a copy of the home page (soft 404).
+// Prerendered as dist/404.html (vite.config.ts), which Netlify serves with a real 404
+// status for unknown URLs (T-0636). The noindex also covers client-side navigation to a
+// path no route knows.
 useHead({
   title: 'Page not found | HappyRoam',
   meta: [{ name: 'robots', content: 'noindex' }],

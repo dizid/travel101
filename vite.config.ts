@@ -16,6 +16,9 @@ declare module 'vite' {
   }
 }
 
+// Prerendered as dist/404.html: the page Netlify shows (status 404) for unknown paths
+const NOT_FOUND_ROUTE = '/404'
+
 export default defineConfig(({ isSsrBuild }) => ({
   plugins: [vue(), netlify()],
   resolve: {
@@ -83,16 +86,25 @@ export default defineConfig(({ isSsrBuild }) => ({
 
       const allRoutes = [...staticRoutes, ...dynamicRoutes].filter(r => !skipRoutes.has(r))
       console.log(`[vite-ssg] ${staticRoutes.length} static + ${dynamicRoutes.length} dynamic = ${allRoutes.length} total routes`)
-      return allRoutes
+      // NOT_FOUND_ROUTE matches the router's catch-all, so this writes dist/404.html with the
+      // NotFoundView. Netlify serves that file with a real 404 status for every path that is
+      // neither a prerendered page nor an app route in netlify.toml (T-0636, Nov 21 2026).
+      return [...allRoutes, NOT_FOUND_ROUTE]
     },
     // Stamp each prerendered page with the route it was rendered for. src/main.ts only
     // hydrates when this matches the URL; Netlify's SPA fallback serves the home HTML for
     // routes that aren't prerendered (/dashboard, /profile, ...), and those must render fresh.
+    // The 404 page is served for any unknown path, so it gets no canonical or og:url
+    // (index.html's defaults name the home page) and is marked noindex.
     onPageRendered(route: string, renderedHTML: string) {
-      return renderedHTML.replace(
+      const stamped = renderedHTML.replace(
         '<div id="app" data-server-rendered="true">',
         `<div id="app" data-server-rendered="true" data-ssg-route="${route.replace(/"/g, '&quot;')}">`,
       )
+      if (route !== NOT_FOUND_ROUTE) return stamped
+      return stamped
+        .replace(/<link rel="canonical"[^>]*>\n?/g, '')
+        .replace(/<meta property="og:url"[^>]*>\n?/g, '')
     },
   },
 }))
