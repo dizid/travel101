@@ -255,12 +255,19 @@ describe('seo utils', () => {
   })
 
   describe('generateWebSiteSchema', () => {
-    it('should generate WebSite schema with search action', () => {
+    it('should name the site like the title suffix and og:site_name', () => {
       const schema = JSON.parse(generateWebSiteSchema())
 
       expect(schema['@type']).toBe('WebSite')
-      expect(schema.potentialAction['@type']).toBe('SearchAction')
-      expect(schema.potentialAction.target.urlTemplate).toContain('search_term_string')
+      expect(schema.name).toBe('HappyRoam Thailand')
+      expect(schema.alternateName).toBe('HappyRoam')
+      expect(schema.url).toBe('https://happyroam.travel/')
+    })
+
+    it('should not offer a search action (retired by Google; /attractions ignores ?search=)', () => {
+      const schema = JSON.parse(generateWebSiteSchema())
+
+      expect(schema.potentialAction).toBeUndefined()
     })
   })
 

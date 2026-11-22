@@ -10,6 +10,10 @@ import UpcomingFestivalBanner from '@components/features/UpcomingFestivalBanner.
 import ProBadge from '@components/ui/ProBadge.vue'
 import WelcomeWizard from '@components/features/WelcomeWizard.vue'
 import { RightOutlined, StarOutlined } from '@ant-design/icons-vue'
+import { generateWebSiteSchema, useStructuredData } from '@/utils/seo'
+
+// SEO: WebSite schema on the home page, where Google looks for the site name
+useStructuredData('website-schema', generateWebSiteSchema())
 
 const countryStore = useCountryStore()
 const userStore = useUserStore()

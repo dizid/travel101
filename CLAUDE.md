@@ -289,7 +289,7 @@ The DB holds ~30 places/festivals twice (e.g. `phuket` + `phuket-attraction`, an
 
 **Affiliate System**: Klook, Agoda, 12go, GetYourGuide, SafetyWing affiliate links with tracking
 
-**SEO**: JSON-LD schemas (FAQPage, Article, WebSite, HowTo, BreadcrumbList), BreadcrumbNav on all hierarchical pages, dynamic sitemap with guide pages, og:image (PNG only — SVG not supported by social crawlers)
+**SEO**: JSON-LD schemas (checked Nov 23 2026, all 946 prerendered pages parse): Organization (index.html, every page), WebSite (home only, gives Google the site name), BreadcrumbList, Article (guides), Event (festivals), TouristAttraction (attractions), LandmarksOrHistoricalBuildings (heritage), FAQPage (/ai-trip-planner-app-thailand); HowTo helper exists but is unused. BreadcrumbNav on all hierarchical pages, dynamic sitemap with guide pages, og:image (PNG only — SVG not supported by social crawlers)
 
 **Content System**: Travel guides with markdown rendering, table of contents extraction, related guides cross-linking on guide/attraction/festival detail pages
 

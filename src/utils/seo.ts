@@ -381,21 +381,22 @@ export function generateArticleSchema(article: ArticleSchema): string {
   return JSON.stringify(schema)
 }
 
+/**
+ * WebSite schema for the home page only: Google reads it there to pick the site name it
+ * shows above results (developers.google.com/search/docs/appearance/site-names).
+ * The name matches the title suffix, og:site_name and the Organization schema in
+ * index.html. No SearchAction: Google retired the sitelinks search box in Nov 2024, and
+ * /attractions never read a ?search= parameter (T-0636, Nov 23 2026).
+ */
 export function generateWebSiteSchema(): string {
   const schema = {
     '@context': 'https://schema.org',
     '@type': 'WebSite',
     name: SITE_NAME,
-    url: BASE_URL,
+    alternateName: 'HappyRoam',
+    url: `${BASE_URL}/`,
     description: 'Your personalized Thailand travel guide with AI-powered recommendations',
-    potentialAction: {
-      '@type': 'SearchAction',
-      target: {
-        '@type': 'EntryPoint',
-        urlTemplate: `${BASE_URL}/attractions?search={search_term_string}`,
-      },
-      'query-input': 'required name=search_term_string',
-    },
+    inLanguage: 'en',
   }
   return JSON.stringify(schema)
 }
