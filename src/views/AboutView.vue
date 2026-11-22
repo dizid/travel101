@@ -122,7 +122,6 @@ const socialLinks = [
     <!-- Hero Section -->
     <div class="relative bg-gradient-to-br from-primary-600 via-primary-700 to-accent-700 text-white overflow-hidden">
       <div class="absolute inset-0 bg-black/20" />
-      <div class="absolute inset-0 bg-[url('/patterns/thai-pattern.svg')] opacity-10" />
 
       <div class="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24 text-center">
         <div class="inline-flex items-center gap-2 px-3 py-1.5 bg-white/20 text-white rounded-full text-sm font-medium mb-6">

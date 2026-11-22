@@ -155,6 +155,15 @@
   to = "/AgodaPartnerVerification.html"
   status = 200
 
+# Old guide address: the "Digital nomads in Thailand" guide (guide text in the database,
+# db/migrations/014_new_guides.sql) links "the full process" to this guide, which was never
+# written. The 90-day reporting page covers it (found dead by the T-0636 phone crawl, Nov 22 2026).
+[[redirects]]
+  from = "/guides/ninety-day-reporting"
+  to = "/90-day"
+  status = 301
+  force = true
+
 # SPA fallback, only for the app routes in src/router/routes.ts that are not prerendered
 # (vite.config.ts skips them: they need a signed-in user). Every public page is a
 # prerendered file and needs no rule. Every other path gets dist/404.html (the prerendered

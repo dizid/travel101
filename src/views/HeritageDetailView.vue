@@ -310,7 +310,10 @@ onMounted(() => {
 
             <!-- Tabs -->
             <div class="border-b border-gray-200">
-              <nav class="flex gap-6">
+              <!-- On a phone the 4 tabs are wider than the screen: the row scrolls, not the whole
+                   page. -mx-4/px-4 lets the row run to the screen edges (the section's padding
+                   is px-4), so it looks the same as before, just without the sideways wobble. -->
+              <nav class="flex gap-6 overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
                 <button
                   v-for="tab in tabs"
                   :key="tab.key"

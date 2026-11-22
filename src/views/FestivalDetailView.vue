@@ -235,8 +235,8 @@ onMounted(() => {
           :class="gradientClass"
         >
           <div class="absolute inset-0 bg-black/30" />
-          <!-- Decorative emoji -->
-          <div class="absolute inset-0 flex items-center justify-center opacity-10">
+          <!-- Decorative emoji (20rem is wider than a phone: clipped sideways so the page doesn't scroll sideways) -->
+          <div class="absolute inset-0 flex items-center justify-center opacity-10 overflow-x-clip">
             <span class="text-[20rem]">{{ getFestivalEmoji(festival) }}</span>
           </div>
         </div>
