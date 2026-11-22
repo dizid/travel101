@@ -43,7 +43,10 @@ describe('affiliates', () => {
 
       it('generates 12Go URL with slugified destination', () => {
         const url = generateAffiliateUrl('12go', 'Chiang Mai')
-        expect(url).toContain('12go.asia/en/travel/thailand/chiang-mai')
+        // the place page, not a "Thailand Border -> Chiang Mai" route
+        expect(url).toBe('https://12go.asia/en/travel/chiang-mai')
+        // the whole country (home page button) was /travel/thailand/thailand, a 404 on 12Go
+        expect(generateAffiliateUrl('12go', 'Thailand')).toBe('https://12go.asia/en/travel/thailand')
         expect(url).not.toContain('referer=')
       })
 
@@ -52,6 +55,15 @@ describe('affiliates', () => {
         expect(url).toContain('getyourguide.com/s/')
         expect(url).toContain('Phi+Phi+Islands')
         expect(url).toContain('Thailand')
+      })
+
+      it('does not repeat the country when the destination is Thailand itself', () => {
+        // Home page + attractions sidebar pass destination "Thailand" (searched "Thailand Thailand")
+        expect(generateAffiliateUrl('getyourguide', 'Thailand')).toMatch(/[?&]q=Thailand(&|$)/)
+        expect(generateAffiliateUrl('viator', 'Thailand')).toMatch(/[?&]q=Thailand(&|$)/)
+        expect(generateAffiliateUrl('getyourguide', 'Thailand', 'Floating Market')).toMatch(/[?&]q=Floating\+Market\+Thailand(&|$)/)
+        // Places still get the country added
+        expect(generateAffiliateUrl('getyourguide', 'Krabi', 'Phi Phi Islands')).toMatch(/[?&]q=Phi\+Phi\+Islands\+Krabi\+Thailand(&|$)/)
       })
 
       it('generates Viator search URL', () => {

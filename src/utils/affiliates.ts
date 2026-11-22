@@ -16,6 +16,15 @@ interface AffiliateConfig {
   buildUrl: (destination: string, attractionName?: string, affiliateId?: string) => string
 }
 
+/**
+ * Search text for the worldwide activity sites (GetYourGuide, Viator): add "Thailand" so they
+ * search the right country, unless the text already says it. The home page and the attractions
+ * sidebar pass destination "Thailand", which used to search "Thailand Thailand".
+ */
+function withCountry(query: string): string {
+  return /\bthailand\b/i.test(query) ? query : `${query} Thailand`
+}
+
 const affiliateConfigs: Record<AffiliatePartner, AffiliateConfig> = {
   klook: {
     baseUrl: 'https://www.klook.com',
@@ -50,15 +59,17 @@ const affiliateConfigs: Record<AffiliatePartner, AffiliateConfig> = {
       // 12Go records a partner only through 'z' ('referer=' set no partner cookie; T-0578)
       const slug = destination.toLowerCase().replace(/\s+/g, '-')
       const params = affiliateId ? `?z=${encodeURIComponent(affiliateId)}` : ''
-      return `https://12go.asia/en/travel/thailand/${slug}${params}`
+      // /en/travel/<place> is 12Go's page for a place ("Discover Chiang Mai"; "thailand" =
+      // "Popular Routes in Thailand"). /en/travel/thailand/<place> is a route FROM "Thailand
+      // Border" to the place, and /en/travel/thailand/thailand was a 404 (home page button)
+      // until Nov 22 2026 (T-0636). Routes between two places: generateTransportUrl below.
+      return `https://12go.asia/en/travel/${slug}${params}`
     },
   },
   getyourguide: {
     baseUrl: 'https://www.getyourguide.com',
     buildUrl: (destination, attractionName, affiliateId) => {
-      const query = attractionName
-        ? `${attractionName} ${destination} Thailand`
-        : `${destination} Thailand`
+      const query = withCountry(attractionName ? `${attractionName} ${destination}` : destination)
       const params = new URLSearchParams({
         q: query,
         searchSource: '1',
@@ -73,9 +84,7 @@ const affiliateConfigs: Record<AffiliatePartner, AffiliateConfig> = {
   viator: {
     baseUrl: 'https://www.viator.com',
     buildUrl: (destination, attractionName, affiliateId) => {
-      const query = attractionName
-        ? `${attractionName} ${destination} Thailand`
-        : `${destination} Thailand`
+      const query = withCountry(attractionName ? `${attractionName} ${destination}` : destination)
       const params = new URLSearchParams({
         q: query,
         ...(affiliateId && {
