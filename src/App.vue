@@ -39,4 +39,17 @@ useAuth()
   opacity: 0;
   transform: translateY(-10px);
 }
+
+/* "Reduce motion" setting: switch pages without the slide (and fade) */
+@media (prefers-reduced-motion: reduce) {
+  .page-enter-active,
+  .page-leave-active {
+    transition: none;
+  }
+
+  .page-enter-from,
+  .page-leave-to {
+    transform: none;
+  }
+}
 </style>

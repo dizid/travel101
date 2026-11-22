@@ -366,11 +366,14 @@
 }
 
 @layer utilities {
-  /* Animation delays */
-  .animate-delay-100 { animation-delay: 100ms; }
-  .animate-delay-200 { animation-delay: 200ms; }
-  .animate-delay-300 { animation-delay: 300ms; }
-  .animate-delay-500 { animation-delay: 500ms; }
+  /* Animation delays. 'backwards' = during the delay the element already sits at the
+     animation's first frame (invisible for fade/slide-in). Without it the home hero's
+     subtitle, feature cards and price line were drawn, vanished, then faded in
+     (measured Nov 22 2026, T-0636). */
+  .animate-delay-100 { animation-delay: 100ms; animation-fill-mode: backwards; }
+  .animate-delay-200 { animation-delay: 200ms; animation-fill-mode: backwards; }
+  .animate-delay-300 { animation-delay: 300ms; animation-fill-mode: backwards; }
+  .animate-delay-500 { animation-delay: 500ms; animation-fill-mode: backwards; }
 
   /* Text helpers */
   .text-balance { text-wrap: balance; }
@@ -396,4 +399,29 @@
 
   /* Edge border utility */
   .border-edge { border-color: var(--color-edge); }
+}
+
+/* ============================================
+   REDUCED MOTION
+   Visitors who set "reduce motion" on their phone/OS see the same pages, but
+   content appears in place at once (no slide/fade-in), decorative endless
+   animations stop, and in-page links jump instead of scrolling smoothly.
+   Loading spinners, pulses and the AI "typing" dots stay: they show progress.
+   (The page slide is switched off in App.vue, the 404 float in NotFoundView.vue:
+   their own styles would win over this block.)
+   ============================================ */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .animate-fade-in,
+  .animate-slide-up,
+  .animate-rise-up,
+  .animate-slide-down,
+  .animate-scale-in,
+  .animate-float,
+  .animate-ping {
+    animation: none;
+  }
 }

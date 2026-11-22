@@ -84,4 +84,11 @@ useHead({
 .animate-float {
   animation: float 3s ease-in-out infinite;
 }
+
+/* "Reduce motion" setting: the icon stays still */
+@media (prefers-reduced-motion: reduce) {
+  .animate-float {
+    animation: none;
+  }
+}
 </style>
