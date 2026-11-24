@@ -79,9 +79,10 @@ function formatDate(dateStr: string) {
           </div>
         </div>
         <div class="bg-gray-50 rounded-lg p-2">
-          <!-- &shy;: in the narrow side column of a tablet (768-820 px) "Humidity" is wider than
-               its box; it breaks as "Humid-ity" there and nowhere else -->
-          <div class="text-xs text-gray-500">Humid&shy;ity</div>
+          <!-- &shy;: in the narrow side column of a tablet in portrait (768-1023 px) "Humidity" is
+               wider than its box and stuck out of it; it breaks as "Humid-ity" there. From 1024 px
+               (lg) it fits the box (nowrap keeps it on one line); phones have a wide box. -->
+          <div class="text-xs text-gray-500 lg:whitespace-nowrap">Humid&shy;ity</div>
           <div class="font-medium text-gray-900">
             {{ weatherData.current.humidity }}%
           </div>
