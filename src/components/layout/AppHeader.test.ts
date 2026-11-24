@@ -182,8 +182,8 @@ describe('AppHeader', () => {
   describe('mobile menu', () => {
     it('has mobile menu toggle button', () => {
       const wrapper = mountHeader()
-      // The mobile menu toggle has md:hidden class to hide it on desktop
-      const menuButton = wrapper.find('button.md\\:hidden')
+      // The mobile menu toggle has lg:hidden class to hide it on desktop
+      const menuButton = wrapper.find('button.lg\\:hidden')
 
       expect(menuButton.exists()).toBe(true)
     })
@@ -197,7 +197,7 @@ describe('AppHeader', () => {
 
     it('opens mobile menu when toggle clicked', async () => {
       const wrapper = mountHeader()
-      const menuButton = wrapper.find('button.md\\:hidden')
+      const menuButton = wrapper.find('button.lg\\:hidden')
 
       await menuButton.trigger('click')
 
@@ -207,7 +207,7 @@ describe('AppHeader', () => {
 
     it('navigation links trigger close menu handler', async () => {
       const wrapper = mountHeader()
-      const menuButton = wrapper.find('button.md\\:hidden')
+      const menuButton = wrapper.find('button.lg\\:hidden')
 
       // Open menu
       await menuButton.trigger('click')
@@ -226,7 +226,7 @@ describe('AppHeader', () => {
 
     it('closes mobile menu when clicking logo', async () => {
       const wrapper = mountHeader()
-      const menuButton = wrapper.find('button.md\\:hidden')
+      const menuButton = wrapper.find('button.lg\\:hidden')
 
       // Open menu
       await menuButton.trigger('click')
@@ -244,7 +244,7 @@ describe('AppHeader', () => {
   describe('mobile navigation content', () => {
     it('shows saved places in mobile menu', async () => {
       const wrapper = mountHeader()
-      const menuButton = wrapper.find('button.md\\:hidden')
+      const menuButton = wrapper.find('button.lg\\:hidden')
 
       await menuButton.trigger('click')
 
@@ -253,7 +253,7 @@ describe('AppHeader', () => {
 
     it('shows dashboard in mobile menu', async () => {
       const wrapper = mountHeader()
-      const menuButton = wrapper.find('button.md\\:hidden')
+      const menuButton = wrapper.find('button.lg\\:hidden')
 
       await menuButton.trigger('click')
 
@@ -303,16 +303,16 @@ describe('AppHeader', () => {
   })
 
   describe('responsive design', () => {
-    it('desktop navigation is hidden on mobile (md:flex)', () => {
+    it('desktop navigation is hidden on phones and tablets in portrait (lg:flex)', () => {
       const wrapper = mountHeader()
-      const desktopNav = wrapper.find('nav.hidden.md\\:flex')
+      const desktopNav = wrapper.find('nav.hidden.lg\\:flex')
 
       expect(desktopNav.exists()).toBe(true)
     })
 
-    it('mobile menu button is hidden on desktop (md:hidden)', () => {
+    it('mobile menu button is hidden on desktop (lg:hidden)', () => {
       const wrapper = mountHeader()
-      const mobileButton = wrapper.find('button.md\\:hidden')
+      const mobileButton = wrapper.find('button.lg\\:hidden')
 
       expect(mobileButton.exists()).toBe(true)
     })

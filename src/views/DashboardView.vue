@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { computed, onMounted } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@stores/userStore'
 import { useSubscription } from '@/composables/useSubscription'
@@ -25,6 +25,10 @@ const route = useRoute()
 const router = useRouter()
 const { loading: subLoading, subscriptionStatus, nextBillingDate, startCheckout, openPortal, fetchStatus } = useSubscription()
 const { chatUsage, introUsage, attractionChatUsage, packingUsage, fetchUsage, isPro: isProUsage } = useAIUsage()
+
+// A name with one very long word (e.g. the email name shown when no name is set) may break
+// anywhere in the greeting; otherwise it alone would make the page wider than a phone
+const greetingHasLongWord = computed(() => userStore.displayName.split(/[\s-]+/).some((word) => word.length > 18))
 
 onMounted(async () => {
   if (userStore.isAuthenticated) {
@@ -82,13 +86,19 @@ const { profileCompleteness } = useProfileCompleteness()
     <!-- Header -->
     <div class="bg-white border-b border-gray-100">
       <div class="max-w-5xl mx-auto px-4 sm:px-6 py-8">
-        <div class="flex items-center justify-between">
-          <div class="flex items-center gap-4">
-            <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center text-white shadow-thai">
+        <!-- "Settings" moves under the greeting only when the two don't fit side by side (a
+             320-360 px phone, or a long name); min-w-min makes the row wrap exactly then, so
+             wider screens look the same. Before, "Settings" was pushed off screen. -->
+        <div class="flex flex-wrap items-center justify-between gap-y-4">
+          <div class="flex items-center gap-4 grow basis-0 min-w-min">
+            <div class="w-16 h-16 shrink-0 rounded-2xl bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center text-white shadow-thai">
               <UserOutlined class="text-2xl" />
             </div>
-            <div>
-              <h1 class="text-2xl font-display font-bold text-gray-900">
+            <div class="min-w-0">
+              <h1
+                class="text-2xl font-display font-bold text-gray-900 break-words"
+                :class="{ '[overflow-wrap:anywhere]': greetingHasLongWord }"
+              >
                 Sawasdee, {{ userStore.displayName }}!
               </h1>
               <div class="flex items-center gap-2 mt-1">

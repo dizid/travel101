@@ -79,7 +79,9 @@ function formatDate(dateStr: string) {
           </div>
         </div>
         <div class="bg-gray-50 rounded-lg p-2">
-          <div class="text-xs text-gray-500">Humidity</div>
+          <!-- &shy;: in the narrow side column of a tablet (768-820 px) "Humidity" is wider than
+               its box; it breaks as "Humid-ity" there and nowhere else -->
+          <div class="text-xs text-gray-500">Humid&shy;ity</div>
           <div class="font-medium text-gray-900">
             {{ weatherData.current.humidity }}%
           </div>

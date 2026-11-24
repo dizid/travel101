@@ -103,8 +103,11 @@ onUnmounted(() => {
           </div>
         </RouterLink>
 
-        <!-- Desktop Navigation -->
-        <nav class="hidden md:flex items-center gap-1">
+        <!-- Desktop Navigation, from 1024 px (lg). The row needs ~975 px: from 768 px (md, its
+             old start) it made the page ~120 px wider than an iPad in portrait and pushed the
+             saved/profile buttons off screen (T-0636, Nov 24 2026); tablets in portrait now
+             get the phone header with the menu button. -->
+        <nav class="hidden lg:flex items-center gap-1">
           <!-- Primary discovery links -->
           <RouterLink
             v-for="item in primaryNav"
@@ -263,7 +266,7 @@ onUnmounted(() => {
           <!-- Mobile menu button -->
           <button
             @click="toggleMobileMenu"
-            class="md:hidden w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center text-gray-600 hover:bg-gray-200 transition-colors"
+            class="lg:hidden w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center text-gray-600 hover:bg-gray-200 transition-colors"
           >
             <MenuOutlined v-if="!isMobileMenuOpen" />
             <CloseOutlined v-else />
@@ -283,7 +286,7 @@ onUnmounted(() => {
     >
       <div
         v-if="isMobileMenuOpen"
-        class="md:hidden absolute top-full left-0 right-0 bg-white border-b border-gray-100 shadow-lg"
+        class="lg:hidden absolute top-full left-0 right-0 bg-white border-b border-gray-100 shadow-lg"
       >
         <nav class="py-3">
           <!-- Discover section -->

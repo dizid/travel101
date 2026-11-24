@@ -28,7 +28,9 @@ const stats = [
     icon: '🤖',
     number: 'Smart',
     label: 'Matching',
-    description: 'AI-powered recommendations based on your travel preferences',
+    // \u00AD = soft hyphen: on a 320-360 px phone "recommendations" is wider than its half-width
+    // card and stuck out of it; now it breaks as "recommen-dations" there, nowhere else.
+    description: 'AI-powered recommen\u00ADdations based on your travel preferences',
   },
 ]
 

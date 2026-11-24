@@ -393,8 +393,10 @@ async function handleDeleteActivity(activityId: string) {
     <!-- Header -->
     <div class="bg-white border-b border-gray-100">
       <div class="max-w-5xl mx-auto px-4 sm:px-6 py-8">
-        <div class="flex items-center justify-between">
-          <div class="flex items-center gap-4">
+        <!-- The buttons move under the title only when both don't fit on one line (phones);
+             min-w-min makes the row wrap exactly then, so wider screens look the same. -->
+        <div class="flex flex-wrap items-center justify-between gap-y-4">
+          <div class="flex items-center gap-4 grow basis-0 min-w-min">
             <button
               v-if="view === 'detail'"
               @click="goBack"
@@ -402,7 +404,7 @@ async function handleDeleteActivity(activityId: string) {
             >
               <ArrowLeftOutlined />
             </button>
-            <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center text-white shadow-thai">
+            <div class="w-14 h-14 shrink-0 rounded-2xl bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center text-white shadow-thai">
               <CalendarOutlined class="text-2xl" />
             </div>
             <div>

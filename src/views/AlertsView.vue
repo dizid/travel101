@@ -107,9 +107,11 @@ const upcomingNonUrgent = computed(() =>
     <!-- Header -->
     <div class="bg-white border-b border-gray-100">
       <div class="max-w-5xl mx-auto px-4 sm:px-6 py-8">
-        <div class="flex items-center justify-between">
-          <div class="flex items-center gap-4">
-            <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white shadow-lg relative">
+        <!-- The button moves under the title only when both don't fit on one line (a 320 px
+             phone); min-w-min makes the row wrap exactly then, so wider screens look the same. -->
+        <div class="flex flex-wrap items-center justify-between gap-y-4">
+          <div class="flex items-center gap-4 grow basis-0 min-w-min">
+            <div class="w-14 h-14 shrink-0 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white shadow-lg relative">
               <BellOutlined class="text-2xl" />
               <span
                 v-if="unreadCount > 0"

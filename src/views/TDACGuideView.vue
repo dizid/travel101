@@ -108,7 +108,9 @@ const commonMistakes = [
         <div class="grid sm:grid-cols-2 md:grid-cols-4 gap-4">
           <div class="text-center p-4 bg-white rounded-xl">
             <p class="text-2xl mb-1">🌐</p>
-            <p class="text-sm font-medium text-gray-900">tdac.immigration.go.th</p>
+            <!-- <wbr>: on a 768 px tablet the 4 boxes are too narrow for the address on one line;
+                 it then breaks after a dot, elsewhere it stays on one line -->
+            <p class="text-sm font-medium text-gray-900">tdac.<wbr>immigration.<wbr>go.th</p>
             <p class="text-xs text-gray-500">Official website</p>
           </div>
           <div class="text-center p-4 bg-white rounded-xl">

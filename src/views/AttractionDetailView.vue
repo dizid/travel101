@@ -453,8 +453,10 @@ const gradientClass = computed(() => {
       </div>
 
       <!-- Content -->
+      <!-- min-w-0: on a phone the grid has one auto-sized column, which would otherwise grow to
+           the width of the tab row below and push the whole page wider than the screen -->
       <div class="grid md:grid-cols-3 gap-8">
-        <div class="md:col-span-2">
+        <div class="md:col-span-2 min-w-0">
           <h1 class="text-3xl md:text-4xl font-display font-bold text-gray-900 mb-3">
             {{ attraction.name }}
           </h1>
@@ -551,7 +553,10 @@ const gradientClass = computed(() => {
           <div v-if="hasRichContent" class="mt-8">
             <!-- Tab navigation -->
             <div class="border-b border-gray-200">
-              <nav class="flex gap-6">
+              <!-- On a small phone the 3 tabs are wider than the screen: the row scrolls, not the
+                   whole page (same as the heritage tabs). -mx-4/px-4 lets the row run to the screen
+                   edges (the page's padding is px-4); the labels never break into two lines. -->
+              <nav class="flex gap-6 overflow-x-auto whitespace-nowrap -mx-4 px-4 sm:mx-0 sm:px-0">
                 <button
                   @click="activeTab = 'tips'"
                   :class="activeTab === 'tips' ? 'border-primary-500 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700'"

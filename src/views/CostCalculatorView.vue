@@ -202,17 +202,20 @@ const costCategories = [
             <span class="text-sm text-gray-500">{{ lifestyleLabels[lifestyle].label }} lifestyle</span>
           </div>
 
+          <!-- Each amount moves under its label only when the two don't fit side by side (a
+               320-360 px phone; before, "Entertainment" pushed its amount out of the card). The
+               amount grows into the free space (basis-0 + min-w-min), so wider screens look the same. -->
           <div class="space-y-4 mb-6">
             <div
               v-for="cat in costCategories"
               :key="cat.key"
-              class="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+              class="flex flex-wrap items-center justify-between gap-y-1 p-3 bg-gray-50 rounded-lg"
             >
               <div class="flex items-center gap-3">
                 <component :is="cat.icon" :class="cat.color" />
                 <span class="text-gray-700">{{ cat.label }}</span>
               </div>
-              <div class="text-right">
+              <div class="grow basis-0 min-w-min text-right">
                 <span class="font-semibold text-gray-900">{{ formatThb(currentCosts[cat.key as keyof typeof currentCosts]) }}</span>
                 <span class="text-sm text-gray-400 ml-2">({{ formatUsd(currentCosts[cat.key as keyof typeof currentCosts]) }})</span>
               </div>
@@ -220,9 +223,12 @@ const costCategories = [
           </div>
 
           <div class="border-t border-gray-200 pt-4">
-            <div class="flex items-center justify-between">
+            <!-- Same wrap for the total: on a 320-390 px phone the amount sits under "Total
+                 Monthly" (before, it stuck out of the card at 320-360 px); from ~414 px "Total
+                 Monthly" keeps one line next to the amount. -->
+            <div class="flex flex-wrap items-center justify-between gap-y-1">
               <span class="text-lg font-semibold text-gray-900">Total Monthly</span>
-              <div class="text-right">
+              <div class="grow basis-0 min-w-min text-right">
                 <span class="text-2xl font-bold text-primary-600">{{ formatThb(currentCosts.total) }}</span>
                 <span class="text-gray-500 ml-2">({{ formatUsd(currentCosts.total) }})</span>
               </div>
