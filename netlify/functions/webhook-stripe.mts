@@ -9,9 +9,13 @@ export default async (req: Request, context: Context) => {
   }
 
   const secretKey = Netlify.env.get('STRIPE_SECRET_KEY')
-  const webhookSecret = Netlify.env.get('STRIPE_WEBHOOK_SECRET')
+  const webhookSecrets = [...new Set(
+    [Netlify.env.get('STRIPE_WEBHOOK_SECRET'), Netlify.env.get('STRIPE_WEBHOOK_SECRET_DIZID')]
+      .map((s) => s?.trim())
+      .filter((s): s is string => Boolean(s))
+  )]
 
-  if (!secretKey || !webhookSecret) {
+  if (!secretKey || webhookSecrets.length === 0) {
     console.error('Stripe not configured')
     return serverError('Webhook not configured')
   }
@@ -25,7 +29,19 @@ export default async (req: Request, context: Context) => {
 
   try {
     const body = await req.text()
-    const event = stripe.webhooks.constructEvent(body, signature, webhookSecret)
+    let event: Stripe.Event | undefined
+    let lastError: unknown
+    for (const secret of webhookSecrets) {
+      try {
+        event = stripe.webhooks.constructEvent(body, signature, secret)
+        break
+      } catch (e) {
+        lastError = e
+      }
+    }
+    if (!event) {
+      throw lastError
+    }
     const db = await getDb()
 
     switch (event.type) {

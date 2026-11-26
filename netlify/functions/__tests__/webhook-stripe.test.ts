@@ -249,6 +249,37 @@ describe('webhook-stripe function', () => {
 
       expect(response.status).toBe(400)
     })
+
+    it('should accept a signature that matches STRIPE_WEBHOOK_SECRET_DIZID', async () => {
+      setMockEnv('STRIPE_WEBHOOK_SECRET_DIZID', 'whsec_dizid')
+      const event = webhookEvents.checkoutCompleted('user-123', 'sub_mock123')
+      mockStripe.webhooks.constructEvent.mockImplementation((_body, _sig, secret) => {
+        if (secret === 'whsec_dizid') return event
+        throw new Error('Invalid signature')
+      })
+
+      const req = new Request('https://example.com/api/webhook/stripe', {
+        method: 'POST',
+        headers: { 'stripe-signature': 'sig_dizid' },
+        body: JSON.stringify(event),
+      })
+
+      const response = await webhookHandler(req, mockContext as never)
+      const data = await response.json()
+
+      expect(response.status).toBe(200)
+      expect(data.received).toBe(true)
+      expect(mockStripe.webhooks.constructEvent).toHaveBeenCalledWith(
+        expect.anything(),
+        'sig_dizid',
+        'whsec_test_123',
+      )
+      expect(mockStripe.webhooks.constructEvent).toHaveBeenCalledWith(
+        expect.anything(),
+        'sig_dizid',
+        'whsec_dizid',
+      )
+    })
   })
 
   describe('shared Stripe account and old subscriptions', () => {
