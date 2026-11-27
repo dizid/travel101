@@ -215,6 +215,12 @@
 # www.google.com, *.g.doubleclick.net.
 # Promoten (archived affiliate tracker) removed Nov 11 2026: no t.js script, no promoten.pro
 # in the CSP. subscription.mts still passes a legacy plugaff_ref cookie to Stripe (now empty).
+# T-0651 (Nov 27 2026, Security Guy 25 Nov): dropped 'unsafe-eval' and the unused
+# https://api.anthropic.com and https://*.neon.tech from connect-src (AI calls go through our
+# functions; Neon Auth through the /neon-auth/* proxy). Checked on 21 live pages with this
+# policy swapped in: all render; the one report left is Zod's own eval probe (it tries
+# new Function("") and falls back when blocked; Zod comes in with the Neon Auth client).
+# 'unsafe-inline' stays: vite-ssg puts each page's own inline state script in the HTML.
 [[headers]]
   for = "/*"
   [headers.values]
@@ -222,7 +228,7 @@
     X-XSS-Protection = "1; mode=block"
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
-    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://*.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https: blob:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://api.stripe.com https://*.neon.tech https://api.anthropic.com https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com https://www.google.com https://*.g.doubleclick.net; frame-src 'self' https://js.stripe.com https://hooks.stripe.com"
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' https://js.stripe.com https://*.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https: blob:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://api.stripe.com https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com https://www.google.com https://*.g.doubleclick.net; frame-src 'self' https://js.stripe.com https://hooks.stripe.com"
     Permissions-Policy = "geolocation=(self), microphone=(), camera=()"
 
 # Cache static assets
