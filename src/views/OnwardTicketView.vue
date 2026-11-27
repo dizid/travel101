@@ -133,7 +133,10 @@ const isPro = computed(() => proStatus.value?.isPro === true)
 // T-0597: false while the site's Duffel token is a test token. The server then refuses
 // searches, payments and bookings, so the page says so up front instead of letting a
 // traveller pick a sandbox flight and fail at the payment step.
-const bookingPaused = computed(() => proStatus.value?.bookingLive === false)
+// T-0651: paused until the server says booking is live (its status always sends
+// bookingLive). Before, the prerendered page and every first paint (status not loaded
+// yet, or failed) showed "Sign in to book your onward ticket" while booking was paused.
+const bookingPaused = computed(() => proStatus.value?.bookingLive !== true)
 const proBookingsRemaining = computed(() => {
   if (!proStatus.value?.isPro) return 0
   return Math.max(0, proStatus.value.monthlyLimit - proStatus.value.bookingsThisMonth)

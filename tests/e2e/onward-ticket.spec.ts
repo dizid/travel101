@@ -4,11 +4,14 @@ import { test, expect } from '@playwright/test'
 // entire booking wizard behind userStore.isAuthenticated (DB requires
 // user_id NOT NULL on bookings — see OnwardTicketView.vue), so every test in
 // this file needs a session or it only ever sees the signed-out gate.
-// get-session is a cross-origin request to VITE_NEON_AUTH_URL, and its raw
-// (unwrapped) response is `null` when signed out, or `{ session, user }`
-// when signed in — confirmed against the real endpoint.
+// Since T-0493 the app reaches Neon Auth through its own domain
+// (/neon-auth/get-session, a netlify.toml proxy the Vite dev server serves
+// too); the old '**/auth/get-session' glob no longer matched it, so every
+// test here silently ran signed out (T-0651). Its raw (unwrapped) response is
+// `null` when signed out, or `{ session, user }` when signed in — confirmed
+// against the real endpoint. A regex, so a query string still matches.
 async function mockAuthenticatedSession(page: import('@playwright/test').Page) {
-  await page.route('**/auth/get-session', async (route) => {
+  await page.route(/\/neon-auth\/get-session(\?|$)/, async (route) => {
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -25,6 +28,12 @@ async function mockAuthenticatedSession(page: import('@playwright/test').Page) {
         },
       }),
     })
+  })
+
+  // The JWT for API calls (src/lib/authToken.ts). Every API call here is
+  // mocked, so no real token is needed; this keeps the run off Neon Auth.
+  await page.route(/\/neon-auth\/token(\?|$)/, async (route) => {
+    await route.fulfill({ status: 401, contentType: 'application/json', body: '{}' })
   })
 
   // useAuth.checkSession() fires a fire-and-forget POST to /api/user
@@ -99,7 +108,7 @@ async function mockStatusNonPro(page: import('@playwright/test').Page) {
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify({
-          data: { isPro: false, bookingsThisMonth: 0, monthlyLimit: 2, serviceFee: 1200 },
+          data: { isPro: false, bookingsThisMonth: 0, monthlyLimit: 2, serviceFee: 1200, bookingLive: true },
           success: true,
         }),
       })
@@ -118,7 +127,7 @@ async function mockStatusAndSearch(page: import('@playwright/test').Page) {
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify({
-          data: { isPro: false, bookingsThisMonth: 0, monthlyLimit: 2, serviceFee: 1200 },
+          data: { isPro: false, bookingsThisMonth: 0, monthlyLimit: 2, serviceFee: 1200, bookingLive: true },
           success: true,
         }),
       })
@@ -338,6 +347,16 @@ test.describe('Onward Ticket - Flight Search', () => {
     await expect(page.getByText(/verified flight reservation for Thai immigration in minutes/)).toHaveCount(0)
   })
 
+  test('says booking is paused up front, never "sign in to book", when the status call fails (T-0651)', async ({ page }) => {
+    // No status answer = not known to be live: the page must not lead with sign-in.
+    await page.route('**/api/onward-ticket', (route) => route.abort())
+    await page.goto('/onward-ticket')
+
+    await expect(page.getByRole('heading', { name: 'Onward ticket booking is paused' })).toBeVisible({ timeout: 10000 })
+    await expect(page.getByText(/sign in to book/i)).toHaveCount(0)
+    await expect(page.getByRole('button', { name: /search flights/i })).toHaveCount(0)
+  })
+
   test('clicking a flight result moves to step 2', async ({ page }) => {
     await mockStatusAndSearch(page)
     await page.goto('/onward-ticket')
@@ -403,7 +422,7 @@ test.describe('Onward Ticket - Flight Search', () => {
           status: 200,
           contentType: 'application/json',
           body: JSON.stringify({
-            data: { isPro: false, bookingsThisMonth: 0, monthlyLimit: 2, serviceFee: 1200 },
+            data: { isPro: false, bookingsThisMonth: 0, monthlyLimit: 2, serviceFee: 1200, bookingLive: true },
             success: true,
           }),
         })
@@ -434,7 +453,7 @@ test.describe('Onward Ticket - Flight Search', () => {
           status: 200,
           contentType: 'application/json',
           body: JSON.stringify({
-            data: { isPro: false, bookingsThisMonth: 0, monthlyLimit: 2, serviceFee: 1200 },
+            data: { isPro: false, bookingsThisMonth: 0, monthlyLimit: 2, serviceFee: 1200, bookingLive: true },
             success: true,
           }),
         })
@@ -467,7 +486,7 @@ test.describe('Onward Ticket - Pro User', () => {
           status: 200,
           contentType: 'application/json',
           body: JSON.stringify({
-            data: { isPro: true, bookingsThisMonth: 0, monthlyLimit: 2, serviceFee: 1200 },
+            data: { isPro: true, bookingsThisMonth: 0, monthlyLimit: 2, serviceFee: 1200, bookingLive: true },
             success: true,
           }),
         })
@@ -488,7 +507,7 @@ test.describe('Onward Ticket - Pro User', () => {
           status: 200,
           contentType: 'application/json',
           body: JSON.stringify({
-            data: { isPro: true, bookingsThisMonth: 0, monthlyLimit: 2, serviceFee: 1200 },
+            data: { isPro: true, bookingsThisMonth: 0, monthlyLimit: 2, serviceFee: 1200, bookingLive: true },
             success: true,
           }),
         })
@@ -528,7 +547,7 @@ test.describe('Onward Ticket - Full Booking Flow (Pro)', () => {
           status: 200,
           contentType: 'application/json',
           body: JSON.stringify({
-            data: { isPro: true, bookingsThisMonth: 0, monthlyLimit: 2, serviceFee: 1200 },
+            data: { isPro: true, bookingsThisMonth: 0, monthlyLimit: 2, serviceFee: 1200, bookingLive: true },
             success: true,
           }),
         })
@@ -706,7 +725,7 @@ test.describe('Onward Ticket - Full Booking Flow (Pro)', () => {
           status: 200,
           contentType: 'application/json',
           body: JSON.stringify({
-            data: { isPro: true, bookingsThisMonth: 0, monthlyLimit: 2, serviceFee: 1200 },
+            data: { isPro: true, bookingsThisMonth: 0, monthlyLimit: 2, serviceFee: 1200, bookingLive: true },
             success: true,
           }),
         })
@@ -777,7 +796,7 @@ test.describe('Onward Ticket - Full Booking Flow (Pro)', () => {
           status: 200,
           contentType: 'application/json',
           body: JSON.stringify({
-            data: { isPro: true, bookingsThisMonth: 0, monthlyLimit: 2, serviceFee: 1200 },
+            data: { isPro: true, bookingsThisMonth: 0, monthlyLimit: 2, serviceFee: 1200, bookingLive: true },
             success: true,
           }),
         })

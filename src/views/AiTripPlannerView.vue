@@ -3,7 +3,8 @@
 // for that traveller question, made by Foreground's fix-kit pipeline and
 // fact checked against this site (Foreground order 036, the M4 test in
 // dizid/ai-business-score NICHE-PLAN §4.2). The page is the thing being
-// measured, so keep edits to facts that change.
+// measured, so keep edits to facts that change. Nov 27 2026 (T-0651): the
+// "small team ... over a decade living there" line was untrue (built solo).
 import { RouterLink } from 'vue-router'
 import { useHead } from '@unhead/vue'
 import { useBreadcrumbs, useRouteSeo } from '@/composables/useSeo'
@@ -14,7 +15,7 @@ useBreadcrumbs([
   { name: 'AI Trip Planner', url: '/ai-trip-planner-app-thailand' },
 ])
 
-const intro = {"heading":"Who this is for and what you get","text":"HappyRoam Thailand is for travellers who are planning a trip to Thailand and want the itinerary, the visa paperwork and the budget in one app instead of ten browser tabs. Inside you get 400+ places to visit, 50+ festivals, 8 UNESCO heritage sites, 46 travel guides and a 211-phrase Thai phrasebook, plus a visa and entry section, a cost calculator and emergency information. Most of it is free forever: places, festivals, heritage, guides, the visa wizard, TDAC and 90-day tools, the visa countdown, the basic cost calculator, province safety, the phrasebook and the medical and emergency pages. The AI tools are limited to one use per day per feature on the free plan. Pro costs $10 a month with a 7-day free trial and can be cancelled at any time. HappyRoam is built by a small team of developers and travel enthusiasts based in Thailand who have collectively spent over a decade living there, from Bangkok and Chiang Mai to Phuket and Koh Phangan."}
+const intro = {"heading":"Who this is for and what you get","text":"HappyRoam Thailand is for travellers who are planning a trip to Thailand and want the itinerary, the visa paperwork and the budget in one app instead of ten browser tabs. Inside you get 400+ places to visit, 50+ festivals, 8 UNESCO heritage sites, 46 travel guides and a 211-phrase Thai phrasebook, plus a visa and entry section, a cost calculator and emergency information. Most of it is free forever: places, festivals, heritage, guides, the visa wizard, TDAC and 90-day tools, the visa countdown, the basic cost calculator, province safety, the phrasebook and the medical and emergency pages. The AI tools are limited to one use per day per feature on the free plan. Pro costs $10 a month with a 7-day free trial and can be cancelled at any time. HappyRoam is built and run by one person, Marc de Ruijter, a Dutch developer (Dizid), not by a team or an agency."}
 
 // Each traveller question, answered. Rendered visibly below and reused for
 // the FAQPage schema, so the schema text always matches what's shown.

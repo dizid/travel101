@@ -139,7 +139,7 @@ const footerLinks = {
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <!-- Disclaimers -->
         <p class="text-sm text-gray-500 text-center mb-2">
-          Content researched by our team with AI assistance. Always verify important travel details.
+          Content researched with AI assistance. Always verify important travel details.
         </p>
         <p class="text-xs text-gray-600 text-center mb-4">
           Some links on this site are affiliate links. We may earn a commission at no extra cost to you.

@@ -83,11 +83,13 @@ const editorialPoints = [
 ]
 
 const whoWeAre = {
-  title: 'Who We Are',
+  // T-0651: HappyRoam is one person's app (dizid.com: "Built solo"). The old copy claimed
+  // a "small team", "over a decade living in Thailand" and an "editorial team".
+  title: 'Who Builds It',
   paragraphs: [
-    'HappyRoam is built by a small team of developers and travel enthusiasts based in Thailand. We created this guide because we were frustrated with generic travel content that reads like it was written by someone who\'s never been here.',
-    'Our team has collectively spent over a decade living in Thailand — from Bangkok to Chiang Mai, Phuket to Koh Phangan. We eat the street food, ride the songthaews, renew our own visas, and navigate the same 90-day reporting you will. This isn\'t a travel blog written from a hotel room — it\'s a practical guide informed by daily life.',
-    'We combine local knowledge with technology: AI-powered recommendations learn from your travel preferences, real-time data keeps prices and availability current, and our editorial team fact-checks every guide against on-the-ground reality.',
+    'HappyRoam is built and run by one person: Marc de Ruijter, a Dutch developer (Dizid). There is no team or agency behind it. It started from frustration with generic travel content that reads like it was written by someone who\'s never been here.',
+    'The guides cover the whole country, from Bangkok to Chiang Mai and Phuket to Koh Phangan, with the practical side first: visas, the 90-day reporting, getting around and what things cost.',
+    'Local knowledge is combined with technology: AI-powered recommendations learn from your travel preferences, and visa rules and festival dates are checked against official sources.',
   ],
   approach: [
     { label: 'Research', desc: 'We visit places before recommending them' },
@@ -96,27 +98,6 @@ const whoWeAre = {
     { label: 'Disclose', desc: 'Affiliate links are clearly marked — always' },
   ],
 }
-
-const socialLinks = [
-  {
-    icon: '𝕏',
-    label: 'Twitter',
-    handle: '@happyroam',
-    url: 'https://x.com/happyroam',
-  },
-  {
-    icon: '📘',
-    label: 'Facebook',
-    handle: 'HappyRoam',
-    url: 'https://facebook.com/happyroam',
-  },
-  {
-    icon: '📸',
-    label: 'Instagram',
-    handle: '@happyroam',
-    url: 'https://instagram.com/happyroam',
-  },
-]
 </script>
 
 <template>
@@ -133,7 +114,7 @@ const socialLinks = [
           About HappyRoam
         </h1>
         <p class="text-lg md:text-xl text-white/90 max-w-2xl mx-auto">
-          Built by travelers who fell in love with Thailand
+          Built by a traveler who fell in love with Thailand
         </p>
       </div>
     </div>
@@ -278,7 +259,7 @@ const socialLinks = [
         </div>
       </section>
 
-      <!-- Contact & Socials -->
+      <!-- Contact -->
       <section class="pb-16 md:pb-24">
         <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 md:p-12 text-center">
           <span class="text-4xl mb-4 block">👋</span>
@@ -291,28 +272,13 @@ const socialLinks = [
 
           <RouterLink
             to="/contact"
-            class="inline-flex items-center gap-2 px-6 py-3 bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-colors font-medium mb-8"
+            class="inline-flex items-center gap-2 px-6 py-3 bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-colors font-medium"
           >
             Contact Us
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
             </svg>
           </RouterLink>
-
-          <!-- Social Links -->
-          <div class="flex justify-center gap-4 flex-wrap">
-            <a
-              v-for="social in socialLinks"
-              :key="social.label"
-              :href="social.url"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="flex items-center gap-2 px-4 py-2 bg-gray-50 border border-gray-200 text-gray-700 rounded-xl hover:bg-primary-50 hover:border-primary-200 hover:text-primary-700 transition-all text-sm font-medium"
-            >
-              <span class="font-bold">{{ social.icon }}</span>
-              <span>{{ social.handle }}</span>
-            </a>
-          </div>
         </div>
       </section>
 

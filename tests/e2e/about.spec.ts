@@ -12,9 +12,9 @@ test.describe('About Page', () => {
 
   test('shows stats section', async ({ page }) => {
     await expect(page.getByText('400+')).toBeVisible({ timeout: 10000 })
-    await expect(page.getByText('Destinations')).toBeVisible()
+    await expect(page.getByRole('main').getByText('Destinations', { exact: true })).toBeVisible()
     await expect(page.getByText('50+')).toBeVisible()
-    await expect(page.getByText('Festivals')).toBeVisible()
+    await expect(page.getByRole('main').getByText('Festivals', { exact: true })).toBeVisible()
   })
 
   test('shows UNESCO sites stat', async ({ page }) => {
@@ -51,8 +51,15 @@ test.describe('About Page', () => {
     await expect(page.getByText(/affiliate partnerships/i)).toBeVisible({ timeout: 10000 })
   })
 
-  test('shows Who We Are section', async ({ page }) => {
-    await expect(page.getByText('Who We Are')).toBeVisible({ timeout: 10000 })
+  test('says who builds it: one person, not a team (T-0651)', async ({ page }) => {
+    await expect(page.getByRole('heading', { name: 'Who Builds It' })).toBeVisible({ timeout: 10000 })
+    await expect(page.getByText(/built and run by one person/i)).toBeVisible()
+    await expect(page.getByText(/small team|over a decade|editorial team/i)).toHaveCount(0)
+  })
+
+  test('links no social accounts that do not exist (x.com/happyroam was a 404, T-0651)', async ({ page }) => {
+    await expect(page.getByRole('link', { name: 'Contact Us' })).toBeVisible({ timeout: 10000 })
+    await expect(page.locator('main a[href*="x.com/happyroam"], main a[href*="facebook.com/happyroam"], main a[href*="instagram.com/happyroam"]')).toHaveCount(0)
   })
 
   test('has navigation links', async ({ page }) => {
